@@ -71,6 +71,22 @@ body {
   }
 }
 
+/* iOS/mobile perf: reduce expensive effects (blur/shadows) */
+@media (max-width: 575.98px) {
+  .pm-ad-gallery-nav {
+    backdrop-filter: none;
+    box-shadow: none;
+  }
+
+  /* Many tiles/cards on mobile: keep UI snappy */
+  .card.shadow,
+  .card.shadow-sm,
+  .shadow,
+  .shadow-sm {
+    box-shadow: none !important;
+  }
+}
+
 .pm-hero-section {
   background-color: var(--pm-hero-bg);
   border: 1px solid rgba(var(--pm-accent-rgb), 0.22);
