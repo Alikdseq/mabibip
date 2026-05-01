@@ -73,33 +73,33 @@ cd app
 ```dotenv
 DJANGO_SETTINGS_MODULE=config.settings.prod
 DEBUG=False
-SECRET_KEY=<<<generate_strong_secret>>>
+SECRET_KEY=<<<СГЕНЕРИРУЙТЕ_СИЛЬНЫЙ_СЕКРЕТ_И_ВСТАВЬТЕ_СЮДА>>>
 
 SITE_BASE_URL=https://mabibip.ru
-ALLOWED_HOSTS=mabibip.ru,www.mabibip.ru
+ALLOWED_HOSTS=mabibip.ru,www.mabibip.ru,185.225.35.109
 CSRF_TRUSTED_ORIGINS=https://mabibip.ru,https://www.mabibip.ru
 
 # Postgres (docker compose db)
 POSTGRES_USER=promaster
-POSTGRES_PASSWORD=<<<strong_password>>>
+POSTGRES_PASSWORD=<<<СИЛЬНЫЙ_ПАРОЛЬ_POSTGRES>>>
 POSTGRES_DB=promaster
 
-DATABASE_URL=postgres://promaster:<<<strong_password>>>@db:5432/promaster
+DATABASE_URL=postgres://promaster:<<<СИЛЬНЫЙ_ПАРОЛЬ_POSTGRES>>>@db:5432/promaster
 
 REDIS_URL=redis://redis:6379/0
 CELERY_BROKER_URL=redis://redis:6379/1
 
-# Email (если включаем SMTP)
+# Email (SMTP) — взято из вашего текущего .env
 EMAIL_HOST=smtp.gmail.com
 EMAIL_PORT=587
-EMAIL_HOST_USER=<<<user>>>
-EMAIL_HOST_PASSWORD=<<<app_password>>>
+EMAIL_HOST_USER=alihanskaev@gmail.com
+EMAIL_HOST_PASSWORD=npik jlcg eiga nboj
 EMAIL_USE_TLS=True
 DEFAULT_FROM_EMAIL=alihanskaev@gmail.com
 
-# reCAPTCHA (боевые ключи)
-RECAPTCHA_SITE_KEY=<<<site_key>>>
-RECAPTCHA_SECRET_KEY=<<<secret_key>>>
+# reCAPTCHA (БОЕВЫЕ ключи; в проде RECAPTCHA_SKIP НЕ ставим)
+RECAPTCHA_SITE_KEY=6Le2X9QsAAAAADQB5j5A8uPO0jS2vIz_ErJl1KUY
+RECAPTCHA_SECRET_KEY=6Le2X9QsAAAAAK4TOlV1zP3jMYnUgRE8OR37wHpy
 
 # ЮKassa (на старте выключено)
 YOOKASSA_ENABLED=0

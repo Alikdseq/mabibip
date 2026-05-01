@@ -47,7 +47,8 @@ function ensureV2({ formId }) {
     ensureV3({
       siteKey: node.dataset.siteKey || '',
       formId,
-      action: node.dataset.action || 'submit',
+      // If data-action is empty, fall back to form's data-recaptcha-action.
+      action: node.dataset.action || '',
     });
   });
 })();
