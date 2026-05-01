@@ -1,0 +1,77 @@
+{% extends "sto_owner/base.html" %}
+{% load static %}
+{% block title %}Чат по записи — Кабинет СТО{% endblock %}
+{% block sto_owner_main %}
+  <div class="d-flex align-items-center justify-content-between gap-2 mb-3 pm-chat-header">
+    <div class="min-w-0">
+      <h1 class="h5 mb-0 text-truncate">Чат по записи #{{ booking.pk }}</h1>
+      <div class="small text-muted">Клиент: {{ peer_display }}</div>
+    </div>
+    <div class="pm-chat-actions">
+      {% if calls_enabled and peer_user_id and peer_user_id != request.user.pk %}
+        <button type="button"
+                class="btn btn-outline-primary btn-sm pm-nowrap js-pm-call"
+                data-receiver-user-id="{{ peer_user_id }}"
+                data-context-kind="{{ call_context_kind|default:'booking_chat' }}"
+                data-context-id="{{ call_context_id|default:'' }}">
+          Позвонить
+        </button>
+      {% endif %}
+      <a class="btn btn-outline-secondary btn-sm pm-nowrap" href="{% url 'sto_owner:booking_chats' %}">К списку</a>
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-body">
+      <p id="booking-chat-ws-status" class="small text-muted mb-2" aria-live="polite">Подключение чата…</p>
+      <div id="booking-chat-log"
+           class="small border rounded bg-white p-2 mb-3"
+           style="max-height: 60vh; overflow-y: auto;"
+           data-user-pk="{{ request.user.pk }}"
+           data-room-id="{{ room.pk }}"
+           aria-live="polite">
+        {% for m in chat_messages %}
+          <div class="mb-2 {% if m.sender_id == request.user.pk %}text-end{% endif %}" data-msg-id="{{ m.pk }}">
+            <span class="badge {% if m.sender_id == request.user.pk %}text-bg-primary{% else %}text-bg-secondary{% endif %}">
+              {% if m.sender_id == request.user.pk %}Вы{% else %}{{ peer_display }}{% endif %}
+            </span>
+            <span class="text-muted">{{ m.created_at|date:"d.m.Y H:i" }}</span>
+            {% if m.text %}
+              <div class="mt-1">{{ m.text|linebreaksbr }}</div>
+            {% endif %}
+            {% if m.attachment %}
+              <div class="mt-1">
+                <a href="{{ m.attachment.url }}" target="_blank" rel="noopener">Вложение</a>
+              </div>
+            {% endif %}
+          </div>
+        {% empty %}
+          <p class="text-muted mb-0">Пока нет сообщений — напишите первым.</p>
+        {% endfor %}
+      </div>
+
+      <div id="booking-chat-send-alert" class="alert alert-danger py-2 px-3 small d-none" role="alert"></div>
+      <form id="booking-chat-send-form" class="d-flex gap-2 flex-wrap align-items-start">
+        <label class="visually-hidden" for="booking-chat-textarea">Сообщение</label>
+        <textarea id="booking-chat-textarea" class="form-control form-control-sm flex-grow-1" rows="2" maxlength="5000"
+                  placeholder="Сообщение клиенту…" required autocomplete="off"></textarea>
+        <button type="submit" class="btn btn-primary btn-sm" id="booking-chat-submit">Отправить</button>
+      </form>
+    </div>
+  </div>
+
+  {% if chat_ws_path %}
+    <div id="booking-chat-root"
+         data-ws-path="{{ chat_ws_path }}"
+         data-mine-label="Вы"
+         data-other-label="{{ peer_display }}"></div>
+  {% endif %}
+{% endblock %}
+
+{% block extra_js %}
+  {{ block.super }}
+  {% if chat_ws_path %}
+    <script type="module" src="{% static 'js/pages/booking-chat-ws.js' %}"></script>
+  {% endif %}
+{% endblock %}
+

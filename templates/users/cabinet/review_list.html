@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Мои отзывы — МаБибип{% endblock %}
+{% block content %}
+  {% include "users/cabinet/_subnav.html" %}
+  <h1 class="h4 mb-2">Отзывы о вас</h1>
+  <p class="small text-muted mb-4">Здесь отображаются отзывы других пользователей: по визитам в сервис и по сделкам с объявлениями.</p>
+
+  {% if show_reviews_work %}
+    <h2 class="h6 text-uppercase text-muted mb-2">Работа (записи, СТО)</h2>
+    {% if reviews_work %}
+      <div class="list-group mb-4">
+        {% for r in reviews_work %}
+          <div class="list-group-item">
+            <div class="d-flex justify-content-between flex-wrap gap-2">
+              <div>
+                <span class="text-warning">★</span> {{ r.rating }} ·
+                <a href="{% url 'stations:detail' r.booking.station.slug %}">{{ r.booking.station.name }}</a>
+                <span class="small text-muted">· {{ r.created_at|date:"d.m.Y H:i" }}</span>
+              </div>
+            </div>
+            <p class="small text-muted mb-1 mt-2">
+              От {% if r.booking.client.first_name or r.booking.client.last_name %}{{ r.booking.client.first_name }} {{ r.booking.client.last_name }}{% else %}{{ r.booking.client.phone }}{% endif %}
+            </p>
+            <p class="mb-0 mt-1 small">{{ r.text|default:"(без текста)"|linebreaksbr }}</p>
+            {% include "reviews/_review_photo.html" with review=r only %}
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="text-muted small mb-4">Пока нет отзывов по вашим станциям и записям.</p>
+    {% endif %}
+  {% endif %}
+
+  <h2 class="h6 text-uppercase text-muted mb-2">Продажи (объявления)</h2>
+  {% if reviews_sales %}
+    <div class="list-group">
+      {% for r in reviews_sales %}
+        <div class="list-group-item">
+          <div class="d-flex justify-content-between flex-wrap gap-2">
+            <div>
+              <span class="text-warning">★</span> {{ r.rating }} ·
+              <span class="small text-muted">{{ r.created_at|date:"d.m.Y H:i" }}</span>
+            </div>
+          </div>
+          <p class="small text-muted mb-1 mt-2">
+            От {% if r.author.first_name or r.author.last_name %}{{ r.author.first_name }} {{ r.author.last_name }}{% else %}{{ r.author.phone }}{% endif %}
+          </p>
+          {% if r.text %}
+            <p class="mb-0 mt-1 small">{{ r.text|linebreaksbr }}</p>
+          {% endif %}
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="text-muted small">Пока нет отзывов о вас как о продавце.</p>
+  {% endif %}
+{% endblock %}

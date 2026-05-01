@@ -1,0 +1,32 @@
+{% load static station_catalog %}
+{% with logo_rel=stem|brand_logo_relpath sz=stem|brand_logo_size %}
+{% if mode == "link" %}
+  <a class="btn btn-outline-secondary w-100 h-100 d-flex flex-column align-items-center justify-content-between gap-1 shadow-sm text-decoration-none px-2 py-2 pm-brand-tile"
+     href="{{ href }}"
+     aria-label="Марка {{ label }}"
+     title="{{ label }}">
+{% else %}
+  <button type="button"
+          class="btn w-100 h-100 d-flex flex-column align-items-center justify-content-between gap-1 shadow-sm px-2 py-2 pm-brand-tile {% if catalog_brand == slug %}btn-primary{% else %}btn-outline-secondary{% endif %}"
+          @click="applyBrand('{{ slug }}')"
+          aria-label="Марка {{ label }}"
+          aria-pressed="{% if catalog_brand == slug %}true{% else %}false{% endif %}"
+          title="{{ label }}">
+{% endif %}
+    <span class="d-flex align-items-center justify-content-center flex-shrink-0 w-100 pm-brand-tile-logo">
+      <img src="{% static logo_rel %}"
+           alt=""
+           width="{{ sz }}"
+           height="{{ sz }}"
+           loading="lazy"
+           decoding="async"
+           class="d-block"
+           style="object-fit:contain;max-width:100%;max-height:100%;">
+    </span>
+    <span class="small fw-medium text-center text-truncate w-100 mt-1" title="{{ label }}">{{ label }}</span>
+{% if mode == "link" %}
+  </a>
+{% else %}
+  </button>
+{% endif %}
+{% endwith %}

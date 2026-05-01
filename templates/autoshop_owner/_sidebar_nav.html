@@ -1,0 +1,28 @@
+{% comment %}Боковое меню кабинета автомагазина/разборки/автосалона.{% endcomment %}
+{% with url_name=request.resolver_match.url_name %}
+  <nav class="card border-0 shadow-sm autoshop-owner-sidebar-nav" aria-label="Кабинет автомагазина">
+    <div class="card-body p-0">
+      <div class="px-3 pt-3 pb-2 border-bottom bg-light rounded-top">
+        <span class="small fw-semibold text-body-secondary text-uppercase letter-spacing">Кабинет бизнеса</span>
+      </div>
+      <div class="list-group list-group-flush rounded-0 rounded-bottom">
+        <a class="list-group-item list-group-item-action border-0 py-2 px-3 d-flex align-items-center gap-2{% if url_name == 'dashboard' %} active fw-semibold{% endif %}"
+           href="{% url 'shop_owner:dashboard' %}" {% if url_name == 'dashboard' %}aria-current="page"{% endif %}>
+          <i class="bi bi-speedometer2 {% if url_name == 'dashboard' %}text-white{% else %}text-primary{% endif %}" aria-hidden="true"></i>
+          <span>Главная</span>
+        </a>
+        <a class="list-group-item list-group-item-action border-0 py-2 px-3 d-flex align-items-center gap-2{% if url_name == 'products' %} active fw-semibold{% endif %}"
+           href="{% url 'shop_owner:products' %}" {% if url_name == 'products' %}aria-current="page"{% endif %}>
+          <i class="bi bi-bag {% if url_name == 'products' %}text-white{% else %}text-primary{% endif %}" aria-hidden="true"></i>
+          <span>Товары</span>
+        </a>
+        <a class="list-group-item list-group-item-action border-0 py-2 px-3 d-flex align-items-center gap-2{% if url_name == 'branches' or url_name == 'branch_add' or url_name == 'branch_edit' %} active fw-semibold{% endif %}"
+           href="{% url 'shop_owner:branches' %}" {% if url_name == 'branches' %}aria-current="page"{% endif %}>
+          <i class="bi bi-geo-alt {% if url_name == 'branches' or url_name == 'branch_add' or url_name == 'branch_edit' %}text-white{% else %}text-primary{% endif %}" aria-hidden="true"></i>
+          <span>Магазины</span>
+        </a>
+      </div>
+    </div>
+  </nav>
+{% endwith %}
+

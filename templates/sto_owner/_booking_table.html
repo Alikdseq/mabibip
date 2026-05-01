@@ -1,0 +1,33 @@
+{% if bookings %}
+  {# Mobile: карточки + pop-up modal (открывается с дашборда) #}
+  <div class="d-md-none">
+    <div class="d-flex flex-column gap-2">
+      {% for b in bookings %}
+        {% include "sto_owner/_booking_mobile_card_button.html" with show_slot_date=False %}
+      {% endfor %}
+    </div>
+  </div>
+
+  {# Desktop/tablet: таблица #}
+  <div class="d-none d-md-block">
+    <table class="table table-sm align-middle mb-0">
+      <thead>
+        <tr>
+          <th>Время</th>
+          <th class="d-none d-md-table-cell">Пост</th>
+          <th>Клиент</th>
+          <th class="d-none d-lg-table-cell">Авто / проблема</th>
+          <th class="d-none d-md-table-cell">Статус</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for b in bookings %}
+          {% include "sto_owner/_booking_desktop_table_row.html" with show_slot_date=False row_suffix="" %}
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% else %}
+  <p class="text-muted small mb-0">Нет записей.</p>
+{% endif %}

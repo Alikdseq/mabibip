@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+{% block title %}Регистрация — МаБибип{% endblock %}
+{% block content %}
+  <h1 class="h4 mb-3">Регистрация</h1>
+  {% load socialaccount %}
+  {% get_providers as socialaccount_providers %}
+  {% if socialaccount_providers %}
+    <div class="col-lg-7 mb-3 d-none" id="oauth-signup-driver-only">
+      <div class="d-grid gap-2">
+        {% for p in socialaccount_providers %}
+          {% if p.id == 'google' %}
+            <a class="btn btn-outline-primary" href="{% provider_login_url 'google' process='signup' next='/cabinet/profile/' %}">Регистрация через Google</a>
+          {% elif p.id == 'apple' %}
+            <a class="btn btn-outline-dark" href="{% provider_login_url 'apple' process='signup' next='/cabinet/profile/' %}">Регистрация через Apple</a>
+          {% elif p.id == 'vk' %}
+            <a class="btn btn-outline-secondary" href="{% provider_login_url 'vk' process='signup' next='/cabinet/profile/' %}">Регистрация через VK</a>
+          {% endif %}
+        {% endfor %}
+      </div>
+      <div class="text-muted small mt-2">Или зарегистрируйтесь по телефону.</div>
+    </div>
+  {% endif %}
+  <p class="text-muted small mb-3">
+    Выберите роль и заполните форму. Для бизнеса заявка уходит на модерацию администратору.
+  </p>
+
+  <div class="d-flex flex-wrap gap-2 mb-3" role="group" aria-label="Роль">
+    <button type="button" class="btn btn-outline-primary js-role flex-grow-1 text-nowrap" data-role="driver">Водитель</button>
+    <button type="button" class="btn btn-outline-primary js-role flex-grow-1 text-nowrap" data-role="master">Мастер</button>
+    <button type="button" class="btn btn-outline-primary js-role flex-grow-1 text-nowrap" data-role="autoservice">Автосервис</button>
+    <button type="button" class="btn btn-outline-primary js-role flex-grow-1 text-nowrap" data-role="autoshop">Автомагазин</button>
+  </div>
+
+  <form method="post" class="col-lg-7" id="register-form" data-recaptcha-action="register" novalidate>
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+      <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+    {% endif %}
+    {{ form.role }}
+
+    <div class="mb-3">
+      <label class="form-label" for="{{ form.phone.id_for_label }}">{{ form.phone.label }}</label>
+      {{ form.phone }}
+      {% for err in form.phone.errors %}<div class="invalid-feedback d-block">{{ err }}</div>{% endfor %}
+    </div>
+    <div id="phone-owner-block" class="form-check mb-3 {% if form.is_bound and not form.is_valid %}d-block{% else %}d-none{% endif %}" aria-live="polite">
+      {{ form.phone_owner_confirm }}
+      <label class="form-check-label" for="{{ form.phone_owner_confirm.id_for_label }}">{{ form.phone_owner_confirm.label }}</label>
+      {% for err in form.phone_owner_confirm.errors %}<div class="invalid-feedback d-block">{{ err }}</div>{% endfor %}
+    </div>
+    <div class="mb-3" style="display:none" aria-hidden="true">
+      {{ form.website_url }}
+    </div>
+    <div class="mb-3">
+      <label class="form-label" for="{{ form.password1.id_for_label }}">{{ form.password1.label }}</label>
+      {{ form.password1 }}
+      {% for err in form.password1.errors %}<div class="invalid-feedback d-block">{{ err }}</div>{% endfor %}
+    </div>
+    <div class="mb-3">
+      <label class="form-label" for="{{ form.password2.id_for_label }}">{{ form.password2.label }}</label>
+      {{ form.password2 }}
+      {% for err in form.password2.errors %}<div class="invalid-feedback d-block">{{ err }}</div>{% endfor %}
+    </div>
+    <div class="mb-3">
+      <label class="form-label" for="{{ form.email.id_for_label }}">{{ form.email.label }}</label>
+      {{ form.email }}
+      {% for err in form.email.errors %}<div class="invalid-feedback d-block">{{ err }}</div>{% endfor %}
+    </div>
+
+    <div id="biz-fields" class="border rounded p-3 mb-3 d-none">
+      <div class="fw-semibold mb-2">Данные для бизнеса</div>
+      <div class="mb-2">
+        <label class="form-label" for="{{ form.business_name.id_for_label }}">Название / имя</label>
+        {{ form.business_name }}
+        {% for err in form.business_name.errors %}<div class="invalid-feedback d-block">{{ err }}</div>{% endfor %}
+      </div>
+      <div>
+        <label class="form-label" for="{{ form.city_label.id_for_label }}">Город</label>
+        {{ form.city_label }}
+        {% for err in form.city_label.errors %}<div class="invalid-feedback d-block">{{ err }}</div>{% endfor %}
+      </div>
+      <div id="autoshop-kind-fields" class="mt-2 d-none">
+        <label class="form-label" for="{{ form.autoshop_kind.id_for_label }}">Тип</label>
+        {{ form.autoshop_kind }}
+      </div>
+      <p class="small text-muted mt-2 mb-0">После модерации откроется кабинет бизнеса.</p>
+    </div>
+    <div class="form-check mb-2">
+      {{ form.accept_privacy }}
+      <label class="form-check-label" for="{{ form.accept_privacy.id_for_label }}">
+        Принимаю <a href="{% url 'legal:document' key='privacy' %}" target="_blank" rel="noopener">политику конфиденциальности</a>
+      </label>
+      {% for err in form.accept_privacy.errors %}<div class="invalid-feedback d-block">{{ err }}</div>{% endfor %}
+    </div>
+    <div class="form-check mb-2">
+      {{ form.accept_user_agreement }}
+      <label class="form-check-label" for="{{ form.accept_user_agreement.id_for_label }}">
+        Принимаю <a href="{% url 'legal:document' key='user_agreement' %}" target="_blank" rel="noopener">пользовательское соглашение</a>
+      </label>
+      {% for err in form.accept_user_agreement.errors %}<div class="invalid-feedback d-block">{{ err }}</div>{% endfor %}
+    </div>
+    <div class="form-check mb-2">
+      {{ form.accept_pd_consent }}
+      <label class="form-check-label" for="{{ form.accept_pd_consent.id_for_label }}">
+        Даю <a href="{% url 'legal:document' key='pd_consent' %}" target="_blank" rel="noopener">согласие на обработку персональных данных</a>
+      </label>
+      {% for err in form.accept_pd_consent.errors %}<div class="invalid-feedback d-block">{{ err }}</div>{% endfor %}
+    </div>
+    {{ form.recaptcha_token }}
+    <button type="submit" class="btn btn-primary text-nowrap" id="register-submit-btn" disabled>Зарегистрироваться</button>
+  </form>
+  {% include "users/includes/recaptcha_submit.html" with form_id="register-form" %}
+  <script src="https://unpkg.com/imask"></script>
+  <script>
+    (function () {
+      var phone = document.getElementById('{{ form.phone.id_for_label }}');
+      if (phone && window.IMask) {
+        IMask(phone, { mask: '+{7} (000) 000-00-00' });
+      }
+    })();
+  </script>
+  <script>
+    (function () {
+      var roleInput = document.getElementById('{{ form.role.id_for_label }}');
+      var biz = document.getElementById('biz-fields');
+      var kind = document.getElementById('autoshop-kind-fields');
+      var oauth = document.getElementById('oauth-signup-driver-only');
+      function setRole(r) {
+        if (roleInput) roleInput.value = r;
+        document.querySelectorAll('.js-role').forEach(function (b) {
+          b.classList.toggle('btn-primary', b.getAttribute('data-role') === r);
+          b.classList.toggle('btn-outline-primary', b.getAttribute('data-role') !== r);
+        });
+        var isBiz = r !== 'driver';
+        if (biz) biz.classList.toggle('d-none', !isBiz);
+        if (kind) kind.classList.toggle('d-none', r !== 'autoshop');
+        if (oauth) oauth.classList.toggle('d-none', r !== 'driver');
+      }
+      document.querySelectorAll('.js-role').forEach(function (b) {
+        b.addEventListener('click', function () { setRole(b.getAttribute('data-role')); });
+      });
+      setRole((roleInput && roleInput.value) || 'driver');
+    })();
+  </script>
+  <script>
+    (function () {
+      var phone = document.getElementById('{{ form.phone.id_for_label }}');
+      var block = document.getElementById('phone-owner-block');
+      var cb = document.getElementById('{{ form.phone_owner_confirm.id_for_label }}');
+      var btn = document.getElementById('register-submit-btn');
+      if (!phone || !block || !cb || !btn) return;
+
+      var showTimer = null;
+      var armTimer = null;
+
+      function digitCount(val) {
+        return (val || '').replace(/\D/g, '').length;
+      }
+
+      function hideConfirm() {
+        if (showTimer) clearTimeout(showTimer);
+        showTimer = null;
+        block.classList.remove('d-block');
+        block.classList.add('d-none');
+        cb.checked = false;
+        armSubmit();
+      }
+
+      function armSubmit() {
+        btn.disabled = true;
+        if (armTimer) clearTimeout(armTimer);
+        armTimer = null;
+        if (!cb.checked) return;
+        armTimer = setTimeout(function () { btn.disabled = false; }, 2000);
+      }
+
+      function onPhoneInput() {
+        var n = digitCount(phone.value);
+        if (showTimer) clearTimeout(showTimer);
+        showTimer = null;
+        if (n < 11) {
+          hideConfirm();
+          return;
+        }
+        showTimer = setTimeout(function () {
+          block.classList.remove('d-none');
+          block.classList.add('d-block');
+          armSubmit();
+        }, 1500);
+      }
+
+      phone.addEventListener('input', onPhoneInput);
+      phone.addEventListener('blur', onPhoneInput);
+      cb.addEventListener('change', armSubmit);
+      onPhoneInput();
+    })();
+  </script>
+{% endblock %}

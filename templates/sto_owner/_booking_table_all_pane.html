@@ -1,0 +1,41 @@
+{# bookings: first page; bookings_all_total; bookings_all_has_more; bookings_all_remaining #}
+{% if bookings %}
+  <div class="d-md-none">
+    <div class="d-flex flex-column gap-2" id="sto-all-mobile">
+      {% for b in bookings %}
+        {% include "sto_owner/_booking_mobile_card_button.html" with show_slot_date=True row_suffix="all-" %}
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="d-none d-md-block">
+    <table class="table table-sm align-middle mb-0">
+      <thead>
+        <tr>
+          <th>Дата / время</th>
+          <th class="d-none d-md-table-cell">Пост</th>
+          <th>Клиент</th>
+          <th class="d-none d-lg-table-cell">Авто / проблема</th>
+          <th class="d-none d-md-table-cell">Статус</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="sto-all-tbody">
+        {% for b in bookings %}
+          {% include "sto_owner/_booking_desktop_table_row.html" with show_slot_date=True row_suffix="all-" %}
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if bookings_all_has_more %}
+    <button type="button"
+            class="btn btn-outline-secondary btn-sm mt-3 js-sto-all-more"
+            hx-get="{% url 'sto_owner:dashboard_bookings_all_more' %}?offset=5"
+            hx-swap="outerHTML">
+      Ещё{% if bookings_all_remaining %} (ещё {{ bookings_all_remaining }}){% endif %}
+    </button>
+  {% endif %}
+{% else %}
+  <p class="text-muted small mb-0">Нет актуальных записей (ожидают подтверждения или подтверждены на будущее).</p>
+{% endif %}

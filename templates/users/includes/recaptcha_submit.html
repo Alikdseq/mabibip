@@ -1,0 +1,24 @@
+{# form_id — id формы с атрибутом data-recaptcha-action. Если нет ключа сайта, форма шлётся как обычно. #}
+{% if RECAPTCHA_SITE_KEY %}
+  {% load static %}
+  <span data-recaptcha-config="1"
+        data-version="{{ RECAPTCHA_VERSION|default:'v3' }}"
+        data-form-id="{{ form_id|default:'recaptcha-form' }}"
+        data-action=""
+        data-site-key="{{ RECAPTCHA_SITE_KEY }}"></span>
+  {% if RECAPTCHA_VERSION|default:"v3" == "v2" %}
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+    <div class="g-recaptcha my-3" data-sitekey="{{ RECAPTCHA_SITE_KEY }}"></div>
+  {% else %}
+    <script src="https://www.google.com/recaptcha/api.js?render={{ RECAPTCHA_SITE_KEY }}"></script>
+  {% endif %}
+  <script type="module" src="{% static 'js/app/recaptcha.js' %}"></script>
+  {% if RECAPTCHA_VERSION|default:"v3" == "v3" %}
+    <p class="small text-muted mt-2 mb-0">
+      Защита от спама: Google reCAPTCHA v3.
+      <a href="https://policies.google.com/privacy" rel="noopener" target="_blank">Конфиденциальность</a>
+      ·
+      <a href="https://policies.google.com/terms" rel="noopener" target="_blank">Условия</a>
+    </p>
+  {% endif %}
+{% endif %}

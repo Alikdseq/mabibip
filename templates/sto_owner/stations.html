@@ -1,0 +1,57 @@
+{% extends "sto_owner/base.html" %}
+{% block title %}Мои станции — МаБибип{% endblock %}
+{% block sto_owner_main %}
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'sto_owner:dashboard' %}">Кабинет</a></li>
+      <li class="breadcrumb-item active" aria-current="page">Станции</li>
+    </ol>
+  </nav>
+
+  <h1 class="h4 mb-3">Мои станции</h1>
+  <p class="small mb-3">
+    <a href="{{ bays_url }}">Посты (боксы)</a>
+  </p>
+  <p class="text-muted small mb-3">
+    Откройте <strong>профиль</strong>, чтобы заполнить описание, услуги, контакты и цены «от … ₽».
+    Марки авто можно задать здесь или в профиле — для фильтра «Марка» в каталоге.
+  </p>
+
+  <div class="list-group">
+    {% for s in stations %}
+      <div class="list-group-item">
+        <div class="d-flex justify-content-between align-items-start gap-3">
+          <div class="min-w-0">
+            <div class="fw-semibold text-truncate">{{ s.name }}</div>
+            <div class="small text-body-secondary mt-1">
+              {% if s.car_brands.all %}
+                {% for b in s.car_brands.all|slice:":8" %}
+                  <span class="badge rounded-pill text-bg-light border me-1">{{ b.name }}</span>
+                {% endfor %}
+                {% if s.car_brands.all|length > 8 %}
+                  <span class="text-muted">ещё {{ s.car_brands.all|length|add:"-8" }}</span>
+                {% endif %}
+              {% else %}
+                <span class="text-muted">Марки не выбраны</span>
+              {% endif %}
+            </div>
+          </div>
+          <div class="flex-shrink-0 d-flex flex-wrap gap-2 justify-content-end">
+            <a class="btn btn-primary btn-sm"
+               href="{% url 'sto_owner:station_profile' s.slug %}">
+              Профиль и услуги
+            </a>
+            <a class="btn btn-outline-primary btn-sm"
+               href="{% url 'sto_owner:station_brands' s.slug %}">
+              Марки
+            </a>
+          </div>
+        </div>
+      </div>
+    {% empty %}
+      <div class="alert alert-light border text-muted mb-0">
+        У вас пока нет созданных станций/профиля исполнителя.
+      </div>
+    {% endfor %}
+  </div>
+{% endblock %}

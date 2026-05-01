@@ -1,0 +1,47 @@
+<div class="booking-request-form">
+  <h3 class="h6">Запись на {{ slot.date }} {{ slot.start_time|time:"H:i" }}</h3>
+  <p class="small text-muted">{{ station.name }} · {{ slot.bay.name }}</p>
+  <form method="post"
+        action="{% url 'stations:booking_submit' station.slug slot.id %}"
+        hx-post="{% url 'stations:booking_submit' station.slug slot.id %}"
+        hx-target="#{{ booking_modal_body_id }}"
+        hx-swap="innerHTML">
+    {% csrf_token %}
+    <input type="hidden" name="modal_body" value="{{ booking_modal_body_id }}">
+    {% if form.non_field_errors %}
+      <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+    {% endif %}
+    {% if saved_cars %}
+      <div class="mb-2">
+        <label class="form-label small mb-0" for="savedCarPick">Подставить из «Мои авто»</label>
+        <select class="form-select form-select-sm" id="savedCarPick" autocomplete="off">
+          <option value="">— не выбирать —</option>
+          {% for car in saved_cars %}
+            <option value="{{ car.display_line }}">{{ car.display_line }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <script>
+        (function () {
+          var sel = document.getElementById('savedCarPick');
+          if (!sel) return;
+          var carInput = document.querySelector('.booking-request-form input[name="car_info"]');
+          sel.addEventListener('change', function () {
+            var o = sel.options[sel.selectedIndex];
+            if (!carInput || !o.value) return;
+            carInput.value = o.value;
+          });
+        })();
+      </script>
+    {% endif %}
+    {% for field in form %}
+      <div class="mb-2">
+        <label class="form-label small" for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {% for err in field.errors %}<div class="invalid-feedback d-block">{{ err }}</div>{% endfor %}
+      </div>
+    {% endfor %}
+    <p class="small text-muted">Окно удерживается до подтверждения СТО, не более часа.</p>
+    <button type="submit" class="btn btn-primary w-100">Отправить заявку</button>
+  </form>
+</div>

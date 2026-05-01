@@ -1,0 +1,135 @@
+{# Поля фильтров: подключаются в форму десктопа и мобильного модального окна. suffix — суффикс для id. #}
+<input type="hidden" name="brand" value="{{ catalog_brand }}">
+<input type="hidden" name="entry" value="{{ request.GET.entry|default:'' }}">
+<input type="hidden" name="quick" value="{{ request.GET.quick|default:'' }}">
+<input type="hidden" name="service" value="{{ catalog_service_slug|default:'' }}">
+
+<div class="mb-3">
+  <label class="form-label small fw-semibold" for="id-q-{{ suffix }}">Поиск</label>
+  <input id="id-q-{{ suffix }}" type="search" name="q" value="{{ catalog_q }}"
+         class="form-control form-control-sm"
+         placeholder="Название, адрес или услуга…"
+         autocomplete="off">
+</div>
+
+<div class="mb-3">
+  <div class="small fw-semibold mb-1">Тип исполнителя</div>
+  <div class="form-check">
+    <input class="form-check-input" type="checkbox" name="exec" value="{{ executor_sto }}"
+           id="exec-sto-{{ suffix }}"
+           {% if executor_sto in catalog_exec or not catalog_exec %}checked{% endif %}>
+    <label class="form-check-label" for="exec-sto-{{ suffix }}">СТО и автосервисы</label>
+  </div>
+  <div class="form-check">
+    <input class="form-check-input" type="checkbox" name="exec" value="{{ executor_private }}"
+           id="exec-prv-{{ suffix }}"
+           {% if executor_private in catalog_exec or not catalog_exec %}checked{% endif %}>
+    <label class="form-check-label" for="exec-prv-{{ suffix }}">Частные мастера</label>
+  </div>
+</div>
+
+<div class="mb-3">
+  <div class="small fw-semibold mb-1">Категории услуг</div>
+  <div class="border rounded p-2" style="max-height: 200px; overflow-y: auto;">
+    {% for c in categories %}
+      <div class="form-check">
+        <input class="form-check-input" type="checkbox" name="cat" value="{{ c.id }}"
+               id="cat-{{ suffix }}-{{ c.id }}"
+               {% if c.id in catalog_cat_ids %}checked{% endif %}>
+        <label class="form-check-label small" for="cat-{{ suffix }}-{{ c.id }}">{{ c.name }}</label>
+      </div>
+    {% empty %}
+      <p class="small text-muted mb-0">Категории появятся после настройки в админке.</p>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="mb-3">
+  <label class="form-label small fw-semibold" for="id-rating-{{ suffix }}">Рейтинг</label>
+  <select id="id-rating-{{ suffix }}" name="rating" class="form-select form-select-sm">
+    <option value="" {% if not catalog_rating %}selected{% endif %}>Любой</option>
+    <option value="4" {% if catalog_rating == "4" %}selected{% endif %}>★★★★☆ и выше (4+)</option>
+    <option value="5" {% if catalog_rating == "5" %}selected{% endif %}>★★★★★ (только 5)</option>
+  </select>
+</div>
+
+<div class="mb-3">
+  <div class="small fw-semibold mb-1">Статусы</div>
+  <div class="form-check">
+    <input class="form-check-input" type="checkbox" name="slots_today" value="1" id="sl-td-{{ suffix }}"
+           {% if catalog_slots_today %}checked{% endif %}>
+    <label class="form-check-label" for="sl-td-{{ suffix }}">Свободные окна сегодня</label>
+  </div>
+  <div class="form-check">
+    <input class="form-check-input" type="checkbox" name="slots_tomorrow" value="1" id="sl-tm-{{ suffix }}"
+           {% if catalog_slots_tomorrow %}checked{% endif %}>
+    <label class="form-check-label" for="sl-tm-{{ suffix }}">Свободные окна завтра</label>
+  </div>
+  <div class="form-check">
+    <input class="form-check-input" type="checkbox" name="verified" value="1" id="ver-{{ suffix }}"
+           {% if catalog_verified %}checked{% endif %}>
+    <label class="form-check-label" for="ver-{{ suffix }}">Проверенные исполнители</label>
+  </div>
+  <div class="form-check">
+    <input class="form-check-input" type="checkbox" name="open247" value="1" id="247-{{ suffix }}"
+           {% if catalog_open247 %}checked{% endif %}>
+    <label class="form-check-label" for="247-{{ suffix }}">Работают 24/7</label>
+  </div>
+</div>
+
+<div class="mb-3">
+  <label class="form-label small fw-semibold" for="id-district-{{ suffix }}">Район / зона</label>
+  <select id="id-district-{{ suffix }}" name="district" class="form-select form-select-sm">
+    <option value="">— любой —</option>
+    {% for d in districts %}
+      <option value="{{ d.slug }}" {% if catalog_district == d.slug %}selected{% endif %}>
+        {% if d.city_label %}{{ d.city_label }} — {% endif %}{{ d.name }}
+      </option>
+    {% endfor %}
+  </select>
+</div>
+
+<div class="mb-3">
+  <div class="small fw-semibold mb-1">Расположение</div>
+  <input type="hidden" name="user_lat" id="user-lat-{{ suffix }}" value="{{ catalog_user_lat }}">
+  <input type="hidden" name="user_lng" id="user-lng-{{ suffix }}" value="{{ catalog_user_lng }}">
+  <label class="form-label small" for="id-radius-{{ suffix }}">Радиус от точки, км (0 — не ограничивать)</label>
+  <select id="id-radius-{{ suffix }}" name="radius_km" class="form-select form-select-sm">
+    <option value="0" {% if catalog_radius_km == "0" %}selected{% endif %}>Не ограничивать</option>
+    <option value="5" {% if catalog_radius_km == "5" %}selected{% endif %}>5 км</option>
+    <option value="10" {% if catalog_radius_km == "10" %}selected{% endif %}>10 км</option>
+    <option value="25" {% if catalog_radius_km == "25" %}selected{% endif %}>25 км</option>
+  </select>
+  <button type="button" class="btn btn-outline-secondary btn-sm mt-2 w-100 js-geo-locate" data-suffix="{{ suffix }}">
+    Определить моё местоположение
+  </button>
+</div>
+
+<div class="mb-3">
+  <div class="small fw-semibold mb-1">Доп. удобства</div>
+  <div class="form-check">
+    <input class="form-check-input" type="checkbox" name="amen_wifi" value="1" id="aw-{{ suffix }}"
+           {% if catalog_amen_wifi %}checked{% endif %}>
+    <label class="form-check-label" for="aw-{{ suffix }}">Wi‑Fi</label>
+  </div>
+  <div class="form-check">
+    <input class="form-check-input" type="checkbox" name="amen_coffee" value="1" id="ac-{{ suffix }}"
+           {% if catalog_amen_coffee %}checked{% endif %}>
+    <label class="form-check-label" for="ac-{{ suffix }}">Кофе / чай</label>
+  </div>
+  <div class="form-check">
+    <input class="form-check-input" type="checkbox" name="amen_cards" value="1" id="ad-{{ suffix }}"
+           {% if catalog_amen_cards %}checked{% endif %}>
+    <label class="form-check-label" for="ad-{{ suffix }}">Принимают карты</label>
+  </div>
+  <div class="form-check">
+    <input class="form-check-input" type="checkbox" name="amen_tow" value="1" id="at-{{ suffix }}"
+           {% if catalog_amen_tow %}checked{% endif %}>
+    <label class="form-check-label" for="at-{{ suffix }}">Эвакуатор</label>
+  </div>
+  <div class="form-check">
+    <input class="form-check-input" type="checkbox" name="amen_legal" value="1" id="al-{{ suffix }}"
+           {% if catalog_amen_legal %}checked{% endif %}>
+    <label class="form-check-label" for="al-{{ suffix }}">Работают с юрлицами</label>
+  </div>
+</div>

@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Избранные Мастера — МаБибип{% endblock %}
+{% block content %}
+  {% include "users/cabinet/_subnav.html" %}
+  <h1 class="h4 mb-3">Избранные Мастера</h1>
+  {% if favorites %}
+    <ul class="list-group">
+      {% for f in favorites %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          <a href="{% url 'stations:detail' f.station.slug %}">{{ f.station.name }}</a>
+          <span class="small text-muted">{{ f.station.address|truncatechars:50 }}</span>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="text-muted mb-0">Пока пусто. Добавляйте мастеров и сервисы кнопкой «В избранное» в каталоге.</p>
+  {% endif %}
+{% endblock %}

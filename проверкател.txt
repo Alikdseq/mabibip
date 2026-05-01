@@ -1,0 +1,368 @@
+ТЗ: Комплексная защита регистрации и подтверждение контактов (без SMS)
+1. Цели
+Защитить регистрацию от ботов и дубликатов без использования платных SMS-шлюзов.
+
+Ввести подтверждение email (новый функционал) как второй фактор валидации пользователя.
+
+Обеспечить уникальность номера телефона (1 номер = 1 аккаунт) и его базовую валидность.
+
+Собрать первый эшелон обороны: reCAPTCHA v3, honeypot, rate limiting, таймауты.
+
+Улучшить UX: маска ввода телефона, галочка «Это Ваш телефон?», адаптивность.
+
+2. Основные технические решения
+reCAPTCHA v3 (invisible): бесплатная, невидима для пользователя, возвращает score.
+
+Honeypot: скрытое поле, которое боты заполняют, люди — нет.
+
+Rate limiting: через django-ratelimit (бекенд) и таймауты на фронте.
+
+Валидация телефона: библиотека django-phonenumber-field с phonenumbers.
+
+Уникальность телефона: на уровне модели (уникальный индекс) с препроцессингом.
+
+Подтверждение email: через отправку письма со ссылкой (Django email + SMTP).
+
+Фронтенд: HTMX-фрагменты, маска ввода (IMask), никаких тяжёлых фреймворков.
+
+3. Подробные атомарные задачи
+Задача 1. Установка зависимостей
+Добавить в requirements.txt:
+
+text
+django-phonenumber-field>=7.0.0
+phonenumbers>=8.13.0
+django-ratelimit>=4.1.0
+Установить: pip install -r requirements.txt
+
+Задача 2. Настройки Django (settings.py)
+2.1 reCAPTCHA
+python
+# settings.py
+RECAPTCHA_PUBLIC_KEY = os.environ.get('RECAPTCHA_PUBLIC_KEY', '')
+RECAPTCHA_PRIVATE_KEY = os.environ.get('RECAPTCHA_PRIVATE_KEY', '')
+RECAPTCHA_REQUIRED_SCORE = 0.5  # минимальный порог для прохождения
+Получить ключи в Google reCAPTCHA Admin (выбрать v3). Добавить домены в список разрешённых.
+
+2.2 Email (SMTP)
+Бесплатный вариант: Gmail (учётная запись приложения).
+
+python
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.gmail.com')
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')  # пароль приложения
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'noreply@promaster.ru')
+Для разработки можно использовать EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'.
+
+2.3 Установить django-ratelimit
+Добавить в INSTALLED_APPS не нужно, достаточно наличия библиотеки.
+
+Задача 3. Модель пользователя (уточнение)
+Если используется стандартная модель User (или кастомная), необходимо добавить поля:
+
+phone_number (уже может существовать)
+
+phone_verified (BooleanField, default=False)
+
+email_verified (BooleanField, default=False)
+
+email_verification_token (UUIDField, null=True, blank=True) — для генерации ссылки подтверждения
+
+Создать миграцию:
+
+python
+# users/migrations/000X_add_verification_fields.py
+from django.db import migrations, models
+import uuid
+
+class Migration(migrations.Migration):
+    dependencies = [('users', 'предыдущая_миграция')]
+
+    operations = [
+        migrations.AddField(
+            model_name='user',
+            name='phone_verified',
+            field=models.BooleanField(default=False, verbose_name='Телефон подтверждён'),
+        ),
+        migrations.AddField(
+            model_name='user',
+            name='email_verified',
+            field=models.BooleanField(default=False, verbose_name='Email подтверждён'),
+        ),
+        migrations.AddField(
+            model_name='user',
+            name='email_verification_token',
+            field=models.UUIDField(default=None, null=True, blank=True, unique=True),
+        ),
+        migrations.AlterField(
+            model_name='user',
+            name='phone_number',
+            field=models.CharField(max_length=16, unique=True, null=True, blank=True, verbose_name='Номер телефона'),
+        ),
+    ]
+Если поле phone_number уже существует и не уникально — создать уникальный составной индекс, либо валидировать на уровне приложения. Для простоты задаём unique=True (но допускаем NULL, чтобы пустые номера не конфликтовали). Стандартный django-phonenumber-field предоставляет поле PhoneNumberField, которое автоматически валидирует и форматирует. Рекомендую использовать его:
+
+python
+from phonenumber_field.modelfields import PhoneNumberField
+# ...
+phone_number = PhoneNumberField(unique=True, null=True, blank=True, verbose_name='Номер телефона')
+При использовании PhoneNumberField потребуется миграция с изменением типа поля (если текущее — CharField). Если это сложно, оставить CharField и добавить валидацию на уровне формы.
+
+Задача 4. Валидация и форматирование телефона
+Создать users/validators.py:
+
+python
+import phonenumbers
+from django.core.exceptions import ValidationError
+
+def validate_phone_number(value):
+    try:
+        parsed = phonenumbers.parse(value, None)
+        if not phonenumbers.is_valid_number(parsed):
+            raise ValidationError('Некорректный номер телефона')
+    except phonenumbers.NumberParseException:
+        raise ValidationError('Не удалось распознать номер')
+Если используете PhoneNumberField из django-phonenumber-field, валидация уже встроена.
+Для приведения к единому формату при сохранении можно переопределить clean в форме.
+
+Задача 5. Форма регистрации с защитными механизмами
+Создать users/forms.py:
+
+python
+from django import forms
+from django.contrib.auth.forms import UserCreationForm
+from django.core.validators import RegexValidator
+from phonenumber_field.formfields import PhoneNumberField
+from .models import User
+
+class CustomUserCreationForm(UserCreationForm):
+    email = forms.EmailField(required=True)
+    phone_number = PhoneNumberField(
+        required=True,
+        widget=forms.TextInput(attrs={'placeholder': '+7 (999) 123-45-67', 'id': 'phone-input'})
+    )
+    confirm_phone = forms.BooleanField(
+        required=True,
+        label='Это Ваш телефон?',
+        widget=forms.CheckboxInput(attrs={'id': 'confirm-phone-check'})
+    )
+    # Honeypot — скрытое поле
+    website = forms.CharField(required=False, widget=forms.TextInput(attrs={'style': 'display:none;', 'autocomplete': 'off'}))
+
+    class Meta:
+        model = User
+        fields = ('username', 'email', 'phone_number', 'password1', 'password2')
+
+    def clean_phone_number(self):
+        number = self.cleaned_data.get('phone_number')
+        # Дополнительная проверка уникальности (если модель не гарантирует)
+        if User.objects.filter(phone_number=number).exists():
+            raise forms.ValidationError('Пользователь с таким номером уже существует.')
+        return number
+
+    def clean_website(self):
+        # Если honeypot заполнен — бот
+        if self.cleaned_data.get('website'):
+            raise forms.ValidationError('Спам-регистрация.')
+        return ''
+
+    def clean(self):
+        cleaned_data = super().clean()
+        # Проверка confirm_phone уже через required=True, но можно добавить задержку на фронте
+        return cleaned_data
+Примечание: поле confirm_phone — галочка. Не даёт реальной защиты, но замедляет автоматизированных ботов. Для фронтенда реализовать появление галочки с задержкой 1.5 сек после завершения ввода телефона (см. задачу 7).
+
+Задача 6. reCAPTCHA v3 интеграция
+6.1 Бекенд-валидация
+Создать users/recaptcha.py:
+
+python
+import requests
+from django.conf import settings
+
+def verify_recaptcha(token):
+    """Вернуть True, если токен валиден и скор >= порога."""
+    if not token:
+        return False
+    try:
+        r = requests.post('https://www.google.com/recaptcha/api/siteverify', data={
+            'secret': settings.RECAPTCHA_PRIVATE_KEY,
+            'response': token
+        })
+        result = r.json()
+        return result.get('success', False) and result.get('score', 0) >= settings.RECAPTCHA_REQUIRED_SCORE
+    except Exception:
+        return False
+В форме регистрации добавить скрытое поле recaptcha_token и валидацию:
+
+python
+recaptcha_token = forms.CharField(widget=forms.HiddenInput(), required=False)
+
+def clean_recaptcha_token(self):
+    token = self.cleaned_data.get('recaptcha_token')
+    if not verify_recaptcha(token):
+        raise forms.ValidationError('Подозрительная активность. Попробуйте позже.')
+    return token
+6.2 Клиентская часть
+В base.html (или в шаблоне регистрации) подключить скрипт reCAPTCHA:
+
+html
+<script src="https://www.google.com/recaptcha/api.js?render={{ RECAPTCHA_PUBLIC_KEY }}"></script>
+При отправке формы динамически получить токен и вставить в скрытое поле:
+
+javascript
+// в обработчике submit
+grecaptcha.ready(function() {
+    grecaptcha.execute('{{ RECAPTCHA_PUBLIC_KEY }}', {action: 'register'}).then(function(token) {
+        document.getElementById('recaptcha-token').value = token;
+        form.submit();
+    });
+});
+Форму сабмитить через AJAX (HTMX) или нативный JS.
+
+Задача 7. Фронтенд: маска ввода и галочка «Это Ваш телефон?»
+Использовать IMask.js (лёгкая, 5 кб). Подключить в шаблон:
+
+html
+<script src="https://unpkg.com/imask"></script>
+Применить к полю #phone-input:
+
+javascript
+const phoneInput = document.getElementById('phone-input');
+const confirmCheck = document.getElementById('confirm-phone-check');
+const confirmLabel = document.querySelector('label[for="confirm-phone-check"]');
+
+// Маска
+IMask(phoneInput, {
+    mask: '+{7} (000) 000-00-00'
+});
+
+// Показать галочку с задержкой после полного ввода
+phoneInput.addEventListener('input', function() {
+    const val = phoneInput.value.replace(/\D/g, '');
+    if (val.length >= 11) {
+        setTimeout(() => {
+            confirmLabel.style.display = 'inline';  // или убрать класс hidden
+            confirmCheck.disabled = false;
+        }, 1500);
+    } else {
+        confirmLabel.style.display = 'none';
+        confirmCheck.disabled = true;
+        confirmCheck.checked = false;
+    }
+});
+CSS для скрытого honeypot уже задан инлайн. Гарантировать, что пользователи скринридеры не взаимодействуют (aria-hidden).
+
+Задача 8. Rate limiting
+Добавить middleware django-ratelimit. В settings.py:
+
+python
+MIDDLEWARE = [
+    'django.middleware.security.SecurityMiddleware',
+    ...
+]
+# ratelimit конфигурация не требует middleware, используется декоратор.
+В views.py обернуть представление регистрации:
+
+python
+from django_ratelimit.decorators import ratelimit
+
+@ratelimit(key='ip', rate='3/h', method=['POST'], block=True)
+def register_view(request):
+    ...
+Блокировка с кодом 429. Можно обработать через django-ratelimit RATELIMIT_VIEW.
+
+Также на уровне формы (в clean) можно проверять таймаут между запросами от одной сессии:
+
+python
+# Внутри clean запомнить время последней попытки в сессии, 
+# если разница < 5 сек — ошибка.
+Задача 9. Подтверждение email (новый функционал)
+9.1 Отправка письма после успешной регистрации
+В views.py после сохранения пользователя (аккаунт активен, но email_verified=False):
+
+python
+import uuid
+from django.core.mail import send_mail
+from django.urls import reverse
+from django.conf import settings
+
+def send_verification_email(user, request):
+    token = uuid.uuid4()
+    user.email_verification_token = token
+    user.save()
+    verify_url = request.build_absolute_uri(
+        reverse('verify-email', kwargs={'token': str(token)})
+    )
+    send_mail(
+        subject='Подтверждение регистрации на ПроМастер',
+        message=f'Перейдите по ссылке для подтверждения email: {verify_url}',
+        html_message=f'<p>Перейдите по ссылке: <a href="{verify_url}">{verify_url}</a></p>',
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        recipient_list=[user.email],
+        fail_silently=False,
+    )
+Вызвать после успешного создания пользователя.
+
+9.2 Представление для подтверждения
+Создать users/views.py:
+
+python
+from django.shortcuts import get_object_or_404, redirect
+from django.contrib import messages
+
+def verify_email(request, token):
+    user = get_object_or_404(User, email_verification_token=token)
+    user.email_verified = True
+    user.email_verification_token = None
+    user.save()
+    messages.success(request, 'Email успешно подтверждён. Теперь вы можете использовать все функции.')
+    return redirect('profile')  # или на главную
+9.3 URL
+python
+path('verify-email/<uuid:token>/', views.verify_email, name='verify-email'),
+9.4 Условный доступ к функционалу
+При необходимости ограничить возможности (например, создание объявлений) для пользователей с email_verified=False. Реализовать через декоратор @user_passes_test(lambda u: u.email_verified) или middleware.
+
+Задача 10. Шаблон регистрации (интеграция)
+Создать templates/registration/register.html (или заменить существующий). Внедрить honeypot, reCAPTCHA, галочку. Кнопка отправки должна быть неактивна до установки галочки. Пример HTMX-фрагмента для отправки или классический POST.
+
+Задача 11. Админ-панель
+Дополнить admin.py отображением полей email_verified, phone_verified, phone_number в списке пользователей.
+
+Задача 12. Тестирование
+Ручной проход сценария регистрации:
+
+Попытка регистрации без галочки (должна быть ошибка валидации).
+
+Ввод невалидного номера (буквы, короткий) – ошибка.
+
+Дубликат номера – ошибка уникальности.
+
+Бот-тест: заполнение скрытого поля через JS – регистрация отклонена.
+
+Проверка email: получение письма, переход по ссылке, флаг email_verified=True.
+
+Rate limit: более 3 попыток с одного IP за час – 429 ошибка.
+
+Адаптивность: на 320px ширина всё помещается, галочка не перекрывает кнопку.
+
+4. Ожидаемые результаты (definition of done)
+Включена reCAPTCHA v3, проверка скора на бэкенде.
+
+Honeypot поле работает.
+
+Реализован rate limiting (3 регистрации/час/IP).
+
+Номер телефона уникален, форматируется через phonenumbers, длина контролируется.
+
+Маска ввода, галочка «Это Ваш телефон?» появляется с задержкой.
+
+Отправка подтверждающего email работает через SMTP (или консоль для dev).
+
+Пользователь может подтвердить email по ссылке.
+
+Существующий функционал не сломан.

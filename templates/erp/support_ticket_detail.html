@@ -1,0 +1,88 @@
+{% extends "erp/_layout.html" %}
+
+{% block erp_title %}ERP → Тикет #{{ ticket.id }}{% endblock %}
+{% block erp_subtitle %}{{ ticket.get_status_display }}{% endblock %}
+
+{% block erp_content %}
+  <div class="mb-3">
+    <a class="btn btn-outline-secondary btn-sm"
+       href="{% if back_query %}{% url 'erp:support' %}?{{ back_query }}{% else %}{% url 'erp:support' %}{% endif %}">← К списку</a>
+  </div>
+
+  <div class="card mb-4">
+    <div class="card-body">
+      <p class="mb-1"><strong>Пользователь:</strong> {{ ticket.user.phone|default:"—" }} (id {{ ticket.user_id }})</p>
+      <p class="mb-1"><strong>Тема:</strong> {{ ticket.subject|default:"—" }}</p>
+      <p class="mb-0 text-muted small">Создан: {{ ticket.created_at|date:"d.m.Y H:i" }} · Обновлён: {{ ticket.updated_at|date:"d.m.Y H:i" }}</p>
+    </div>
+  </div>
+
+  <div class="card mb-4">
+    <div class="card-header fw-semibold">Переписка</div>
+    <div class="card-body">
+      {% for m in messages_list %}
+        <div class="border-bottom pb-3 mb-3">
+          <div class="d-flex flex-wrap justify-content-between gap-2 small text-muted mb-1">
+            <span>
+              {% if m.is_system_auto %}
+                Система
+              {% elif m.is_staff_reply %}
+                Поддержка{% if m.author %} ({{ m.author.phone|default:m.author_id }}){% endif %}
+              {% else %}
+                Пользователь{% if m.author %} ({{ m.author.phone|default:m.author_id }}){% endif %}
+              {% endif %}
+            </span>
+            <span class="text-nowrap">{{ m.created_at|date:"d.m.Y H:i" }}</span>
+          </div>
+          <div class="small" style="white-space: pre-wrap;">{{ m.body }}</div>
+        </div>
+      {% empty %}
+        <p class="text-muted mb-0">Нет сообщений.</p>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="card mb-4">
+    <div class="card-header fw-semibold">Ответ от поддержки</div>
+    <div class="card-body">
+      <form method="post" action="{% url 'erp:support_ticket_reply' ticket.id %}">
+        {% csrf_token %}
+        {% if back_query %}
+          <input type="hidden" name="next_q" value="{{ back_query }}"/>
+        {% endif %}
+        <div class="mb-3">
+          <label class="form-label" for="body">Текст</label>
+          <textarea id="body" name="body" class="form-control" rows="4" required></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary">Отправить ответ</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header fw-semibold">Статус</div>
+    <div class="card-body d-flex flex-wrap gap-2">
+      {% if ticket.status == "open" or ticket.status == "in_progress" %}
+        <form method="post" action="{% url 'erp:support_ticket_set_status' ticket.id %}">
+          {% csrf_token %}
+          {% if back_query %}<input type="hidden" name="next_q" value="{{ back_query }}"/>{% endif %}
+          <input type="hidden" name="status" value="resolved"/>
+          <button type="submit" class="btn btn-outline-success btn-sm">Решён</button>
+        </form>
+        <form method="post" action="{% url 'erp:support_ticket_set_status' ticket.id %}">
+          {% csrf_token %}
+          {% if back_query %}<input type="hidden" name="next_q" value="{{ back_query }}"/>{% endif %}
+          <input type="hidden" name="status" value="closed"/>
+          <button type="submit" class="btn btn-outline-secondary btn-sm">Закрыт</button>
+        </form>
+      {% else %}
+        <form method="post" action="{% url 'erp:support_ticket_set_status' ticket.id %}">
+          {% csrf_token %}
+          {% if back_query %}<input type="hidden" name="next_q" value="{{ back_query }}"/>{% endif %}
+          <input type="hidden" name="status" value="open"/>
+          <button type="submit" class="btn btn-outline-primary btn-sm">Снова открыт</button>
+        </form>
+      {% endif %}
+    </div>
+  </div>
+{% endblock %}

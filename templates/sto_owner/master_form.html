@@ -1,0 +1,118 @@
+{% extends "sto_owner/base.html" %}
+{% block title %}Добавить мастера — МаБибип{% endblock %}
+{% block sto_owner_main %}
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'sto_owner:dashboard' %}">Кабинет</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'sto_owner:masters' %}">Мастера</a></li>
+      <li class="breadcrumb-item active" aria-current="page">Добавить</li>
+    </ol>
+  </nav>
+
+  <h1 class="h4 mb-3">Добавить мастера</h1>
+
+  <form method="post" enctype="multipart/form-data" class="card border-0 shadow-sm">
+    {% csrf_token %}
+    <div class="card-body">
+      <div class="mb-3">
+        <label class="form-label">Автосервис (родитель)</label>
+        <select name="parent_station_id" class="form-select" required>
+          <option value="" selected disabled>Выберите автосервис…</option>
+          {% for s in stations %}
+            <option value="{{ s.pk }}">{{ s.name }}</option>
+          {% endfor %}
+        </select>
+        <div class="form-text">Мастер будет отображаться в каталоге как отдельный исполнитель, но “от вашего сервиса”.</div>
+      </div>
+
+      {% for err in form.non_field_errors %}<div class="alert alert-danger">{{ err }}</div>{% endfor %}
+
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label">Имя мастера</label>
+          {{ form.name }}
+          {% if form.name.errors %}<div class="invalid-feedback d-block">{{ form.name.errors|join:", " }}</div>{% endif %}
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Коротко (слоган)</label>
+          {{ form.tagline }}
+          {% if form.tagline.errors %}<div class="invalid-feedback d-block">{{ form.tagline.errors|join:", " }}</div>{% endif %}
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label">Опыт (лет)</label>
+          {{ form.experience_years }}
+          {% if form.experience_years.errors %}<div class="invalid-feedback d-block">{{ form.experience_years.errors|join:", " }}</div>{% endif %}
+        </div>
+        <div class="col-md-8">
+          <label class="form-label">Фото (аватар)</label>
+          {{ form.avatar }}
+          {% if form.avatar.errors %}<div class="invalid-feedback d-block">{{ form.avatar.errors|join:", " }}</div>{% endif %}
+        </div>
+
+        <div class="col-12">
+          <label class="form-label">О мастере</label>
+          {{ form.master_bio }}
+          {% if form.master_bio.errors %}<div class="invalid-feedback d-block">{{ form.master_bio.errors|join:", " }}</div>{% endif %}
+        </div>
+
+        <div class="col-12">
+          <label class="form-label">Короткое описание</label>
+          {{ form.description_short }}
+          {% if form.description_short.errors %}<div class="invalid-feedback d-block">{{ form.description_short.errors|join:", " }}</div>{% endif %}
+        </div>
+
+        <div class="col-12">
+          <label class="form-label">Описание</label>
+          {{ form.description }}
+          {% if form.description.errors %}<div class="invalid-feedback d-block">{{ form.description.errors|join:", " }}</div>{% endif %}
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label">Разделы услуг</label>
+          {{ form.service_sections }}
+          {% if form.service_sections.errors %}<div class="invalid-feedback d-block">{{ form.service_sections.errors|join:", " }}</div>{% endif %}
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Категории услуг</label>
+          {{ form.categories }}
+          {% if form.categories.errors %}<div class="invalid-feedback d-block">{{ form.categories.errors|join:", " }}</div>{% endif %}
+        </div>
+
+        <div class="col-md-8">
+          <label class="form-label">Марки авто</label>
+          {{ form.car_brands }}
+          {% if form.car_brands.errors %}<div class="invalid-feedback d-block">{{ form.car_brands.errors|join:", " }}</div>{% endif %}
+        </div>
+        <div class="col-md-4">
+          <label class="form-label d-block">Марки</label>
+          <div class="form-check mt-2">
+            {{ form.car_brands_all }}
+            <label class="form-check-label" for="{{ form.car_brands_all.id_for_label }}">Работаю со всеми марками</label>
+          </div>
+          {% if form.car_brands_all.errors %}<div class="invalid-feedback d-block">{{ form.car_brands_all.errors|join:", " }}</div>{% endif %}
+        </div>
+
+        <div class="col-md-6">
+          <div class="form-check">
+            {{ form.certified_partner }}
+            <label class="form-check-label" for="{{ form.certified_partner.id_for_label }}">Сертифицированный партнёр</label>
+          </div>
+          {% if form.certified_partner.errors %}<div class="invalid-feedback d-block">{{ form.certified_partner.errors|join:", " }}</div>{% endif %}
+        </div>
+        <div class="col-md-6">
+          <div class="form-check">
+            {{ form.license_held }}
+            <label class="form-check-label" for="{{ form.license_held.id_for_label }}">Лицензия/разрешения</label>
+          </div>
+          {% if form.license_held.errors %}<div class="invalid-feedback d-block">{{ form.license_held.errors|join:", " }}</div>{% endif %}
+        </div>
+      </div>
+    </div>
+    <div class="card-footer bg-white d-flex gap-2">
+      <button class="btn btn-primary" type="submit">Создать</button>
+      <a class="btn btn-outline-secondary" href="{% url 'sto_owner:masters' %}">Отмена</a>
+    </div>
+  </form>
+{% endblock %}
+

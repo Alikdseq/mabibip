@@ -1,0 +1,117 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 56">
+  <defs>
+    <linearGradient id="pmStroke" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#D98A44"/>
+      <stop offset="1" stop-color="#F2C879"/>
+    </linearGradient>
+    <style>
+      .bg{fill:#1E1E1E}
+      .stroke{fill:none;stroke:url(#pmStroke);stroke-width:2}
+      .txt{fill:#FFFFFF;font:700 22px Montserrat,system-ui,sans-serif;letter-spacing:.5px}
+      .sub{fill:#A1A1AA;font:600 12px Montserrat,system-ui,sans-serif}
+    </style>
+  </defs>
+
+  <symbol id="lada" viewBox="0 0 160 56">
+    <rect class="bg" x="1" y="1" width="158" height="54" rx="14"/>
+    <rect class="stroke" x="1" y="1" width="158" height="54" rx="14" opacity=".55"/>
+    <text class="txt" x="80" y="35" text-anchor="middle">LADA</text>
+  </symbol>
+  <symbol id="audi" viewBox="0 0 160 56">
+    <rect class="bg" x="1" y="1" width="158" height="54" rx="14"/>
+    <rect class="stroke" x="1" y="1" width="158" height="54" rx="14" opacity=".55"/>
+    <text class="txt" x="80" y="35" text-anchor="middle">AUDI</text>
+  </symbol>
+  <symbol id="bmw" viewBox="0 0 160 56">
+    <rect class="bg" x="1" y="1" width="158" height="54" rx="14"/>
+    <rect class="stroke" x="1" y="1" width="158" height="54" rx="14" opacity=".55"/>
+    <text class="txt" x="80" y="35" text-anchor="middle">BMW</text>
+  </symbol>
+  <symbol id="ford" viewBox="0 0 160 56">
+    <rect class="bg" x="1" y="1" width="158" height="54" rx="14"/>
+    <rect class="stroke" x="1" y="1" width="158" height="54" rx="14" opacity=".55"/>
+    <text class="txt" x="80" y="35" text-anchor="middle">FORD</text>
+  </symbol>
+  <symbol id="hyundai" viewBox="0 0 160 56">
+    <rect class="bg" x="1" y="1" width="158" height="54" rx="14"/>
+    <rect class="stroke" x="1" y="1" width="158" height="54" rx="14" opacity=".55"/>
+    <text class="txt" x="80" y="34" text-anchor="middle">HYUNDAI</text>
+  </symbol>
+  <symbol id="kia" viewBox="0 0 160 56">
+    <rect class="bg" x="1" y="1" width="158" height="54" rx="14"/>
+    <rect class="stroke" x="1" y="1" width="158" height="54" rx="14" opacity=".55"/>
+    <text class="txt" x="80" y="35" text-anchor="middle">KIA</text>
+  </symbol>
+  <symbol id="mercedes" viewBox="0 0 160 56">
+    <rect class="bg" x="1" y="1" width="158" height="54" rx="14"/>
+    <rect class="stroke" x="1" y="1" width="158" height="54" rx="14" opacity=".55"/>
+    <text class="txt" x="80" y="30" text-anchor="middle">MERCEDES</text>
+    <text class="sub" x="80" y="44" text-anchor="middle">BENZ</text>
+  </symbol>
+  <symbol id="nissan" viewBox="0 0 160 56">
+    <rect class="bg" x="1" y="1" width="158" height="54" rx="14"/>
+    <rect class="stroke" x="1" y="1" width="158" height="54" rx="14" opacity=".55"/>
+    <text class="txt" x="80" y="35" text-anchor="middle">NISSAN</text>
+  </symbol>
+  <symbol id="toyota" viewBox="0 0 160 56">
+    <rect class="bg" x="1" y="1" width="158" height="54" rx="14"/>
+    <rect class="stroke" x="1" y="1" width="158" height="54" rx="14" opacity=".55"/>
+    <text class="txt" x="80" y="35" text-anchor="middle">TOYOTA</text>
+  </symbol>
+  <symbol id="vw" viewBox="0 0 160 56">
+    <rect class="bg" x="1" y="1" width="158" height="54" rx="14"/>
+    <rect class="stroke" x="1" y="1" width="158" height="54" rx="14" opacity=".55"/>
+    <text class="txt" x="80" y="35" text-anchor="middle">VOLKSWAGEN</text>
+  </symbol>
+
+  <symbol id="renault" viewBox="0 0 160 56">
+    <rect class="bg" x="1" y="1" width="158" height="54" rx="14"/>
+    <rect class="stroke" x="1" y="1" width="158" height="54" rx="14" opacity=".35"/>
+    <text class="txt" x="80" y="35" text-anchor="middle">RENAULT</text>
+  </symbol>
+  <symbol id="skoda" viewBox="0 0 160 56">
+    <rect class="bg" x="1" y="1" width="158" height="54" rx="14"/>
+    <rect class="stroke" x="1" y="1" width="158" height="54" rx="14" opacity=".35"/>
+    <text class="txt" x="80" y="35" text-anchor="middle">SKODA</text>
+  </symbol>
+  <symbol id="chevrolet" viewBox="0 0 160 56">
+    <rect class="bg" x="1" y="1" width="158" height="54" rx="14"/>
+    <rect class="stroke" x="1" y="1" width="158" height="54" rx="14" opacity=".35"/>
+    <text class="txt" x="80" y="35" text-anchor="middle">CHEVROLET</text>
+  </symbol>
+  <symbol id="mazda" viewBox="0 0 160 56">
+    <rect class="bg" x="1" y="1" width="158" height="54" rx="14"/>
+    <rect class="stroke" x="1" y="1" width="158" height="54" rx="14" opacity=".35"/>
+    <text class="txt" x="80" y="35" text-anchor="middle">MAZDA</text>
+  </symbol>
+  <symbol id="mitsubishi" viewBox="0 0 160 56">
+    <rect class="bg" x="1" y="1" width="158" height="54" rx="14"/>
+    <rect class="stroke" x="1" y="1" width="158" height="54" rx="14" opacity=".35"/>
+    <text class="txt" x="80" y="35" text-anchor="middle">MITSUBISHI</text>
+  </symbol>
+  <symbol id="opel" viewBox="0 0 160 56">
+    <rect class="bg" x="1" y="1" width="158" height="54" rx="14"/>
+    <rect class="stroke" x="1" y="1" width="158" height="54" rx="14" opacity=".35"/>
+    <text class="txt" x="80" y="35" text-anchor="middle">OPEL</text>
+  </symbol>
+  <symbol id="peugeot" viewBox="0 0 160 56">
+    <rect class="bg" x="1" y="1" width="158" height="54" rx="14"/>
+    <rect class="stroke" x="1" y="1" width="158" height="54" rx="14" opacity=".35"/>
+    <text class="txt" x="80" y="35" text-anchor="middle">PEUGEOT</text>
+  </symbol>
+  <symbol id="honda" viewBox="0 0 160 56">
+    <rect class="bg" x="1" y="1" width="158" height="54" rx="14"/>
+    <rect class="stroke" x="1" y="1" width="158" height="54" rx="14" opacity=".35"/>
+    <text class="txt" x="80" y="35" text-anchor="middle">HONDA</text>
+  </symbol>
+  <symbol id="lexus" viewBox="0 0 160 56">
+    <rect class="bg" x="1" y="1" width="158" height="54" rx="14"/>
+    <rect class="stroke" x="1" y="1" width="158" height="54" rx="14" opacity=".35"/>
+    <text class="txt" x="80" y="35" text-anchor="middle">LEXUS</text>
+  </symbol>
+  <symbol id="geely" viewBox="0 0 160 56">
+    <rect class="bg" x="1" y="1" width="158" height="54" rx="14"/>
+    <rect class="stroke" x="1" y="1" width="158" height="54" rx="14" opacity=".35"/>
+    <text class="txt" x="80" y="35" text-anchor="middle">GEELY</text>
+  </symbol>
+</svg>

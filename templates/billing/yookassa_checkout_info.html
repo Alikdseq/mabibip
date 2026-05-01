@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Оплата через ЮKassa — МаБибип{% endblock %}
+{% block content %}
+  <div class="col-lg-8">
+    <h1 class="h4 mb-3">Онлайн-оплата (ЮKassa)</h1>
+
+    {% if yookassa_enabled %}
+      <div class="alert alert-info">
+        Интеграция <strong>включена</strong> в настройках. Дальнейший шаг — подключить создание платежей и return URL в коде (точка входа для владельца СТО).
+      </div>
+    {% else %}
+      <div class="alert alert-warning mb-3">
+        Интеграция ЮKassa на платформе <strong>выключена</strong> (<code>YOOKASSA_ENABLED=0</code>).
+        Вебхук и создание платежей не обрабатываются до включения администратором.
+      </div>
+    {% endif %}
+
+    <ul class="small text-muted">
+      <li>Вебхук: <code>/billing/webhooks/yookassa/</code> — отвечает 403, пока интеграция отключена.</li>
+      <li>Секрет вебхука в env: <code>YOOKASSA_WEBHOOK_SECRET</code>
+        {% if webhook_secret_configured %}<span class="text-success">(задан)</span>{% else %}<span class="text-warning">(не задан)</span>{% endif %}
+      </li>
+    </ul>
+
+    <p class="mb-0"><a href="{% url 'sto_owner:dashboard' %}">← В кабинет СТО</a></p>
+  </div>
+{% endblock %}

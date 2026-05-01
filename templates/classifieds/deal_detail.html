@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Сделка #{{ deal.pk }} — МаБибип{% endblock %}
+{% block content %}
+  {% include "users/cabinet/_subnav.html" %}
+
+  <div class="col-lg-8">
+    <div class="d-flex justify-content-between align-items-start gap-2 mb-3">
+      <div>
+        <h1 class="h4 mb-1">Сделка #{{ deal.pk }}</h1>
+        <div class="small text-muted">
+          Объявление:
+          <a href="{% url 'classifieds:ad_detail' deal.ad_id %}">{{ deal.ad.title|default:"Объявление" }}</a>
+        </div>
+      </div>
+      <div class="text-end">
+        <div class="fw-semibold">{{ deal.amount|floatformat:0 }} ₽</div>
+        <div class="small text-muted">{{ deal.get_status_display }}</div>
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-body">
+        <div class="d-flex flex-wrap gap-2">
+          {% if user.id == deal.buyer_id %}
+            {% if deal.status == 'waiting_shipment' or deal.status == 'payment_pending' or deal.status == 'funds_held' or deal.status == 'created' %}
+              <form method="post" action="{% url 'classifieds:deal_cancel' deal.pk %}" class="m-0">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-outline-danger"
+                        onclick="return confirm('Отменить сделку? Если платёж уже прошёл, оформим возврат.');">
+                  Отменить
+                </button>
+              </form>
+            {% endif %}
+            {% if deal.status == 'shipped' or deal.status == 'waiting_shipment' %}
+              <form method="post" action="{% url 'classifieds:deal_confirm_received' deal.pk %}" class="m-0">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-success"
+                        onclick="return confirm('Подтвердить получение? Деньги станут доступны продавцу.');">
+                  Получил(а)
+                </button>
+              </form>
+            {% endif %}
+          {% endif %}
+
+          {% if user.id == deal.seller_id %}
+            {% if deal.status == 'waiting_shipment' or deal.status == 'funds_held' %}
+              <form method="post" action="{% url 'classifieds:deal_mark_shipped' deal.pk %}" class="m-0">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-primary">Отправил(а)</button>
+              </form>
+            {% endif %}
+          {% endif %}
+        </div>
+
+        <hr class="my-3">
+        <div class="row g-3 small">
+          <div class="col-md-4">
+            <div class="text-muted">Создана</div>
+            <div class="fw-semibold">{{ deal.created_at|date:"d.m.Y H:i" }}</div>
+          </div>
+          <div class="col-md-4">
+            <div class="text-muted">Оплата</div>
+            <div class="fw-semibold">{% if deal.paid_at %}{{ deal.paid_at|date:"d.m.Y H:i" }}{% else %}—{% endif %}</div>
+          </div>
+          <div class="col-md-4">
+            <div class="text-muted">Автоподтверждение</div>
+            <div class="fw-semibold">{% if deal.auto_confirm_at %}{{ deal.auto_confirm_at|date:"d.m.Y H:i" }}{% else %}—{% endif %}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <p class="mb-0"><a href="{% url 'classifieds:my_deals' %}">← К списку сделок</a></p>
+  </div>
+{% endblock %}
+

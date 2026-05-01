@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Юридические документы — МаБибип{% endblock %}
+{% block content %}
+  <h1 class="h4 mb-3">Архив версий документов</h1>
+  <p class="text-muted small">Опубликованные редакции. Актуальная для пользователя — последняя по дате вступления в силу.</p>
+  <div class="table-responsive">
+    <table class="table table-sm">
+      <thead>
+        <tr>
+          <th>Тип</th>
+          <th>Версия</th>
+          <th>Вступление</th>
+          <th>Контрольная сумма (SHA-256)</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for v in versions %}
+          <tr>
+            <td><a href="{% url 'legal:document' key=v.key %}">{{ v.get_key_display }}</a></td>
+            <td>{{ v.version_label }}</td>
+            <td>{{ v.effective_at }}</td>
+            <td><code class="small">{{ v.content_checksum|slice:":16" }}…</code></td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="4">Документы ещё не загружены.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endblock %}

@@ -1,0 +1,12 @@
+{# Компактная кнопка избранного для мобильной карточки (иконка). Ожидается обёртка span#pm-fav-ad-icon-{{ ad.pk }} с hx-swap innerHTML #}
+<button type="button"
+        class="btn btn-light border pm-ad-card-icon-btn {% if is_favorite %}pm-ad-card-icon-btn--active{% endif %}"
+        hx-post="{% url 'classifieds:favorite_ad_toggle' ad.pk %}"
+        hx-trigger="click"
+        hx-target="#pm-fav-ad-icon-{{ ad.pk }}"
+        hx-swap="innerHTML"
+        hx-vals='{"use_icon": "1"}'
+        title="{% if is_favorite %}В избранном{% else %}В избранное{% endif %}"
+        aria-label="{% if is_favorite %}В избранном{% else %}В избранное{% endif %}">
+  <i class="bi {% if is_favorite %}bi-heart-fill{% else %}bi-heart{% endif %}" aria-hidden="true"></i>
+</button>

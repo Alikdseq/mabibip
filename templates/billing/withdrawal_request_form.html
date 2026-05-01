@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Запросить вывод — МаБибип{% endblock %}
+{% block content %}
+  {% include "users/cabinet/_subnav.html" %}
+  <div class="col-lg-7">
+    <h1 class="h4 mb-3">Запросить вывод</h1>
+    <div class="alert alert-info">
+      Доступно к выводу: <strong>{{ balances.available|floatformat:2 }} ₽</strong>
+    </div>
+
+    <form method="post" class="card border-0 shadow-sm">
+      <div class="card-body">
+        {% csrf_token %}
+        <div class="mb-3">
+          <label class="form-label" for="{{ form.amount.id_for_label }}">{{ form.amount.label }}</label>
+          {{ form.amount }}
+          {% for err in form.amount.errors %}<div class="invalid-feedback d-block">{{ err }}</div>{% endfor %}
+        </div>
+        <div class="mb-3">
+          <label class="form-label" for="{{ form.payout_details.id_for_label }}">{{ form.payout_details.label }}</label>
+          {{ form.payout_details }}
+          {% for err in form.payout_details.errors %}<div class="invalid-feedback d-block">{{ err }}</div>{% endfor %}
+        </div>
+        <div class="mb-3">
+          <label class="form-label" for="{{ form.reason.id_for_label }}">{{ form.reason.label }}</label>
+          {{ form.reason }}
+          {% for err in form.reason.errors %}<div class="invalid-feedback d-block">{{ err }}</div>{% endfor %}
+        </div>
+        {% for err in form.non_field_errors %}<div class="alert alert-danger">{{ err }}</div>{% endfor %}
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn btn-primary">Отправить заявку</button>
+          <a class="btn btn-outline-secondary" href="{% url 'billing:wallet_home' %}">Отмена</a>
+        </div>
+      </div>
+    </form>
+  </div>
+{% endblock %}
+

@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}Вход через соцсеть — МаБибип{% endblock %}
+{% block content %}
+  <div class="container py-4">
+    <div class="row justify-content-center">
+      <div class="col-lg-6">
+        <div class="card card-body shadow-sm">
+          <h1 class="h5 mb-2">{% trans "Завершаем вход…" %}</h1>
+          <p class="text-muted mb-3">
+            Если у вас уже есть аккаунт с этой почтой — вы войдёте в него автоматически.
+          </p>
+
+          <form method="post" action="">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit" class="btn btn-primary">{% trans "Продолжить" %}</button>
+          </form>
+
+          <div class="small text-muted mt-3">
+            Если страница не закрылась автоматически, нажмите «Продолжить».
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+

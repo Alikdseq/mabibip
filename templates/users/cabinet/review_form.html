@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Отзыв — МаБибип{% endblock %}
+{% block content %}
+  {% include "users/cabinet/_subnav.html" %}
+  <h1 class="h4 mb-3">Отзыв о визите</h1>
+  <p class="text-muted small">{{ booking.station.name }} · {{ booking.slot.date|date:"d.m.Y" }} {{ booking.slot.start_time|time:"H:i" }}</p>
+  <p class="small text-body-secondary mb-3">
+    Можно приложить одно фото (JPG, PNG или WEBP, до 5&nbsp;МБ). Фото будет видно на странице сервиса вместе с отзывом.
+  </p>
+  <form method="post" enctype="multipart/form-data" class="col-lg-6">
+    {% csrf_token %}
+    {% for field in form %}
+      <div class="mb-3">
+        <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {% for err in field.errors %}<div class="invalid-feedback d-block">{{ err }}</div>{% endfor %}
+      </div>
+    {% endfor %}
+    <button type="submit" class="btn btn-primary">Отправить</button>
+    <a class="btn btn-link" href="{% url 'cabinet:bookings' %}">Назад</a>
+  </form>
+{% endblock %}

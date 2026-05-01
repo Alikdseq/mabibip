@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ seo_og_title }}{% endblock %}
+
+{% block extra_head %}
+  {% if faq_json_ld %}
+    <script type="application/ld+json">{{ faq_json_ld }}</script>
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+  <div class="mb-4">
+    <h1 class="h3 mb-2">{{ section.name }}</h1>
+    {% if provider_count %}
+      <div class="text-muted small mb-2">Исполнителей по разделу: <strong>{{ provider_count }}</strong></div>
+    {% endif %}
+    {% if landing_lead %}
+      <p class="lead mb-3">{{ landing_lead|linebreaksbr }}</p>
+    {% endif %}
+    <div class="d-flex flex-wrap gap-2">
+      <a class="btn btn-primary" href="{% if catalog_href_brand %}{{ catalog_href_brand }}{% else %}{{ catalog_href }}{% endif %}">
+        Смотреть в каталоге
+      </a>
+      {% if MAP_FEATURE_ENABLED %}
+      <a class="btn btn-outline-primary" href="{% url 'stations:list' %}?view=map&amp;section={{ section.slug }}{% if selected_brand_slug %}&amp;brand={{ selected_brand_slug }}{% endif %}">Показать на карте</a>
+      <a class="btn btn-outline-secondary" href="{% url 'stations:nearby_map' %}">Рядом на карте</a>
+      {% endif %}
+    </div>
+    {% if selected_brand_slug and catalog_href_brand %}
+      <p class="text-muted small mt-2 mb-0">Вы выбрали марку — можно сразу открыть каталог по разделу и марке.</p>
+    {% endif %}
+  </div>
+
+  {% if top_brand_links %}
+    <section class="mb-5" aria-labelledby="brands-heading">
+      <h2 id="brands-heading" class="h4 mb-3">Выберите марку авто</h2>
+      <div class="row row-cols-3 row-cols-sm-4 row-cols-lg-5 g-2 g-md-3 pm-brands-grid">
+        {% for b in top_brand_links %}
+          <div class="col d-flex pm-brand-col">
+            {% include "stations/includes/car_brand_choice_tile.html" with mode="link" stem=b.stem label=b.name href=b.href only %}
+          </div>
+        {% endfor %}
+      </div>
+      <p class="text-muted small mt-2 mb-0">
+        После выбора марки вы попадёте в каталог с фильтрами по разделу и марке.
+      </p>
+    </section>
+  {% else %}
+    <div class="alert alert-info">
+      Пока нет исполнителей по этому разделу.
+    </div>
+  {% endif %}
+
+  {% if landing_faq %}
+    <section class="mb-5" aria-labelledby="faq-heading">
+      <h2 id="faq-heading" class="h4 mb-3">Частые вопросы</h2>
+      <div class="accordion" id="faqAccordion">
+        {% for item in landing_faq %}
+          <div class="accordion-item">
+            <h3 class="accordion-header" id="faqH{{ forloop.counter }}">
+              <button class="accordion-button {% if not forloop.first %}collapsed{% endif %}" type="button"
+                      data-bs-toggle="collapse" data-bs-target="#faqC{{ forloop.counter }}"
+                      aria-expanded="{% if forloop.first %}true{% else %}false{% endif %}"
+                      aria-controls="faqC{{ forloop.counter }}">
+                {{ item.q }}
+              </button>
+            </h3>
+            <div id="faqC{{ forloop.counter }}" class="accordion-collapse collapse {% if forloop.first %}show{% endif %}"
+                 aria-labelledby="faqH{{ forloop.counter }}" data-bs-parent="#faqAccordion">
+              <div class="accordion-body">{{ item.a|linebreaksbr }}</div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </section>
+  {% endif %}
+{% endblock %}
+

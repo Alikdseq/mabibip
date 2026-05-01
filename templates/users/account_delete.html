@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Удаление аккаунта — МаБибип{% endblock %}
+{% block content %}
+  <h1 class="h4 mb-3">Обезличивание аккаунта</h1>
+  <p class="text-muted">По запросу мы анонимизируем ваши персональные данные (телефон, email, ФИО). История заказов останется у СТО в обезличенном виде для отчётности, как описано в документах сервиса.</p>
+  <form method="post" class="col-lg-6">
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+      <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+    {% endif %}
+    <div class="form-check mb-3">
+      {{ form.confirm }}
+      <label class="form-check-label" for="{{ form.confirm.id_for_label }}">{{ form.confirm.label }}</label>
+      {% for err in form.confirm.errors %}<div class="invalid-feedback d-block">{{ err }}</div>{% endfor %}
+    </div>
+    <button type="submit" class="btn btn-danger">Обезличить аккаунт</button>
+    <a class="btn btn-link" href="{% url 'cabinet:index' %}">Отмена</a>
+  </form>
+{% endblock %}

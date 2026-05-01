@@ -1,0 +1,38 @@
+{% extends "autoshop_owner/base.html" %}
+{% block title %}{% if mode == 'add' %}Добавить магазин{% else %}Редактировать магазин{% endif %} — кабинет автомагазина{% endblock %}
+
+{% block autoshop_owner_main %}
+  <h1 class="h4 mb-3">{% if mode == 'add' %}Добавить магазин{% else %}Редактировать магазин{% endif %}</h1>
+  <form method="post" class="card border-0 shadow-sm">
+    <div class="card-body">
+      {% csrf_token %}
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label">Название (необязательно)</label>
+          {{ form.name }}
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Телефон</label>
+          {{ form.contact_phone }}
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Город</label>
+          {{ form.city_label }}
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Часы работы</label>
+          {{ form.work_hours }}
+        </div>
+        <div class="col-12">
+          <label class="form-label">Адрес</label>
+          {{ form.address }}
+        </div>
+      </div>
+    </div>
+    <div class="card-footer bg-white d-flex gap-2 justify-content-end">
+      <a class="btn btn-outline-secondary" href="{% url 'shop_owner:branches' %}">Отмена</a>
+      <button class="btn btn-primary" type="submit">Сохранить</button>
+    </div>
+  </form>
+{% endblock %}
+

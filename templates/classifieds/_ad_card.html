@@ -1,0 +1,190 @@
+{% load humanize %}
+{% load dict_extras %}
+{% with photos=ad.photos.all ac=ad_call_map|get_item:ad.pk %}
+<article class="card border-0 shadow-sm pm-ad-card pm-ad-card--avito w-100 overflow-hidden">
+  {# ——— Мобильная вёрстка: фото сверху; снизу текст + справа только избранное и чат (звонок/отзыв — на странице объявления) ——— #}
+  <div class="d-md-none pm-ad-card-mobile">
+    <div class="pm-ad-card-slider" data-pm-ad-slider>
+      <div class="pm-ad-card-slider-track">
+        {% for ph in photos %}
+          <div class="pm-ad-card-slider-slide flex-shrink-0">
+            <a href="{% url 'classifieds:ad_detail' ad.pk %}" class="d-block h-100 text-decoration-none">
+              <div class="pm-ad-card-img-bg pm-ad-card-slider-img" style="--pm-ad-img: url('{{ ph.image.url }}');">
+                <img src="{{ ph.image.url }}" alt="" class="pm-ad-card-img-fg" width="400" height="300" loading="lazy" decoding="async">
+              </div>
+            </a>
+          </div>
+        {% empty %}
+          <div class="pm-ad-card-slider-slide flex-shrink-0">
+            <div class="pm-ad-card-no-photo pm-ad-card-slider-img d-flex align-items-center justify-content-center text-muted small px-3 text-center">Нет фото</div>
+          </div>
+        {% endfor %}
+      </div>
+      {% if photos|length > 1 %}
+        <div class="pm-ad-card-slider-dots" aria-hidden="true"></div>
+      {% endif %}
+    </div>
+
+    <div class="pm-ad-card-mobile-footer d-flex align-items-start gap-2 px-3 pb-2 pt-2">
+      <a href="{% url 'classifieds:ad_detail' ad.pk %}" class="text-decoration-none text-body pm-ad-card-mobile-text flex-grow-1 min-w-0">
+        <div class="pm-m-block pm-m-price pm-ad-card-mobile-price fw-bold">{{ ad.price|intcomma }}&nbsp;₽</div>
+        <div class="pm-m-block pm-m-title">
+          {% if ad.kind == 'car' %}
+            <h2 class="h6 mb-0 text-body pm-ad-card-title pm-ad-card-mobile-title">{{ ad.car_card_headline }}</h2>
+          {% else %}
+            <h2 class="h6 mb-0 text-body pm-ad-card-title pm-ad-card-mobile-title">{{ ad.title }}</h2>
+          {% endif %}
+        </div>
+        {% if ad.kind == 'part' %}
+          {% if ad.part_category or ad.part_brand or ad.condition %}
+            <div class="pm-m-block pm-m-meta small text-muted pm-ad-card-mobile-meta">
+              {% if ad.part_category %}<span class="me-1">{{ ad.part_category.name }}</span>{% endif %}
+              {% if ad.part_brand %}<span class="me-1">{{ ad.part_brand.name }}</span>{% endif %}
+              {% if ad.condition %}<span class="badge rounded-pill pm-ad-pill">{{ ad.get_condition_display }}</span>{% endif %}
+            </div>
+          {% endif %}
+        {% elif ad.kind == 'car' %}
+          {% with line=ad.car_specs_line %}
+            {% if line %}
+              <div class="pm-m-block pm-m-meta small text-muted pm-ad-card-mobile-meta">{{ line }}</div>
+            {% endif %}
+          {% endwith %}
+        {% endif %}
+        {% if ad.city_label %}
+          <div class="pm-m-block pm-m-city small text-muted">{{ ad.city_label }}</div>
+        {% endif %}
+        {# описание и дата в карточке не показываем (как в Avito) #}
+      </a>
+      <div class="pm-ad-card-mobile-actions flex-shrink-0 d-flex flex-column align-items-center gap-1"
+           onclick="event.stopPropagation();" role="group" aria-label="Действия">
+        {% if user.is_authenticated and user.pk == ad.owner_id %}
+          <a class="btn btn-light border pm-ad-card-icon-btn text-primary"
+             href="{% url 'classifieds:ad_detail' ad.pk %}"
+             title="Открыть" aria-label="Открыть объявление"><i class="bi bi-box-arrow-up-right" aria-hidden="true"></i></a>
+        {% else %}
+          {% if user.is_authenticated %}
+            <span id="pm-fav-ad-icon-{{ ad.pk }}">
+              {% if favorite_ad_ids and ad.pk in favorite_ad_ids %}
+                {% include "classifieds/partials/favorite_ad_button_icon.html" with ad=ad is_favorite=True %}
+              {% else %}
+                {% include "classifieds/partials/favorite_ad_button_icon.html" with ad=ad is_favorite=False %}
+              {% endif %}
+            </span>
+          {% else %}
+            <a class="btn btn-light border pm-ad-card-icon-btn text-secondary"
+               href="{% url 'users:login' %}?next={% url 'classifieds:ad_detail' ad.pk %}"
+               title="В избранное" aria-label="В избранное"><i class="bi bi-heart" aria-hidden="true"></i></a>
+          {% endif %}
+          {% if user.is_authenticated and user.pk != ad.owner_id %}
+            <a class="btn btn-light border pm-ad-card-icon-btn text-primary"
+               href="{% url 'classifieds:ad_start_chat' ad.pk %}"
+               title="Написать" aria-label="Написать"><i class="bi bi-chat-dots" aria-hidden="true"></i></a>
+          {% elif not user.is_authenticated %}
+            <a class="btn btn-light border pm-ad-card-icon-btn text-primary"
+               href="{% url 'users:login' %}?next={% url 'classifieds:ad_start_chat' ad.pk %}"
+               title="Написать" aria-label="Написать"><i class="bi bi-chat-dots" aria-hidden="true"></i></a>
+          {% endif %}
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  {# ——— Десктоп ——— #}
+  <div class="d-none d-md-block">
+    <div class="row g-0 align-items-stretch pm-ad-card-row">
+      <div class="col-12 col-md-auto">
+        <a href="{% url 'classifieds:ad_detail' ad.pk %}" class="text-decoration-none text-body d-block h-100 pm-ad-card-link position-relative">
+          <div class="pm-ad-card-media-inner h-100">
+            {% with main=photos|first %}
+              {% if main %}
+                <div class="pm-ad-card-img-bg h-100" style="--pm-ad-img: url('{{ main.image.url }}');">
+                  <img src="{{ main.image.url }}" alt="{{ ad.title }}" class="pm-ad-card-cover-img pm-ad-card-img-fg" width="320" height="240" loading="lazy" decoding="async">
+                </div>
+              {% else %}
+                <div class="pm-ad-card-no-photo d-flex align-items-center justify-content-center text-muted small px-3 text-center">Нет фото</div>
+              {% endif %}
+            {% endwith %}
+          </div>
+        </a>
+      </div>
+
+      <div class="col-12 col-md">
+        <a href="{% url 'classifieds:ad_detail' ad.pk %}" class="text-decoration-none text-body d-flex flex-column h-100 pm-ad-card-link">
+          <div class="p-3 d-flex flex-column h-100 pm-ad-card-mid">
+            <div class="d-flex flex-column flex-lg-row align-items-start justify-content-between gap-2">
+              <div class="min-w-0">
+                {% if ad.kind == 'car' %}
+                  <h2 class="h6 mb-1 text-body pm-ad-card-title text-truncate">{{ ad.car_card_headline }}</h2>
+                {% else %}
+                  <h2 class="h6 mb-1 text-body pm-ad-card-title text-truncate">{{ ad.title }}</h2>
+                {% endif %}
+
+                {% if ad.kind == 'part' %}
+                  <div class="small text-muted mb-1 text-truncate">
+                    {% if ad.part_category %}<span class="me-2">{{ ad.part_category.name }}</span>{% endif %}
+                    {% if ad.part_brand %}<span class="me-2">{{ ad.part_brand.name }}</span>{% endif %}
+                    {% if ad.condition %}<span class="badge rounded-pill pm-ad-pill">{{ ad.get_condition_display }}</span>{% endif %}
+                  </div>
+                {% else %}
+                  <div class="small text-muted mb-1 text-truncate">
+                    {% if ad.city_label %}<span class="me-2">{{ ad.city_label }}</span>{% endif %}
+                    {% with line=ad.car_specs_line %}{% if line %}<span class="me-2">{{ line }}</span>{% endif %}{% endwith %}
+                  </div>
+                {% endif %}
+              </div>
+              <div class="pm-ad-card-price fw-bold text-nowrap">{{ ad.price|intcomma }}&nbsp;₽</div>
+            </div>
+
+            {# описание и дата в карточке не показываем (как в Avito) #}
+          </div>
+        </a>
+      </div>
+
+      <div class="col-12 col-md-auto pm-ad-card-actions-col">
+        <div class="p-3 h-100 d-flex flex-column justify-content-center pm-ad-card-actions">
+          <div class="d-grid gap-2">
+            {% if user.is_authenticated %}
+              <span id="pm-fav-ad-{{ ad.pk }}">
+                {% if favorite_ad_ids and ad.pk in favorite_ad_ids %}
+                  {% include "classifieds/partials/favorite_ad_button.html" with ad=ad is_favorite=True %}
+                {% else %}
+                  {% include "classifieds/partials/favorite_ad_button.html" with ad=ad is_favorite=False %}
+                {% endif %}
+              </span>
+            {% else %}
+              <a class="btn btn-sm btn-outline-secondary" href="{% url 'users:login' %}?next={% url 'classifieds:ad_detail' ad.pk %}">♡ В избранное</a>
+            {% endif %}
+
+            <a class="btn btn-sm btn-outline-primary" href="{% url 'classifieds:seller_profile' ad.owner.public_id %}">Профиль</a>
+
+            {% if user.is_authenticated and user.pk == ad.owner_id %}
+              <a class="btn btn-sm btn-outline-secondary" href="{% url 'classifieds:ad_detail' ad.pk %}">Открыть</a>
+            {% elif not user.is_authenticated %}
+              <a class="btn btn-sm btn-success" href="{% url 'users:login' %}?next={% url 'classifieds:ad_detail' ad.pk %}">Позвонить</a>
+            {% elif ac and ac.mode == 'direct' %}
+              <div data-pm-reveal-ad-id="{{ ad.pk }}">
+                <button type="button" class="btn btn-sm btn-success js-pm-reveal-phone" data-ad-id="{{ ad.pk }}">Показать номер</button>
+                <a class="btn btn-sm btn-success mt-2 disabled js-pm-tel-href" href="#" aria-disabled="true">Позвонить</a>
+                <div class="small text-muted mt-1 js-pm-phone-masked">{{ ac.seller_masked }}</div>
+                <div class="fw-semibold small d-none js-pm-phone-display"></div>
+                <div class="small text-muted d-none js-pm-reveal-timer"></div>
+              </div>
+            {% elif ac and ac.tel_href %}
+              <a class="btn btn-sm btn-success js-pm-track-ad-call" href="{{ ac.tel_href }}" data-ad-id="{{ ad.pk }}">Позвонить</a>
+            {% else %}
+              <a class="btn btn-sm btn-success" href="{% url 'classifieds:ad_detail' ad.pk %}">Позвонить</a>
+            {% endif %}
+            {% if user.is_authenticated and user.pk != ad.owner_id %}
+              <a class="btn btn-sm btn-outline-primary js-pm-safety-contact" href="{% url 'classifieds:ad_start_chat' ad.pk %}">Написать</a>
+            {% endif %}
+            {% if user.is_authenticated and user.pk != ad.owner_id and ad.owner_id not in seller_review_done_owner_ids %}
+              <a class="btn btn-sm btn-outline-warning"
+                 href="{% url 'classifieds:seller_review_create' ad.owner.public_id %}?next={{ request.get_full_path|urlencode }}">Отзыв</a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</article>
+{% endwith %}

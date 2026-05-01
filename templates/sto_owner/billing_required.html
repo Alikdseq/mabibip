@@ -1,0 +1,11 @@
+{% extends "sto_owner/base.html" %}
+{% block title %}Подписка — МаБибип{% endblock %}
+{% block sto_owner_main %}
+  <div class="col-lg-8">
+  <h1 class="h4">Подписка</h1>
+  <p class="mb-2"><strong>Временно бесплатно:</strong> на старте показ в каталоге и функции кабинета доступны без оплаты.</p>
+  <p class="text-muted small mb-2">Онлайн-оплату через ЮKassa включим позже — когда официально запустим платные тарифы.</p>
+  <p class="text-muted small mb-3">Если у вас есть вопросы по тарифам — напишите в поддержку.</p>
+    <a class="btn btn-primary" href="{% url 'sto_owner:dashboard' %}">В кабинет</a>
+  </div>
+{% endblock %}

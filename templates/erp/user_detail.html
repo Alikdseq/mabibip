@@ -1,0 +1,195 @@
+{% extends "erp/_layout.html" %}
+
+{% block erp_title %}ERP → Пользователь #{{ u.id }}{% endblock %}
+{% block erp_subtitle %}Профиль + записи + отзывы + логи{% endblock %}
+
+{% block erp_content %}
+  <div class="card mb-4">
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-6">
+          <div class="text-muted small">Телефон</div>
+          <div class="fs-5 fw-semibold">{{ u.phone }}</div>
+        </div>
+        <div class="col-md-6">
+          <div class="text-muted small">Email</div>
+          <div class="fs-5 fw-semibold">{{ u.email|default:"—" }}</div>
+        </div>
+        <div class="col-md-3">
+          <div class="text-muted small">Роль</div>
+          <div>{% if u.is_sto_owner %}Владелец СТО{% else %}Клиент{% endif %}</div>
+        </div>
+        <div class="col-md-3">
+          <div class="text-muted small">Статус</div>
+          <div>{% if u.is_active %}Активен{% else %}<span class="text-danger">Заблокирован</span>{% endif %}</div>
+        </div>
+        <div class="col-md-3">
+          <div class="text-muted small">Регистрация</div>
+          <div>{{ u.date_joined|date:"d.m.Y H:i" }}</div>
+        </div>
+        <div class="col-md-3">
+          <div class="text-muted small">Последний вход</div>
+          <div>{{ u.last_login|date:"d.m.Y H:i"|default:"—" }}</div>
+        </div>
+      </div>
+      <div class="d-flex flex-wrap gap-2 mt-3">
+        {% if u.is_active %}
+          <form method="post" action="{% url 'erp:user_deactivate' u.id %}">
+            {% csrf_token %}
+            <button class="btn btn-outline-danger btn-sm" type="submit">Заблокировать</button>
+          </form>
+        {% else %}
+          <form method="post" action="{% url 'erp:user_activate' u.id %}">
+            {% csrf_token %}
+            <button class="btn btn-outline-success btn-sm" type="submit">Разблокировать</button>
+          </form>
+        {% endif %}
+
+        <form method="post" action="{% url 'erp:user_set_role' u.id %}" class="d-flex gap-2 align-items-end flex-wrap">
+          {% csrf_token %}
+          <div style="min-width: 220px;">
+            <label class="form-label small text-muted">Роль</label>
+            <select name="role" class="form-select form-select-sm">
+              <option value="client" {% if not u.is_sto_owner %}selected{% endif %}>Клиент</option>
+              <option value="owner" {% if u.is_sto_owner %}selected{% endif %}>Владелец СТО</option>
+            </select>
+          </div>
+          <button class="btn btn-outline-primary btn-sm" type="submit">Сохранить</button>
+        </form>
+
+        <form method="post" action="{% url 'erp:user_sto_set_moderation' u.id %}" class="d-flex gap-2 align-items-end flex-wrap">
+          {% csrf_token %}
+          <div style="min-width: 220px;">
+            <label class="form-label small text-muted">Модерация СТО</label>
+            <select name="status" class="form-select form-select-sm">
+              <option value="approved" {% if u.sto_moderation_status == 'approved' %}selected{% endif %}>Одобрено</option>
+              <option value="pending" {% if u.sto_moderation_status == 'pending' %}selected{% endif %}>На модерации</option>
+              <option value="rejected" {% if u.sto_moderation_status == 'rejected' %}selected{% endif %}>Отклонено</option>
+            </select>
+          </div>
+          <button class="btn btn-outline-primary btn-sm" type="submit">Сохранить</button>
+        </form>
+
+        <form method="post" action="{% url 'erp:user_sto_approve' u.id %}">
+          {% csrf_token %}
+          <button class="btn btn-warning btn-sm" type="submit">Одобрить заявку СТО + активировать СТО</button>
+        </form>
+
+        <a class="btn btn-outline-primary btn-sm" href="{% url 'erp:user_bookings_xlsx' u.id %}">Скачать XLSX (записи пользователя)</a>
+        <a class="btn btn-outline-primary btn-sm" href="{% url 'erp:user_reviews_xlsx' u.id %}">Скачать XLSX (отзывы/жалобы)</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="card mb-4">
+    <div class="card-header fw-semibold">Записи (последние 200)</div>
+    <div class="card-body p-0 table-responsive">
+      <table class="table table-striped mb-0">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>СТО</th>
+            <th>Статус</th>
+            <th>Создано</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for b in bookings %}
+            <tr>
+              <td class="small">{{ b.id }}</td>
+              <td class="small">{{ b.station.name }}</td>
+              <td class="small"><code>{{ b.status }}</code></td>
+              <td class="small text-nowrap">{{ b.created_at|date:"d.m.Y H:i" }}</td>
+              <td class="small text-end"><a href="{% url 'erp:booking_detail' b.id %}">Открыть</a></td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="5" class="text-muted p-3">Нет записей.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card mb-4">
+    <div class="card-header fw-semibold">Отзывы (последние 200)</div>
+    <div class="card-body p-0 table-responsive">
+      <table class="table table-striped mb-0">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>СТО</th>
+            <th class="text-end">★</th>
+            <th>Статус</th>
+            <th>Дата</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in reviews %}
+            <tr>
+              <td class="small">{{ r.id }}</td>
+              <td class="small">{{ r.booking.station.name }}</td>
+              <td class="small text-end">{{ r.rating }}</td>
+              <td class="small"><code>{{ r.moderation_status }}</code></td>
+              <td class="small text-nowrap">{{ r.created_at|date:"d.m.Y" }}</td>
+              <td class="small text-end"><a href="{% url 'erp:review_detail' r.id %}">Открыть</a></td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="6" class="text-muted p-3">Нет отзывов.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-lg-6">
+      <div class="card h-100">
+        <div class="card-header fw-semibold">Логи (actor = пользователь)</div>
+        <div class="card-body p-0 table-responsive">
+          <table class="table table-sm mb-0">
+            <thead>
+              <tr><th>Когда</th><th>Событие</th><th>Объект</th></tr>
+            </thead>
+            <tbody>
+              {% for e in audit %}
+                <tr>
+                  <td class="small text-nowrap">{{ e.created_at|date:"d.m.Y H:i" }}</td>
+                  <td class="small"><code>{{ e.event_type }}</code> {{ e.action }}</td>
+                  <td class="small">{{ e.object_label }}</td>
+                </tr>
+              {% empty %}
+                <tr><td colspan="3" class="text-muted p-3">Нет событий.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <div class="card h-100">
+        <div class="card-header fw-semibold">Логи (object = users.User)</div>
+        <div class="card-body p-0 table-responsive">
+          <table class="table table-sm mb-0">
+            <thead>
+              <tr><th>Когда</th><th>Событие</th><th>Детали</th></tr>
+            </thead>
+            <tbody>
+              {% for e in audit_obj %}
+                <tr>
+                  <td class="small text-nowrap">{{ e.created_at|date:"d.m.Y H:i" }}</td>
+                  <td class="small"><code>{{ e.event_type }}</code> {{ e.action }}</td>
+                  <td class="small">{{ e.payload }}</td>
+                </tr>
+              {% empty %}
+                <tr><td colspan="3" class="text-muted p-3">Нет событий.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+

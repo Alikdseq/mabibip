@@ -1,0 +1,266 @@
+Техническое задание: VoIP-звонки без раскрытия номера для платформы «МаБибип» (WebRTC, веб-версия)
+1. Общие сведения
+Цель
+Реализовать голосовые звонки прямо в браузере между пользователями (клиентами и владельцами бизнесов) без раскрытия их реальных телефонных номеров.
+
+Принцип работы
+Звонок идёт через технологию WebRTC.
+
+Сигнализация — через Django Channels WebSocket (уже используется для чата).
+
+Медиапоток идёт через LiveKit SFU (в режиме self‑hosted, полностью бесплатно на вашем VPS).
+
+Номера телефонов нигде не участвуют, только внутренние идентификаторы пользователей.
+
+Где будет работать
+Десктопные браузеры (Chrome, Firefox, Edge).
+
+Мобильные браузеры (Chrome iOS, Safari iOS, Android Chrome).
+В будущем – нативные приложения (iOS/Android), подготовим API с запасом.
+
+2. Компоненты системы
+Компонент	Назначение
+Backend Django	Бизнес-логика: создание комнат, выпуск токенов LiveKit, веб-сокеты для сигнализации, история звонков.
+LiveKit Server	SFU для передачи аудиопотоков между участниками. Разворачивается на вашем VPS через Docker.
+Django Channels	WebSocket-уведомления о входящем звонке, сигнализация приёма/отбоя.
+LiveKit JavaScript SDK	Подключение к комнате из браузера, захват микрофона, воспроизведение.
+Redis	Бэкенд для Channels и для кэширования состояния комнат.
+3. Серверная часть (Django)
+3.1 Модель данных
+Создать в приложении calls (или chat, если логически связано) модель Call:
+
+python
+class Call(models.Model):
+    STATUS_CHOICES = (
+        ('initiated', 'Инициирован'),
+        ('active', 'Активен'),
+        ('completed', 'Завершён'),
+        ('missed', 'Пропущен'),
+        ('declined', 'Отклонён'),
+    )
+    room_name = models.CharField(max_length=255, unique=True)
+    caller = models.ForeignKey(User, on_delete=models.CASCADE, related_name='outgoing_calls')
+    receiver = models.ForeignKey(User, on_delete=models.CASCADE, related_name='incoming_calls')
+    ad = models.ForeignKey(ClassifiedAd, on_delete=models.SET_NULL, null=True, blank=True)  # если звонок по объявлению
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='initiated')
+    started_at = models.DateTimeField(null=True, blank=True)
+    ended_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+Поле room_name – уникальный идентификатор комнаты в LiveKit.
+
+3.2 REST API
+3.2.1 Инициация звонка
+POST /api/calls/initiate/
+Авторизация обязательна.
+
+Параметры запроса:
+
+json
+{
+  "receiver_user_id": 42,
+  "ad_id": 123   // необязательно
+}
+Логика эндпоинта:
+
+Проверить, что:
+
+Инициатор и получатель не один и тот же.
+
+Получатель не заблокировал инициатора.
+
+Нет уже активного звонка между этими пользователями.
+
+Сгенерировать room_name = f"call_{caller.id}_{receiver.id}_{uuid.uuid4().hex[:8]}".
+
+Через LiveKit Server API (используя Python SDK livekit-api) создать комнату (если её нет) и получить токены для caller и receiver:
+
+identity = user_{user_id}
+
+room = сгенерированное имя
+
+права: canPublish: true, canSubscribe: true
+
+время жизни токена: 5 минут.
+
+Сохранить объект Call со статусом initiated.
+
+Оповестить получателя через WebSocket (Channels):
+
+Отправить событие в группу пользователя user_{receiver.id}:
+
+json
+{
+  "type": "call.incoming",
+  "caller": {
+    "id": caller.id,
+    "name": caller.get_full_name(),
+    "avatar": caller.avatar_url
+  },
+  "ad_title": ad.title if ad else null,
+  "room_name": room_name,
+  "token": token_for_receiver
+}
+Если получатель не в сети (Channels group отсутствует) — сохранить звонок как missed через таймаут 30 секунд, отправить инициатору уведомление «Абонент не отвечает».
+
+Вернуть инициатору:
+
+json
+{
+  "room_name": "...",
+  "token": "eyJhbGci...",
+  "status": "ringing"
+}
+3.2.2 Действия получателя
+POST /api/calls/action/
+Параметры:
+
+json
+{
+  "room_name": "...",
+  "action": "accept"  // или "decline", "end"
+}
+accept: установить статус звонка active, уведомить инициатора через WebSocket о приёме, отдать ему его токен.
+
+decline: статус declined, уведомить инициатора.
+
+end: когда любой участник завершает звонок, статус completed, удалить комнату в LiveKit, уведомить второго.
+
+3.2.3 Вебхук LiveKit (или обработка событий)
+LiveKit поддерживает отправку событий о входе/выходе участников. Можно подписаться на них через встроенный механизм или таймауты.
+
+Упрощённый вариант: участник, завершая звонок, явно вызывает /api/calls/action/ с action: end. Дополнительно на клиенте при разрыве WebSocket соединения закрывать звонок.
+
+3.3 WebSocket-сигнализация (Django Channels)
+Использовать тот же consumers.ChatConsumer или создать отдельный CallConsumer.
+При подключении пользователь добавляется в группу user_{user.id}.
+
+Клиент должен слушать события:
+
+call.incoming – входящий звонок (отобразить модальное окно или баннер с кнопками «Принять»/«Отклонить»).
+
+call.accepted – собеседник принял звонок, можно начинать WebRTC соединение.
+
+call.ended – звонок завершён.
+
+call.declined – отклонили.
+
+call.timeout – пропущенный.
+
+Таким образом, полноценный обмен сигналами идёт через WebSocket, что уже поддерживается инфраструктурой.
+
+4. Клиентская часть (браузер)
+4.1 Интерфейс исходящего звонка
+На странице чата или в карточке объявления добавить кнопку «Позвонить» (иконка трубки). При нажатии:
+
+Вызывается POST /api/calls/initiate/.
+
+Показывается экран набора (аватар получателя, надпись «Звоним…», кнопка «Отменить»).
+
+После получения ответа accepted – переходим к активному экрану разговора.
+
+4.2 Входящий звонок (браузер)
+При получении события call.incoming через WebSocket:
+
+Показать модальное окно с аватаром и именем звонящего, кнопки «Принять», «Отклонить».
+
+Отправить POST /api/calls/action/ с accept или decline.
+
+При принятии – переключиться на экран разговора.
+
+4.3 Экран активного разговора
+HTML-элемент (слой поверх страницы):
+
+Имя / аватар собеседника.
+
+Таймер длительности.
+
+Кнопка отключения микрофона (mute).
+
+Кнопка «Завершить звонок» (красная трубка).
+
+4.4 WebRTC: подключение к LiveKit
+Использовать LiveKit JavaScript SDK:
+
+javascript
+import { Room, RoomEvent, RemoteParticipant } from 'livekit-client';
+
+const room = new Room();
+await room.connect(livekit_url, token);
+// Публикация локального аудио
+await room.localParticipant.publishTrack(await createLocalAudioTrack());
+// Подписка на дорожки удалённых участников
+room.on(RoomEvent.TrackSubscribed, (track, publication, participant) => {
+  if (track.kind === 'audio') {
+    const audio = track.attach();
+    document.body.appendChild(audio);
+  }
+});
+Звонок в браузере работает даже на мобильных устройствах (Safari iOS с ограничениями, но работает после жеста пользователя).
+
+5. Безопасность
+Токены LiveKit выдаются нашим сервером, подписываются секретом. Права доступа ограничены конкретной комнатой.
+
+Комнаты создаются с уникальными именами, содержащими случайную часть.
+
+Все API требуют CSRF+сессию или токен.
+
+WebSocket подключение также аутентифицировано (сессия/токен).
+
+6. Внедрение LiveKit
+Установка на ваш VPS (Docker):
+
+yaml
+version: '3'
+services:
+  livekit:
+    image: livekit/livekit-server:latest
+    ports:
+      - 7880:7880
+      - 7881:7881  # UDP
+    environment:
+      LIVEKIT_KEYS: "devkey: secret"
+      LIVEKIT_CONFIG: |
+        port: 7880
+        rtc:
+          tcp_port: 7881
+          stun_servers: ["stun:stun.l.google.com:19302"]
+          use_external_ip: true
+Используйте внешний IP сервера, откройте порты.
+
+7. Обработка ошибок и ограничений
+Браузер не поддерживает WebRTC: показывать сообщение «Обновите браузер».
+
+Access к микрофону отклонён: подсказка включить микрофон.
+
+Звонок на мобильном Safari: требуется, чтобы пользователь нажал кнопку «Принять» для активации автовоспроизведения.
+
+Если пользователь не в сети на сайте: звонок автоматически переходит в missed, информируем инициатора через WebSocket (или toast), сохраняем в истории.
+
+8. План реализации (адаптированный под текущий стек)
+Развернуть LiveKit на сервере (1-2 часа).
+
+Создать Django приложение calls:
+
+Модель Call, миграции.
+
+REST эндпоинты initiate, action.
+
+Утилита для выпуска токенов LiveKit (Python SDK livekit-api).
+
+Интегрировать с Channels:
+
+Создать CallConsumer (или расширить существующий), добавить обработку звонковых событий.
+
+На клиенте в JS подписаться на эти события.
+
+Разработать интерфейсные компоненты:
+
+Кнопка «Позвонить» в чате/объявлении.
+
+Модальное окно входящего звонка.
+
+Элемент активного разговора (HTML/CSS).
+
+Подключить LiveKit JS SDK в шаблоны.
+
+Тестирование: два пользователя в разных браузерах/устройствах, звонок, мьют, завершение.

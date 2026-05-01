@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{{ seo_og_title }}{% endblock %}
+{% block extra_head %}
+  {% if faq_json_ld %}
+    <script type="application/ld+json">{{ faq_json_ld }}</script>
+  {% endif %}
+{% endblock %}
+{% block content %}
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'home' %}">Главная</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'stations:list' %}">Каталог</a></li>
+      <li class="breadcrumb-item active" aria-current="page">{{ category.name }}</li>
+    </ol>
+  </nav>
+
+  <header class="mb-4">
+    <h1 class="h2 mb-2">{{ category.name }}</h1>
+    {% if landing_lead %}
+      <p class="lead mb-3">{{ landing_lead|linebreaksbr }}</p>
+    {% endif %}
+    <p class="text-muted mb-0">
+      {% if provider_count %}
+        Сейчас в каталоге <strong>{{ provider_count }}</strong>
+        {% if provider_count == 1 %}исполнитель{% elif provider_count < 5 %}исполнителя{% else %}исполнителей{% endif %}
+        с этой специализацией. Выберите станцию или мастера и запишитесь онлайн.
+      {% else %}
+        Пока нет опубликованных исполнителей с этой услугой в выбранном городе — загляните в
+        <a href="{% url 'stations:list' %}">общий каталог</a> или измените город в шапке сайта.
+      {% endif %}
+    </p>
+  </header>
+
+  <div class="d-flex flex-wrap gap-2 mb-5">
+    <a class="btn btn-primary" href="{{ catalog_href }}">Смотреть в каталоге</a>
+    {% if MAP_FEATURE_ENABLED %}
+    <a class="btn btn-outline-primary" href="{% url 'stations:list' %}?view=map&amp;service={{ category.slug }}">Показать на карте</a>
+    <a class="btn btn-outline-secondary" href="{% url 'stations:nearby_map' %}">Рядом на карте</a>
+    {% endif %}
+  </div>
+
+  {% if top_brand_links %}
+    <section class="mb-5" aria-labelledby="brands-heading">
+      <h2 id="brands-heading" class="h4 mb-3">Выберите марку авто</h2>
+      <div class="row row-cols-3 row-cols-sm-4 row-cols-lg-5 g-2 g-md-3 pm-brands-grid">
+        {% for b in top_brand_links %}
+          <div class="col d-flex pm-brand-col">
+            {% include "stations/includes/car_brand_choice_tile.html" with mode="link" stem=b.stem label=b.name href=b.href only %}
+          </div>
+        {% endfor %}
+      </div>
+      <p class="text-muted small mt-2 mb-0">
+        После выбора марки вы попадёте в каталог с фильтрами по услуге и марке.
+      </p>
+    </section>
+  {% endif %}
+
+  {% if landing_faq %}
+    <section class="mb-5" aria-labelledby="faq-heading">
+      <h2 id="faq-heading" class="h4 mb-3">Частые вопросы</h2>
+      <div class="accordion" id="landingFaq">
+        {% for item in landing_faq %}
+          <div class="accordion-item">
+            <h3 class="accordion-header">
+              <button class="accordion-button {% if not forloop.first %}collapsed{% endif %}" type="button"
+                      data-bs-toggle="collapse" data-bs-target="#fq{{ forloop.counter }}"
+                      aria-expanded="{% if forloop.first %}true{% else %}false{% endif %}"
+                      aria-controls="fq{{ forloop.counter }}">
+                {{ item.q }}
+              </button>
+            </h3>
+            <div id="fq{{ forloop.counter }}" class="accordion-collapse collapse {% if forloop.first %}show{% endif %}"
+                 data-bs-parent="#landingFaq">
+              <div class="accordion-body">{{ item.a }}</div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </section>
+  {% endif %}
+
+  {% if related_categories %}
+    <section class="mb-5">
+      <h2 class="h4 mb-3">Похожие и смежные услуги</h2>
+      <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-2">
+        {% for c in related_categories %}
+          <div class="col">
+            <a class="text-decoration-none d-block p-3 border rounded h-100 hover-shadow" href="{% url 'landing:service_category' c.slug %}">
+              <span class="fw-medium">{{ c.name }}</span>
+            </a>
+          </div>
+        {% endfor %}
+      </div>
+    </section>
+  {% endif %}
+{% endblock %}

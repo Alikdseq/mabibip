@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Вход — МаБибип{% endblock %}
+{% block content %}
+  <h1 class="h4 mb-3">Вход</h1>
+  {% load socialaccount %}
+
+  {% get_providers as socialaccount_providers %}
+  {% if socialaccount_providers %}
+    <div class="col-lg-6 mb-3">
+      <div class="d-grid gap-2">
+        {% for p in socialaccount_providers %}
+          {% if p.id == 'google' %}
+            <a class="btn btn-outline-primary" href="{% provider_login_url 'google' process='login' next='/cabinet/' %}">Войти через Google</a>
+          {% elif p.id == 'apple' %}
+            <a class="btn btn-outline-dark" href="{% provider_login_url 'apple' process='login' next='/cabinet/' %}">Войти через Apple</a>
+          {% elif p.id == 'vk' %}
+            <a class="btn btn-outline-secondary" href="{% provider_login_url 'vk' process='login' next='/cabinet/' %}">Войти через VK</a>
+          {% endif %}
+        {% endfor %}
+      </div>
+      <div class="text-muted small mt-2">Или войдите по телефону.</div>
+    </div>
+  {% endif %}
+
+  <form method="post" action="{% url 'users:login' %}" class="col-lg-6" id="login-form" data-recaptcha-action="login">
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+      <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+    {% endif %}
+    <input type="hidden" name="recaptcha_token" value="">
+    {% for field in form %}
+      <div class="mb-3">
+        <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field.errors }}
+        {{ field }}
+      </div>
+    {% endfor %}
+    <button type="submit" class="btn btn-primary">Войти</button>
+    <a class="btn btn-link" href="{% url 'users:password_reset' %}">Забыли пароль?</a>
+    <a class="btn btn-link" href="{% url 'users:register' %}">Регистрация</a>
+  </form>
+  <p class="small text-muted mt-2">Вход по номеру телефона в формате +7… Если указали email при регистрации, можно восстановить пароль по почте.</p>
+  {% include "users/includes/recaptcha_submit.html" with form_id="login-form" %}
+{% endblock %}

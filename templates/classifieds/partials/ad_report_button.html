@@ -1,0 +1,21 @@
+{% if not user.is_authenticated %}
+  <a class="btn btn-outline-danger w-100 mt-2"
+     href="{% url 'users:login' %}?next={% url 'classifieds:ad_detail' ad.pk %}">
+    Пожаловаться
+  </a>
+{% elif user.pk == ad.owner_id %}
+  {# автор не жалуется на своё объявление #}
+{% elif has_reported %}
+  <div class="alert alert-light border mt-2 mb-0 small text-muted">Жалоба отправлена. Спасибо!</div>
+{% else %}
+  <form class="mt-2"
+        hx-post="{% url 'classifieds_api:ad_report' ad.pk %}"
+        hx-target="#pm-ad-report-slot"
+        hx-swap="outerHTML">
+    {% csrf_token %}
+    <input type="hidden" name="reason" value="">
+    <button type="submit" class="btn btn-outline-danger w-100">Пожаловаться</button>
+    <div class="small text-muted mt-1">Жалоба поможет скрыть мошенников и спам.</div>
+  </form>
+{% endif %}
+

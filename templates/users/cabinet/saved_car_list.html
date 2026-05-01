@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Мои авто — МаБибип{% endblock %}
+{% block content %}
+  {% include "users/cabinet/_subnav.html" %}
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <h1 class="h4 mb-0">Мои авто</h1>
+    <a class="btn btn-primary btn-sm" href="{% url 'cabinet:car_add' %}">Добавить</a>
+  </div>
+  {% if cars %}
+    <div class="table-responsive">
+      <table class="table table-sm align-middle">
+        <thead>
+          <tr>
+            <th>Госномер</th>
+            <th>Марка / модель</th>
+            <th>VIN</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in cars %}
+            <tr>
+              <td class="font-monospace">{{ c.license_plate }}</td>
+              <td>{{ c.brand_model|default:"—" }}</td>
+              <td class="small text-muted">{{ c.vin|default:"—" }}</td>
+              <td class="text-nowrap">
+                <a class="btn btn-outline-secondary btn-sm" href="{% url 'cabinet:car_edit' c.pk %}">Изменить</a>
+                <a class="btn btn-outline-danger btn-sm" href="{% url 'cabinet:car_delete' c.pk %}">Удалить</a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="text-muted">Пока нет сохранённых автомобилей — добавьте для быстрой записи.</p>
+  {% endif %}
+{% endblock %}

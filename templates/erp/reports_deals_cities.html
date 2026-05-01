@@ -1,0 +1,58 @@
+{% extends "erp/_layout.html" %}
+
+{% block erp_title %}ERP → Отчёты → Сделки → Города{% endblock %}
+{% block erp_subtitle %}Разрез по городам объявлений + XLSX{% endblock %}
+
+{% block erp_content %}
+  <div class="card mb-4">
+    <div class="card-body">
+      <form method="get" class="row g-2 align-items-end">
+        <div class="col-md-2">
+          <label class="form-label small text-muted" for="start">Начало</label>
+          <input id="start" name="start" type="date" class="form-control" value="{{ start|date:'Y-m-d' }}"/>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small text-muted" for="end">Конец</label>
+          <input id="end" name="end" type="date" class="form-control" value="{{ end|date:'Y-m-d' }}"/>
+        </div>
+        <div class="col-md-8 d-flex gap-2 justify-content-end">
+          <button type="submit" class="btn btn-primary">Показать</button>
+          <a class="btn btn-outline-primary"
+             href="{% url 'erp:deals_cities_report_xlsx' %}?start={{ start|date:'Y-m-d' }}&end={{ end|date:'Y-m-d' }}">XLSX</a>
+          <a class="btn btn-outline-secondary" href="{% url 'erp:deals_report' %}?start={{ start|date:'Y-m-d' }}&end={{ end|date:'Y-m-d' }}">← Сделки</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header fw-semibold">Города (до 500)</div>
+    <div class="card-body p-0 table-responsive">
+      <table class="table table-striped mb-0">
+        <thead>
+          <tr>
+            <th>Город</th>
+            <th class="text-end">Сделок</th>
+            <th class="text-end">GMV paid</th>
+            <th class="text-end">Refunds</th>
+            <th class="text-end">Canceled</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in rows %}
+            <tr>
+              <td class="small">{{ r.city }}</td>
+              <td class="small text-end">{{ r.deals_count }}</td>
+              <td class="small text-end">{{ r.gmv_paid }} ₽</td>
+              <td class="small text-end">{{ r.refunds_count }} / {{ r.refunds_sum }} ₽</td>
+              <td class="small text-end">{{ r.canceled_count }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="5" class="text-muted p-3">Нет данных за период.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endblock %}
+

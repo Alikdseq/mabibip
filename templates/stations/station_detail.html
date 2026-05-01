@@ -1,0 +1,495 @@
+{% extends "base.html" %}
+{% load station_catalog %}
+{% load static %}
+{% block title %}{{ seo_og_title }}{% endblock %}
+{% block extra_head %}
+  <script type="application/ld+json">{{ schema_json_ld }}</script>
+{% endblock %}
+{% block content %}
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'stations:list' %}">Каталог</a></li>
+      <li class="breadcrumb-item active" aria-current="page">{{ station.name }}</li>
+    </ol>
+  </nav>
+
+  <nav class="navbar navbar-expand navbar-light bg-light rounded px-2 py-2 mb-4 small" aria-label="Разделы страницы">
+    <ul class="navbar-nav flex-wrap gap-2">
+      <li class="nav-item"><a class="nav-link py-1" href="#profile">Профиль</a></li>
+      <li class="nav-item"><a class="nav-link py-1" href="#about">О сервисе</a></li>
+      <li class="nav-item"><a class="nav-link py-1" href="#prices">Услуги и цены</a></li>
+      <li class="nav-item"><a class="nav-link py-1" href="#booking-online">Онлайн-запись</a></li>
+      <li class="nav-item"><a class="nav-link py-1" href="#reviews">Отзывы</a></li>
+      <li class="nav-item"><a class="nav-link py-1" href="#contacts">Контакты</a></li>
+      {% if show_legal_block %}
+        <li class="nav-item"><a class="nav-link py-1" href="#legal">Реквизиты</a></li>
+      {% endif %}
+    </ul>
+  </nav>
+
+  <section id="profile" class="mb-5">
+    <div class="row g-4 align-items-start">
+      <div class="col-lg-5">
+        {% if station.executor_kind == executor_private and station.avatar %}
+          <img src="{{ station.avatar_thumb.url|default:station.avatar.url }}"
+               class="img-fluid rounded shadow w-100 object-fit-cover"
+               style="max-height: 320px; object-fit: cover;"
+               alt="{{ station.name }}">
+        {% elif profile_photos %}
+          <div id="stationCarousel" class="carousel slide" data-bs-ride="carousel">
+            <div class="carousel-inner rounded shadow">
+              {% for ph in profile_photos %}
+                <div class="carousel-item {% if forloop.first %}active{% endif %}">
+                  <img src="{{ ph.image_thumb.url|default:ph.image.url }}" class="d-block w-100" alt="{{ station.name }} — фото {{ forloop.counter }}" style="max-height: 360px; object-fit: cover;">
+                </div>
+              {% endfor %}
+            </div>
+            {% if profile_photos|length > 1 %}
+              <button class="carousel-control-prev" type="button" data-bs-target="#stationCarousel" data-bs-slide="prev">
+                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                <span class="visually-hidden">Предыдущее</span>
+              </button>
+              <button class="carousel-control-next" type="button" data-bs-target="#stationCarousel" data-bs-slide="next">
+                <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                <span class="visually-hidden">Следующее</span>
+              </button>
+            {% endif %}
+          </div>
+        {% else %}
+          <div class="ratio ratio-16x9 bg-secondary bg-opacity-10 rounded d-flex align-items-center justify-content-center text-muted">
+            Фото появятся позже
+          </div>
+        {% endif %}
+      </div>
+      <div class="col-lg-7">
+        <h1 class="h2 mb-2">
+          {{ station.name }}
+          {% if station.executor_kind == executor_private %}
+            <span class="badge text-bg-info ms-1 align-middle small">Частный мастер</span>
+          {% endif %}
+          {% if station.executor_kind == executor_private and station.parent_station %}
+            <span class="badge text-bg-light text-dark border ms-1 align-middle small">
+              От сервиса: {{ station.parent_station.name }}
+            </span>
+          {% endif %}
+          {% if station.is_verified %}
+            <span class="badge text-bg-primary ms-1 align-middle small">Проверено</span>
+          {% endif %}
+        </h1>
+        {% if station.executor_kind == executor_private and station.tagline %}
+          <p class="lead text-body-secondary mb-2">{{ station.tagline }}</p>
+        {% endif %}
+        {% if station.avg_rating %}
+          <p class="mb-2">
+            <span class="text-warning">★</span>
+            <strong>{{ station.avg_rating|floatformat:1 }}</strong>
+            {% if station.review_count %}
+              <span class="text-muted">(на основе {{ station.review_count }} отзывов)</span>
+            {% endif %}
+          </p>
+        {% endif %}
+        <p class="mb-2">
+          {% if station.nearest_slot_date %}
+            {% if station.nearest_slot_date == today %}
+              <span class="badge text-bg-success">Ближайшая запись: сегодня {{ station.nearest_slot_time|time:"H:i" }}</span>
+            {% elif station.nearest_slot_date == tomorrow %}
+              <span class="badge text-bg-warning text-dark">Запись на завтра</span>
+            {% else %}
+              <span class="badge text-bg-light text-dark border">Свободные окна с {{ station.nearest_slot_date|date:"j E" }}</span>
+            {% endif %}
+          {% else %}
+            <span class="text-muted small">Свободных окон в ближайшие {{ booking_week|length }} дней нет</span>
+          {% endif %}
+        </p>
+        <p class="mb-3"><span class="text-muted">Адрес:</span> {{ public_address }}</p>
+        <div class="mb-3">
+          {% if show_full_phone %}
+            <a class="btn btn-outline-secondary btn-sm" href="tel:{{ contact_phone_e164 }}">{{ contact_phone_e164 }}</a>
+          {% else %}
+            <span class="font-monospace">{{ contact_phone_masked }}</span>
+            <a class="btn btn-link btn-sm" href="{% url 'users:login' %}?next={{ request.get_full_path|urlencode }}">Показать телефон</a>
+            <span class="small text-muted">(нужен вход)</span>
+          {% endif %}
+        </div>
+        <div class="d-flex flex-wrap gap-2 align-items-center">
+          {% if can_book_online %}
+            <a class="btn btn-primary" href="#booking-online">Записаться онлайн</a>
+            {% if show_full_phone %}
+              <a class="btn btn-outline-primary" href="tel:{{ contact_phone_e164 }}">Позвонить</a>
+            {% endif %}
+          {% else %}
+            <div class="alert alert-secondary py-2 px-3 mb-0">
+              Сервис временно не принимает онлайн-записи
+            </div>
+          {% endif %}
+          {% if user.is_authenticated %}
+            <form method="post" action="{% url 'cabinet:favorite_toggle' station.slug %}" class="d-inline">
+              {% csrf_token %}
+              {% if station_is_favorite %}
+                <button type="submit" class="btn btn-outline-secondary btn-sm">★ В избранном</button>
+              {% else %}
+                <button type="submit" class="btn btn-outline-warning btn-sm">☆ В избранное</button>
+              {% endif %}
+            </form>
+          {% endif %}
+        </div>
+
+        <div class="mt-3 pt-3 border-top" id="station-chat">
+          <button type="button" class="btn btn-outline-dark btn-sm mb-2" data-bs-toggle="collapse"
+                  data-bs-target="#stationChatCollapse" aria-expanded="false" aria-controls="stationChatCollapse">
+            Чат с мастером
+          </button>
+          <div class="collapse" id="stationChatCollapse">
+            <div id="station-chat-slot" data-load-url="{% url 'stations:station_chat_panel' station.slug %}">
+              <p class="small text-muted mb-0">Откройте блок, чтобы загрузить сообщения.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="about" class="mb-5">
+    <h2 class="h4 border-bottom pb-2">О {% if station.executor_kind == executor_private %}мастере{% else %}сервисе{% endif %}</h2>
+    {% if station.description_short %}
+      <p class="lead">{{ station.description_short }}</p>
+    {% endif %}
+    <div class="row g-3 mb-3 small">
+      <div class="col-md-6">
+        <span class="me-2">🚗</span> Постов: <strong>{{ station.bays.count }}</strong>
+      </div>
+      <div class="col-md-6">
+        <span class="me-2">🔧</span>
+        {% if station.categories.all %}
+          Специализация:
+          {% for c in station.categories.all %}
+            <a href="{% url 'landing:service_category' c.slug %}">{{ c.name }}</a>{% if not forloop.last %}, {% endif %}
+          {% endfor %}
+        {% else %}
+          Уточняйте по телефону
+        {% endif %}
+      </div>
+      {% if station.car_brands_all %}
+        <div class="col-12">
+          <span class="me-2">🚘</span>
+          <span class="badge text-bg-primary me-1">Все марки</span>
+          <span class="text-body-secondary small">универсальный приём</span>
+        </div>
+      {% endif %}
+      {% if station.car_brands.all %}
+        <div class="col-12">
+          <span class="me-2">🚘</span>
+          {% if not station.car_brands_all %}Марки:{% else %}Акценты:{% endif %}
+          {% for b in station.car_brands.all %}
+          <a class="badge rounded-pill text-bg-light border text-decoration-none me-1"
+             href="{% url 'landing:car_brand' b.slug %}"
+             title="Страница марки {{ b.name }} — каталог и услуги">{{ b.name }}</a>
+          {% endfor %}
+        </div>
+      {% endif %}
+      {% if station.has_parking %}<div class="col-md-6"><span class="me-2">🅿️</span> Парковка</div>{% endif %}
+      {% if station.amenity_coffee %}<div class="col-md-6"><span class="me-2">☕</span> Кофе-зона</div>{% endif %}
+      {% if station.amenity_cards %}<div class="col-md-6"><span class="me-2">💳</span> Оплата картой</div>{% endif %}
+    </div>
+    {% if station.certified_partner or station.license_held %}
+      <ul class="list-unstyled small text-success mb-3">
+        {% if station.certified_partner %}<li>✓ Сертифицированный сервис</li>{% endif %}
+        {% if station.license_held %}<li>✓ Лицензия (документы доступны администратору)</li>{% endif %}
+      </ul>
+    {% endif %}
+    {% if station.work_schedule_text %}
+      <p class="small"><strong>График:</strong> {{ station.work_schedule_text|linebreaksbr }}</p>
+    {% endif %}
+    {% if station.executor_kind == executor_private %}
+      {% if station.experience_years %}
+        <p class="small">Опыт работы: <strong>{{ station.experience_years }} лет</strong></p>
+      {% endif %}
+      {% if station.master_bio %}
+        <div class="text-body-secondary">{{ station.master_bio|linebreaks }}</div>
+      {% endif %}
+    {% else %}
+      {% if service_masters %}
+        <div class="mt-4">
+          <h3 class="h5 mb-3">Мастера автосервиса</h3>
+          <div class="row g-3">
+            {% for m in service_masters %}
+              <div class="col-md-6 col-lg-4">
+                <div class="card h-100 shadow-sm">
+                  <div class="card-body">
+                    <div class="d-flex align-items-start gap-3">
+                      {% if m.avatar %}
+                        <img src="{{ m.avatar_thumb.url|default:m.avatar.url }}" alt="" width="56" height="56" class="rounded-circle object-fit-cover border" style="object-fit:cover;">
+                      {% else %}
+                        <div class="rounded-circle bg-secondary bg-opacity-10 border" style="width:56px;height:56px;"></div>
+                      {% endif %}
+                      <div class="min-w-0">
+                        <div class="fw-semibold text-truncate">{{ m.name }}</div>
+                        {% if m.tagline %}<div class="small text-muted text-truncate">{{ m.tagline }}</div>{% endif %}
+                        <div class="small mt-2">
+                          <a href="{% url 'stations:detail' m.slug %}" class="stretched-link text-decoration-none">Открыть карточку</a>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+      {% endif %}
+    {% endif %}
+    {% if station.description %}
+      <div class="mt-3 text-body-secondary">{{ station.description|linebreaks }}</div>
+    {% endif %}
+  </section>
+
+  <section id="prices" class="mb-5">
+    <h2 class="h4 border-bottom pb-2">Услуги и цены</h2>
+    {% if has_price_list %}
+      <div class="table-responsive">
+        <table class="table table-sm align-middle">
+          <thead><tr><th>Услуга</th><th>Стоимость</th><th>Примечание</th></tr></thead>
+          <tbody>
+            {% for o in price_preview %}
+              <tr>
+                <td>{{ o.service_title|default:o.category.name }}</td>
+                <td>от {{ o.price_from_rub }} ₽</td>
+                <td class="text-muted small">{{ o.note }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% if price_offer_count > price_preview|length %}
+        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#priceModal">
+          Все услуги и цены
+        </button>
+      {% endif %}
+    {% else %}
+      <p class="text-muted">Цены по запросу.</p>
+    {% endif %}
+  </section>
+
+  <section id="booking-online" class="mb-5">
+    <h2 class="h4 border-bottom pb-2">Онлайн-запись</h2>
+    {% if can_book_online %}
+      <p class="small text-muted">Выберите день ({{ booking_week|length }} дней от сегодня), затем свободное окно.</p>
+      <ul class="nav nav-pills flex-wrap gap-1 mb-3">
+        {% for d in booking_week %}
+          <li class="nav-item">
+            <button type="button"
+                    class="nav-link py-1 px-2 {% if forloop.first %}active{% endif %}"
+                    hx-get="{% url 'stations:slots_partial' station.slug %}?date={{ d|date:'Y-m-d' }}"
+                    hx-target="#slot-panel"
+                    hx-swap="innerHTML">
+              {{ d|date:"D j" }}
+            </button>
+          </li>
+        {% endfor %}
+      </ul>
+      <div id="slot-panel"
+           hx-get="{% url 'stations:slots_partial' station.slug %}?date={{ booking_week.0|date:'Y-m-d' }}"
+           hx-trigger="load"
+           hx-swap="innerHTML">
+        <p class="text-muted small mb-0">Загрузка окон…</p>
+      </div>
+    {% else %}
+      {% include "stations/partials/booking_subscription_paused.html" %}
+    {% endif %}
+  </section>
+
+  {% if station.executor_kind == executor_private and work_photos %}
+    <section id="work-gallery" class="mb-5">
+      <h2 class="h4 border-bottom pb-2">Примеры работ</h2>
+      <div class="row g-2">
+        {% for ph in work_photos %}
+          <div class="col-6 col-md-4">
+            <img src="{{ ph.image_thumb.url|default:ph.image.url }}" class="img-fluid rounded" alt="{{ ph.caption|default:station.name }}">
+            {% if ph.caption %}<p class="small text-muted mb-0 mt-1">{{ ph.caption }}</p>{% endif %}
+          </div>
+        {% endfor %}
+      </div>
+    </section>
+  {% endif %}
+
+  <div class="row g-5">
+    <div class="col-lg-7">
+      <section id="reviews">
+        <h2 class="h4 border-bottom pb-2">Отзывы</h2>
+        {% if station.avg_rating and recent_reviews %}
+          <p class="mb-2"><span class="text-warning">★</span> Средняя оценка: <strong>{{ station.avg_rating|floatformat:1 }}</strong></p>
+          <div class="mb-3 small">
+            {% for row in review_star_bars %}
+              <div class="d-flex align-items-center gap-2 mb-1">
+                <span class="text-nowrap" style="width:4.5rem">{{ row.stars }} ★</span>
+                <div class="progress flex-grow-1" style="height:6px">
+                  <div class="progress-bar bg-warning" style="width: {{ row.pct }}%"></div>
+                </div>
+                <span class="text-muted text-nowrap">{{ row.pct }}%</span>
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+        {% if reviews_preview %}
+          <ul class="list-group list-group-flush">
+            {% for r in reviews_preview %}
+              <li class="list-group-item px-0">
+                <div class="d-flex justify-content-between">
+                  <strong class="text-warning">★ {{ r.rating }}</strong>
+                  <small class="text-muted">{{ r.created_at|date:"d.m.Y" }}</small>
+                </div>
+                <div class="small text-muted mb-1">{{ review_names|dict_get:r.pk }}</div>
+                {% if r.text %}<div class="mb-0 mt-1 small">{{ r.text|linebreaks }}</div>{% endif %}
+                {% include "reviews/_review_photo.html" with review=r only %}
+                {% if r.owner_reply %}
+                  <div class="mt-2 ps-3 border-start border-2 small text-body-secondary">
+                    <strong>Ответ сервиса:</strong> {{ r.owner_reply.text|linebreaks }}
+                  </div>
+                {% endif %}
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="text-muted small">Пока нет отзывов.</p>
+        {% endif %}
+        {% if reviews_more_count %}
+          <p class="small text-muted mt-2">Ещё {{ reviews_more_count }} отзыв(ов) ниже в списке (раскройте).</p>
+        {% endif %}
+        {% if recent_reviews|length > reviews_preview|length %}
+          <details class="mt-2">
+            <summary class="small">Показать все свежие отзывы</summary>
+            <ul class="list-group list-group-flush mt-2">
+              {% for r in recent_reviews %}
+                {% if forloop.counter0 >= reviews_preview|length %}
+                  <li class="list-group-item px-0">
+                    <div class="d-flex justify-content-between">
+                      <strong class="text-warning">★ {{ r.rating }}</strong>
+                      <small class="text-muted">{{ r.created_at|date:"d.m.Y" }}</small>
+                    </div>
+                    <div class="small text-muted mb-1">{{ review_names|dict_get:r.pk }}</div>
+                    {% if r.text %}<div class="mb-0 mt-1 small">{{ r.text|linebreaks }}</div>{% endif %}
+                    {% include "reviews/_review_photo.html" with review=r only %}
+                    {% if r.owner_reply %}
+                      <div class="mt-2 ps-3 border-start border-2 small text-body-secondary">
+                        <strong>Ответ сервиса:</strong> {{ r.owner_reply.text|linebreaks }}
+                      </div>
+                    {% endif %}
+                  </li>
+                {% endif %}
+              {% endfor %}
+            </ul>
+          </details>
+        {% endif %}
+        {% if archived_reviews %}
+          <details class="mt-3">
+            <summary class="small text-muted">Архив (старше 6 мес.): {{ archived_reviews|length }}</summary>
+            <ul class="list-group list-group-flush mt-2">
+              {% for r in archived_reviews %}
+                <li class="list-group-item px-0">
+                  <div class="d-flex justify-content-between">
+                    <strong class="text-warning">★ {{ r.rating }}</strong>
+                    <small class="text-muted">{{ r.created_at|date:"d.m.Y" }}</small>
+                  </div>
+                  {% if r.text %}<div class="mb-0 mt-1 small">{{ r.text|linebreaks }}</div>{% endif %}
+                  {% include "reviews/_review_photo.html" with review=r only %}
+                </li>
+              {% endfor %}
+            </ul>
+          </details>
+        {% endif %}
+      </section>
+    </div>
+    <div class="col-lg-5">
+      <section id="contacts" class="mb-4">
+        <h2 class="h4 border-bottom pb-2">Контакты</h2>
+        <p class="mb-2">{{ public_address }}</p>
+        {% if show_map_links and map_yandex_url %}
+          <p class="small">
+            <a href="{{ map_yandex_url }}" target="_blank" rel="noopener noreferrer">Яндекс.Карты</a>
+            ·
+            <a href="{{ map_google_url }}" target="_blank" rel="noopener noreferrer">Google Maps</a>
+          </p>
+        {% endif %}
+        {% if show_full_phone %}
+          <p class="mb-2"><a href="tel:{{ contact_phone_e164 }}">{{ contact_phone_e164 }}</a></p>
+          {% if telegram_url %}
+            <a class="btn btn-sm btn-outline-info" href="{{ telegram_url }}" target="_blank" rel="noopener noreferrer">Telegram</a>
+          {% endif %}
+        {% endif %}
+        {% if station.website %}
+          <p class="small mb-1"><a href="{{ station.website }}" target="_blank" rel="noopener noreferrer">Сайт</a></p>
+        {% endif %}
+        <div class="d-flex gap-2 mt-2">
+          {% if station.vk_url %}
+            <a class="btn btn-sm btn-outline-primary" href="{{ station.vk_url }}" target="_blank" rel="noopener noreferrer">ВК</a>
+          {% endif %}
+          {% if station.instagram_url %}
+            <a class="btn btn-sm btn-outline-secondary" href="{{ station.instagram_url }}" target="_blank" rel="noopener noreferrer">Instagram</a>
+          {% endif %}
+        </div>
+      </section>
+      {% if show_legal_block %}
+        <section id="legal">
+          <h2 class="h5">Реквизиты</h2>
+          <p class="small text-muted">Видны только авторизованным клиентам.</p>
+          {% if station.inn or station.ogrn %}
+            <dl class="row small mb-0">
+              {% if station.inn %}<dt class="col-4">ИНН</dt><dd class="col-8">{{ station.inn }}</dd>{% endif %}
+              {% if station.ogrn %}<dt class="col-4">ОГРН</dt><dd class="col-8">{{ station.ogrn }}</dd>{% endif %}
+            </dl>
+          {% else %}
+            <p class="small text-muted mb-0">Не указаны.</p>
+          {% endif %}
+        </section>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if has_price_list and price_offer_count > price_preview|length %}
+    <div class="modal fade" id="priceModal" tabindex="-1" aria-labelledby="priceModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2 class="modal-title h5" id="priceModalLabel">Все услуги и цены</h2>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+          </div>
+          <div class="modal-body">
+            <div class="table-responsive">
+              <table class="table table-sm">
+                <thead><tr><th>Услуга</th><th>Стоимость</th><th>Примечание</th></tr></thead>
+                <tbody>
+                  {% for o in station.service_offers.all %}
+                    <tr>
+                      <td>{{ o.service_title|default:o.category.name }}</td>
+                      <td>от {{ o.price_from_rub }} ₽</td>
+                      <td class="text-muted small">{{ o.note }}</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+
+  {% if can_book_online %}
+    <div class="modal fade" id="bookingModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2 class="modal-title h5">Запись на сервис</h2>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+          </div>
+          <div class="modal-body" id="bookingModalBody"></div>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+{% endblock %}
+{% block extra_js %}
+  <script type="module" src="{% static 'js/pages/station-chat-loader.js' %}"></script>
+  <script type="module" src="{% static 'js/pages/direct-chat.js' %}"></script>
+  <script type="module" src="{% static 'js/pages/htmx-booking-modal.js' %}"></script>
+{% endblock %}

@@ -1,0 +1,25 @@
+{% extends "sto_owner/base.html" %}
+{% block title %}Новый пост — МаБибип{% endblock %}
+{% block sto_owner_main %}
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'sto_owner:dashboard' %}">Кабинет</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'sto_owner:bays' %}">Посты</a></li>
+      <li class="breadcrumb-item active" aria-current="page">Новый пост</li>
+    </ol>
+  </nav>
+
+  <h1 class="h4 mb-3">Добавить пост</h1>
+  <form method="post" class="col-lg-6">
+    {% csrf_token %}
+    {% for field in form %}
+      <div class="mb-3">
+        <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {% for err in field.errors %}<div class="invalid-feedback d-block">{{ err }}</div>{% endfor %}
+      </div>
+    {% endfor %}
+    <button type="submit" class="btn btn-primary">Сохранить</button>
+    <a class="btn btn-link" href="{% url 'sto_owner:bays' %}">Отмена</a>
+  </form>
+{% endblock %}

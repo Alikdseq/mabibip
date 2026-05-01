@@ -1,0 +1,50 @@
+{% extends "erp/_layout.html" %}
+
+{% block erp_title %}ERP → Отчёты → Воронка{% endblock %}
+{% block erp_subtitle %}Регистрация → запись → подтверждение → завершение → отзыв{% endblock %}
+
+{% block erp_content %}
+  <div class="card mb-4">
+    <div class="card-body">
+      <form method="get" class="row g-2 align-items-end">
+        <div class="col-md-3">
+          <label class="form-label small text-muted" for="start">Начало</label>
+          <input id="start" name="start" type="date" class="form-control" value="{{ start|date:'Y-m-d' }}"/>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small text-muted" for="end">Конец</label>
+          <input id="end" name="end" type="date" class="form-control" value="{{ end|date:'Y-m-d' }}"/>
+        </div>
+        <div class="col-md-6 d-flex gap-2 justify-content-end">
+          <button type="submit" class="btn btn-primary">Показать</button>
+          <a class="btn btn-outline-primary"
+             href="{% url 'erp:funnel_xlsx' %}?start={{ start|date:'Y-m-d' }}&end={{ end|date:'Y-m-d' }}">Скачать XLSX</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body p-0 table-responsive">
+      <table class="table table-striped mb-0">
+        <thead>
+          <tr>
+            <th>Шаг</th>
+            <th class="text-end">Пользователей</th>
+            <th class="text-end">Конверсия от предыдущего шага</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in steps %}
+            <tr>
+              <td><strong>{{ s.label }}</strong></td>
+              <td class="text-end">{{ s.count }}</td>
+              <td class="text-end">{{ s.pct_prev }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endblock %}
+

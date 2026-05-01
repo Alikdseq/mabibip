@@ -1,0 +1,47 @@
+{% extends "autoshop_owner/base.html" %}
+{% block title %}Магазины — кабинет автомагазина{% endblock %}
+
+{% block autoshop_owner_main %}
+  <h1 class="h4 mb-3">Магазины</h1>
+  <p class="small text-muted">Добавьте филиалы (адреса), чтобы покупатели видели точки продаж на витрине.</p>
+
+  <div class="mb-3">
+    <a class="btn btn-primary" href="{% url 'shop_owner:branch_add' %}">Добавить магазин</a>
+  </div>
+
+  {% if branches %}
+    <div class="table-responsive">
+      <table class="table table-sm align-middle">
+        <thead>
+          <tr>
+            <th>Название</th>
+            <th>Адрес</th>
+            <th>Телефон</th>
+            <th>Часы</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for b in branches %}
+            <tr>
+              <td class="fw-semibold">{{ b.name|default:"—" }}</td>
+              <td>{{ b.city_label }}{% if b.address %}{% if b.city_label %}, {% endif %}{{ b.address }}{% endif %}</td>
+              <td>{% if b.contact_phone %}<a href="tel:{{ b.contact_phone }}">{{ b.contact_phone }}</a>{% else %}—{% endif %}</td>
+              <td>{{ b.work_hours|default:"—" }}</td>
+              <td class="text-end">
+                <a class="btn btn-sm btn-outline-primary" href="{% url 'shop_owner:branch_edit' b.pk %}">Редактировать</a>
+                <form method="post" action="{% url 'shop_owner:branch_delete' b.pk %}" class="d-inline">
+                  {% csrf_token %}
+                  <button class="btn btn-sm btn-outline-danger" type="submit">Удалить</button>
+                </form>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="text-muted">Пока нет филиалов.</p>
+  {% endif %}
+{% endblock %}
+

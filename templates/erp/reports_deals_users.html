@@ -1,0 +1,69 @@
+{% extends "erp/_layout.html" %}
+
+{% block erp_title %}ERP → Отчёты → Сделки → Пользователи{% endblock %}
+{% block erp_subtitle %}Топ пользователей по обороту/количеству сделок + XLSX{% endblock %}
+
+{% block erp_content %}
+  <div class="card mb-4">
+    <div class="card-body">
+      <form method="get" class="row g-2 align-items-end">
+        <div class="col-md-2">
+          <label class="form-label small text-muted" for="start">Начало</label>
+          <input id="start" name="start" type="date" class="form-control" value="{{ start|date:'Y-m-d' }}"/>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small text-muted" for="end">Конец</label>
+          <input id="end" name="end" type="date" class="form-control" value="{{ end|date:'Y-m-d' }}"/>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small text-muted" for="role">Роль</label>
+          <select id="role" name="role" class="form-select">
+            <option value="seller" {% if role == 'seller' %}selected{% endif %}>Продавец</option>
+            <option value="buyer" {% if role == 'buyer' %}selected{% endif %}>Покупатель</option>
+          </select>
+        </div>
+        <div class="col-md-5 d-flex gap-2 justify-content-end">
+          <button type="submit" class="btn btn-primary">Показать</button>
+          <a class="btn btn-outline-primary"
+             href="{% url 'erp:deals_users_report_xlsx' %}?start={{ start|date:'Y-m-d' }}&end={{ end|date:'Y-m-d' }}&role={{ role }}">XLSX</a>
+          <a class="btn btn-outline-secondary" href="{% url 'erp:deals_report' %}?start={{ start|date:'Y-m-d' }}&end={{ end|date:'Y-m-d' }}">← Сделки</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header fw-semibold">Топ (до 100)</div>
+    <div class="card-body p-0 table-responsive">
+      <table class="table table-striped mb-0">
+        <thead>
+          <tr>
+            <th>User</th>
+            <th>Телефон</th>
+            <th>Email</th>
+            <th class="text-end">Сделок</th>
+            <th class="text-end">GMV paid</th>
+            <th class="text-end">Refunds</th>
+            <th class="text-end">Canceled</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in rows %}
+            <tr>
+              <td class="small text-nowrap">{% if r.user %}{{ r.user.id }}{% else %}—{% endif %}</td>
+              <td class="small text-nowrap">{% if r.user %}{{ r.user.phone }}{% else %}—{% endif %}</td>
+              <td class="small">{% if r.user %}{{ r.user.email|default:"—" }}{% else %}—{% endif %}</td>
+              <td class="small text-end">{{ r.deals_count }}</td>
+              <td class="small text-end">{{ r.gmv_paid }} ₽</td>
+              <td class="small text-end">{{ r.refunds_count }} / {{ r.refunds_sum }} ₽</td>
+              <td class="small text-end">{{ r.canceled_count }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="7" class="text-muted p-3">Нет данных за период.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endblock %}
+

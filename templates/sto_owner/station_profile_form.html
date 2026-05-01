@@ -1,0 +1,400 @@
+{% extends "sto_owner/base.html" %}
+{% block title %}Профиль: {{ station.name }} — МаБибип{% endblock %}
+{% block sto_owner_main %}
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'sto_owner:dashboard' %}">Кабинет</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'sto_owner:stations' %}">Станции</a></li>
+      <li class="breadcrumb-item active" aria-current="page">{{ station.name }}</li>
+    </ol>
+  </nav>
+
+  <h1 class="h4 mb-3">Профиль и услуги</h1>
+  <p class="text-muted small mb-4">
+    Заполните карточку — её увидят в каталоге клиенты. Контакты можно оставить пустыми:
+    авторизованным клиентам тогда может показываться ваш номер учётной записи.
+    <a href="{% url 'sto_owner:station_brands' station.slug %}">Только марки авто</a>
+    можно править на отдельной странице — здесь они тоже доступны.
+  </p>
+
+  <form method="post" enctype="multipart/form-data" class="pb-5">
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+      <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+    {% endif %}
+    {% if formset.non_form_errors %}
+      <div class="alert alert-danger">{{ formset.non_form_errors }}</div>
+    {% endif %}
+
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-body">
+        <h2 class="h6 mb-3">Основное</h2>
+        <div class="row g-3">
+          <div class="col-md-8">
+            <label class="form-label small fw-semibold" for="{{ form.name.id_for_label }}">{{ form.name.label }}</label>
+            {{ form.name }}
+            {% if form.name.errors %}<div class="text-danger small mt-1">{{ form.name.errors }}</div>{% endif %}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label small fw-semibold" for="{{ form.executor_kind.id_for_label }}">{{ form.executor_kind.label }}</label>
+            {{ form.executor_kind }}
+            {% if form.executor_kind.errors %}<div class="text-danger small mt-1">{{ form.executor_kind.errors }}</div>{% endif %}
+          </div>
+          <div class="col-12">
+            <label class="form-label small fw-semibold" for="{{ form.address.id_for_label }}">{{ form.address.label }}</label>
+            {{ form.address }}
+            {% if form.address.errors %}<div class="text-danger small mt-1">{{ form.address.errors }}</div>{% endif %}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small fw-semibold" for="{{ form.district.id_for_label }}">{{ form.district.label }}</label>
+            {{ form.district }}
+            {% if form.district.errors %}<div class="text-danger small mt-1">{{ form.district.errors }}</div>{% endif %}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small fw-semibold" for="{{ form.address_public_mode.id_for_label }}">{{ form.address_public_mode.label }}</label>
+            {{ form.address_public_mode }}
+            {% if form.address_public_mode.errors %}<div class="text-danger small mt-1">{{ form.address_public_mode.errors }}</div>{% endif %}
+          </div>
+          <div class="col-12">
+            <label class="form-label small fw-semibold" for="{{ form.description_short.id_for_label }}">{{ form.description_short.label }}</label>
+            {{ form.description_short }}
+            {% if form.description_short.errors %}<div class="text-danger small mt-1">{{ form.description_short.errors }}</div>{% endif %}
+          </div>
+          <div class="col-12">
+            <label class="form-label small fw-semibold" for="{{ form.description.id_for_label }}">{{ form.description.label }}</label>
+            {{ form.description }}
+            {% if form.description.errors %}<div class="text-danger small mt-1">{{ form.description.errors }}</div>{% endif %}
+          </div>
+          <div class="col-12">
+            <label class="form-label small fw-semibold" for="{{ form.work_schedule_text.id_for_label }}">{{ form.work_schedule_text.label }}</label>
+            {{ form.work_schedule_text }}
+            {% if form.work_schedule_text.errors %}<div class="text-danger small mt-1">{{ form.work_schedule_text.errors }}</div>{% endif %}
+          </div>
+          <div class="col-12 d-flex flex-wrap gap-3">
+            <div class="form-check">{{ form.is_open_24_7 }} <label class="form-check-label" for="{{ form.is_open_24_7.id_for_label }}">{{ form.is_open_24_7.label }}</label></div>
+            <div class="form-check">{{ form.has_parking }} <label class="form-check-label" for="{{ form.has_parking.id_for_label }}">{{ form.has_parking.label }}</label></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-body">
+        <h2 class="h6 mb-3">Услуги в каталоге и марки</h2>
+        <div class="row g-3">
+          <div class="col-md-6">
+            <div class="mb-3">
+              <div class="d-flex align-items-baseline justify-content-between gap-2">
+                <label class="form-label small fw-semibold" for="{{ form.service_sections.id_for_label }}">{{ form.service_sections.label }}</label>
+              </div>
+              <p class="small text-muted mb-2">
+                Можно выбрать разделы (как на главной) — тогда вы будете показываться в каталоге по фильтру раздела,
+                даже если не заполнять каждую услугу.
+              </p>
+
+              {# Скрытый select хранит выбранные значения для POST #}
+              <div class="d-none">
+                {{ form.service_sections }}
+              </div>
+
+              <div class="row row-cols-2 row-cols-sm-3 g-2">
+                {% for sec in service_sections %}
+                  <div class="col">
+                    <button type="button"
+                            class="btn w-100 {% if sec.pk|stringformat:'s' in form.service_sections.value %}btn-primary{% else %}btn-outline-secondary{% endif %}"
+                            data-section-btn
+                            data-section-id="{{ sec.pk }}">
+                      <i class="bi {{ sec.icon|default:'bi-tools' }} me-1" aria-hidden="true"></i>
+                      {{ sec.name }}
+                    </button>
+                  </div>
+                {% endfor %}
+              </div>
+              {% if form.service_sections.errors %}<div class="text-danger small mt-1">{{ form.service_sections.errors }}</div>{% endif %}
+            </div>
+
+            <label class="form-label small fw-semibold" for="{{ form.categories.id_for_label }}">{{ form.categories.label }}</label>
+            <p class="small text-muted mb-2">Кликайте по услугам: повторный клик снимает выбор (Ctrl / ⌘ не нужен).</p>
+            {{ form.categories }}
+            {% if form.categories.errors %}<div class="text-danger small mt-1">{{ form.categories.errors }}</div>{% endif %}
+          </div>
+          <div class="col-md-6">
+            <div class="form-check mb-3 py-2 border rounded px-3 bg-light">
+              {{ form.car_brands_all }}
+              <label class="form-check-label fw-semibold" for="{{ form.car_brands_all.id_for_label }}">{{ form.car_brands_all.label }}</label>
+              {% if form.car_brands_all.help_text %}
+                <p class="small text-muted mb-0 mt-1">{{ form.car_brands_all.help_text }}</p>
+              {% endif %}
+            </div>
+            <label class="form-label small fw-semibold" for="{{ form.car_brands.id_for_label }}">{{ form.car_brands.label }}</label>
+            <p class="small text-muted mb-2">При включённом «Все марки» список ниже необязателен (можно указать предпочитаемые марки для текста карточки).</p>
+            {{ form.car_brands }}
+            {% if form.car_brands.errors %}<div class="text-danger small mt-1">{{ form.car_brands.errors }}</div>{% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-body">
+        <h2 class="h6 mb-3">Частный мастер</h2>
+        <p class="small text-muted mb-3">Если тип исполнителя — «Частный мастер», эти поля особенно важны для карточки.</p>
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label small fw-semibold" for="{{ form.tagline.id_for_label }}">{{ form.tagline.label }}</label>
+            {{ form.tagline }}
+            {% if form.tagline.errors %}<div class="text-danger small mt-1">{{ form.tagline.errors }}</div>{% endif %}
+          </div>
+          <div class="col-md-3">
+            <label class="form-label small fw-semibold" for="{{ form.experience_years.id_for_label }}">{{ form.experience_years.label }}</label>
+            {{ form.experience_years }}
+            {% if form.experience_years.errors %}<div class="text-danger small mt-1">{{ form.experience_years.errors }}</div>{% endif %}
+          </div>
+          <div class="col-12">
+            <label class="form-label small fw-semibold" for="{{ form.master_bio.id_for_label }}">{{ form.master_bio.label }}</label>
+            {{ form.master_bio }}
+            {% if form.master_bio.errors %}<div class="text-danger small mt-1">{{ form.master_bio.errors }}</div>{% endif %}
+          </div>
+          <div class="col-12 col-md-8">
+            <label class="form-label small fw-semibold" for="{{ form.avatar.id_for_label }}">{{ form.avatar.label }}</label>
+            {{ form.avatar }}
+            {% if form.avatar.errors %}<div class="text-danger small mt-1">{{ form.avatar.errors }}</div>{% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-body">
+        <h2 class="h6 mb-3">Контакты и соцсети</h2>
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label small fw-semibold" for="{{ form.contact_phone.id_for_label }}">{{ form.contact_phone.label }}</label>
+            {{ form.contact_phone }}
+            {% if form.contact_phone.errors %}<div class="text-danger small mt-1">{{ form.contact_phone.errors }}</div>{% endif %}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small fw-semibold" for="{{ form.whatsapp_phone.id_for_label }}">{{ form.whatsapp_phone.label }}</label>
+            {{ form.whatsapp_phone }}
+            {% if form.whatsapp_phone.errors %}<div class="text-danger small mt-1">{{ form.whatsapp_phone.errors }}</div>{% endif %}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label small fw-semibold" for="{{ form.telegram_username.id_for_label }}">{{ form.telegram_username.label }}</label>
+            {{ form.telegram_username }}
+            {% if form.telegram_username.errors %}<div class="text-danger small mt-1">{{ form.telegram_username.errors }}</div>{% endif %}
+          </div>
+          <div class="col-md-8">
+            <label class="form-label small fw-semibold" for="{{ form.website.id_for_label }}">{{ form.website.label }}</label>
+            {{ form.website }}
+            {% if form.website.errors %}<div class="text-danger small mt-1">{{ form.website.errors }}</div>{% endif %}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small fw-semibold" for="{{ form.vk_url.id_for_label }}">{{ form.vk_url.label }}</label>
+            {{ form.vk_url }}
+            {% if form.vk_url.errors %}<div class="text-danger small mt-1">{{ form.vk_url.errors }}</div>{% endif %}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small fw-semibold" for="{{ form.instagram_url.id_for_label }}">{{ form.instagram_url.label }}</label>
+            {{ form.instagram_url }}
+            {% if form.instagram_url.errors %}<div class="text-danger small mt-1">{{ form.instagram_url.errors }}</div>{% endif %}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label small fw-semibold" for="{{ form.inn.id_for_label }}">{{ form.inn.label }}</label>
+            {{ form.inn }}
+            {% if form.inn.errors %}<div class="text-danger small mt-1">{{ form.inn.errors }}</div>{% endif %}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label small fw-semibold" for="{{ form.ogrn.id_for_label }}">{{ form.ogrn.label }}</label>
+            {{ form.ogrn }}
+            {% if form.ogrn.errors %}<div class="text-danger small mt-1">{{ form.ogrn.errors }}</div>{% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-body">
+        <h2 class="h6 mb-3">Удобства на объекте</h2>
+        <div class="d-flex flex-wrap gap-3">
+          <div class="form-check">{{ form.amenity_wifi }} <label class="form-check-label" for="{{ form.amenity_wifi.id_for_label }}">{{ form.amenity_wifi.label }}</label></div>
+          <div class="form-check">{{ form.amenity_coffee }} <label class="form-check-label" for="{{ form.amenity_coffee.id_for_label }}">{{ form.amenity_coffee.label }}</label></div>
+          <div class="form-check">{{ form.amenity_cards }} <label class="form-check-label" for="{{ form.amenity_cards.id_for_label }}">{{ form.amenity_cards.label }}</label></div>
+          <div class="form-check">{{ form.amenity_tow }} <label class="form-check-label" for="{{ form.amenity_tow.id_for_label }}">{{ form.amenity_tow.label }}</label></div>
+          <div class="form-check">{{ form.amenity_legal }} <label class="form-check-label" for="{{ form.amenity_legal.id_for_label }}">{{ form.amenity_legal.label }}</label></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-body">
+        <h2 class="h6 mb-3">Рекомендуем себе доверие</h2>
+        <div class="d-flex flex-wrap gap-3">
+          <div class="form-check">{{ form.certified_partner }} <label class="form-check-label" for="{{ form.certified_partner.id_for_label }}">{{ form.certified_partner.label }}</label></div>
+          <div class="form-check">{{ form.license_held }} <label class="form-check-label" for="{{ form.license_held.id_for_label }}">{{ form.license_held.label }}</label></div>
+        </div>
+        <p class="small text-muted mt-2 mb-0">Плашки «Проверен» и модерация — по решению администратора платформы.</p>
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-body">
+        <h2 class="h6 mb-3">Ориентиры цен в каталоге</h2>
+        <p class="small text-muted mb-3">По каждой категории услуг — одна строка «цена от … ₽». Повторять категорию нельзя.</p>
+        {{ formset.management_form }}
+        <div class="table-responsive">
+          <table class="table table-sm align-middle">
+            <thead>
+              <tr>
+                <th>Категория</th>
+                <th>Свое название строки</th>
+                <th>Цена от, ₽</th>
+                <th>Примечание</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for offer_form in formset %}
+                <tr>
+                  {% for hidden in offer_form.hidden_fields %}{{ hidden }}{% endfor %}
+                  <td>
+                    {{ offer_form.category }}
+                    {% if offer_form.category.errors %}<div class="text-danger small">{{ offer_form.category.errors }}</div>{% endif %}
+                  </td>
+                  <td>
+                    {{ offer_form.service_title }}
+                    {% if offer_form.service_title.errors %}<div class="text-danger small">{{ offer_form.service_title.errors }}</div>{% endif %}
+                  </td>
+                  <td style="max-width: 8rem;">
+                    {{ offer_form.price_from_rub }}
+                    {% if offer_form.price_from_rub.errors %}<div class="text-danger small">{{ offer_form.price_from_rub.errors }}</div>{% endif %}
+                  </td>
+                  <td>
+                    {{ offer_form.note }}
+                    {% if offer_form.note.errors %}<div class="text-danger small">{{ offer_form.note.errors }}</div>{% endif %}
+                  </td>
+                  <td class="text-nowrap small">
+                    {% if offer_form.instance.pk %}
+                      <label class="form-check-label d-inline-flex align-items-center gap-1">
+                        {{ offer_form.DELETE }} удалить
+                      </label>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="d-flex gap-2">
+      <button type="submit" class="btn btn-primary">Сохранить</button>
+      <a class="btn btn-outline-secondary" href="{% url 'sto_owner:stations' %}">Назад к списку</a>
+    </div>
+  </form>
+
+  {{ category_section_map|json_script:"pm-category-section-map" }}
+  {{ section_categories_map|json_script:"pm-section-categories-map" }}
+
+  <script>
+    (function () {
+      function safeJsonFromScript(id) {
+        const el = document.getElementById(id);
+        if (!el) return {};
+        try {
+          return JSON.parse(el.textContent || "{}");
+        } catch (e) {
+          return {};
+        }
+      }
+
+      function init() {
+        const CATEGORY_SECTION_MAP = safeJsonFromScript('pm-category-section-map');
+        const SECTION_CATEGORIES_MAP = safeJsonFromScript('pm-section-categories-map');
+
+        function setupToggleSelect(selectEl) {
+          if (!selectEl) return;
+          selectEl.addEventListener('mousedown', function (e) {
+            const opt = e.target && e.target.tagName === 'OPTION' ? e.target : null;
+            if (!opt) return;
+            e.preventDefault();
+            opt.selected = !opt.selected;
+            // триггерим change чтобы формы/валидация видели изменения
+            selectEl.dispatchEvent(new Event('change', { bubbles: true }));
+          });
+        }
+
+        function setupSectionButtons() {
+          const selectEl = document.getElementById('{{ form.service_sections.id_for_label }}') || document.querySelector('select[name="{{ form.service_sections.name }}"]');
+          if (!selectEl) return;
+          const btns = document.querySelectorAll('[data-section-btn]');
+          btns.forEach(function (btn) {
+            btn.addEventListener('click', function () {
+              const id = btn.getAttribute('data-section-id');
+              if (!id) return;
+              const opt = Array.from(selectEl.options).find(o => o.value === id);
+              if (!opt) return;
+              opt.selected = !opt.selected;
+              btn.classList.toggle('btn-primary', opt.selected);
+              btn.classList.toggle('btn-outline-secondary', !opt.selected);
+              selectEl.dispatchEvent(new Event('change', { bubbles: true }));
+
+              // При включении раздела — включаем все услуги (категории), которые к нему привязаны.
+              const catsSelect = document.querySelector('select[name="{{ form.categories.name }}"]');
+              if (catsSelect) {
+                const catIds = SECTION_CATEGORIES_MAP[id] || [];
+                if (opt.selected) {
+                  catIds.forEach(function (cid) {
+                    const copt = Array.from(catsSelect.options).find(o => o.value === cid);
+                    if (copt) copt.selected = true;
+                  });
+                } else {
+                  // При выключении раздела — снимаем все точечные услуги этого раздела.
+                  catIds.forEach(function (cid) {
+                    const copt = Array.from(catsSelect.options).find(o => o.value === cid);
+                    if (copt) copt.selected = false;
+                  });
+                }
+                catsSelect.dispatchEvent(new Event('change', { bubbles: true }));
+              }
+            });
+          });
+        }
+
+        const categoriesSelect = document.querySelector('select[name="{{ form.categories.name }}"]');
+        setupToggleSelect(categoriesSelect);
+        setupSectionButtons();
+
+        // Если выбрали услугу (категорию) — автоматически активируем её раздел.
+        if (categoriesSelect) {
+          categoriesSelect.addEventListener('change', function () {
+            const selected = Array.from(categoriesSelect.options).filter(o => o.selected).map(o => o.value);
+            const secSelect = document.getElementById('{{ form.service_sections.id_for_label }}') || document.querySelector('select[name="{{ form.service_sections.name }}"]');
+            if (!secSelect) return;
+            const btnById = {};
+            document.querySelectorAll('[data-section-btn]').forEach(b => { btnById[b.getAttribute('data-section-id')] = b; });
+            selected.forEach(function (cid) {
+              const sid = CATEGORY_SECTION_MAP[cid];
+              if (!sid) return;
+              const sopt = Array.from(secSelect.options).find(o => o.value === sid);
+              if (sopt && !sopt.selected) {
+                sopt.selected = true;
+                const btn = btnById[sid];
+                if (btn) {
+                  btn.classList.add('btn-primary');
+                  btn.classList.remove('btn-outline-secondary');
+                }
+              }
+            });
+          });
+        }
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+      } else {
+        init();
+      }
+    })();
+  </script>
+{% endblock %}

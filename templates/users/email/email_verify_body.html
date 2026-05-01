@@ -1,0 +1,10 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head><meta charset="utf-8"><title>Подтверждение email — МаБибип</title></head>
+<body style="font-family: system-ui, sans-serif; line-height: 1.5; color: #222;">
+  <p>Здравствуйте{% if user.phone %}, пользователь <strong>{{ user.phone }}</strong>{% endif %}.</p>
+  <p>Подтвердите адрес электронной почты для сервиса «<strong>МаБибип</strong>»:</p>
+  <p><a href="{{ verify_url }}">{{ verify_url }}</a></p>
+  <p style="font-size: 0.9em; color: #666;">Если вы не регистрировались на МаБибип, проигнорируйте это письмо.</p>
+</body>
+</html>

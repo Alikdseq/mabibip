@@ -1,0 +1,107 @@
+{% extends "sto_owner/base.html" %}
+{% block title %}Мастера — МаБибип{% endblock %}
+{% block sto_owner_main %}
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'sto_owner:dashboard' %}">Кабинет</a></li>
+      <li class="breadcrumb-item active" aria-current="page">Мастера</li>
+    </ol>
+  </nav>
+
+  <div class="d-flex align-items-start justify-content-between gap-3 mb-3">
+    <div>
+      <h1 class="h4 mb-1">Мастера автосервиса</h1>
+      <p class="small text-muted mb-0">
+        Каждый мастер — отдельная карточка в каталоге, но привязана к вашему сервису.
+      </p>
+    </div>
+    <div class="flex-shrink-0">
+      <a class="btn btn-primary" href="{{ master_add_url }}">Добавить мастера</a>
+    </div>
+  </div>
+
+  {% if not stations %}
+    <div class="alert alert-warning">
+      Сначала должен быть создан автосервис (роль «Автосервис»). Если вы регистрировались как «Мастер», этот раздел не нужен.
+    </div>
+  {% endif %}
+
+  <div class="list-group">
+    {% for row in master_rows %}
+      {% with m=row.master f=row.form %}
+      <div class="list-group-item">
+        <div class="d-flex justify-content-between align-items-start gap-3">
+          <div class="min-w-0">
+            <div class="fw-semibold text-truncate">{{ m.name }}</div>
+            <div class="small text-muted mt-1">
+              От сервиса: <strong>{{ m.parent_station.name }}</strong>
+            </div>
+            {% if m.tagline %}
+              <div class="small text-body-secondary mt-1">{{ m.tagline }}</div>
+            {% endif %}
+          </div>
+          <div class="flex-shrink-0 d-flex flex-wrap gap-2 justify-content-end">
+            <button class="btn btn-outline-dark btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#pm-master-quick-{{ m.pk }}" aria-expanded="false">
+              Быстро
+            </button>
+            <form method="post" action="{% url master_inherit_url_name m.pk %}" class="d-inline">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-outline-success btn-sm" onclick="return confirm('Скопировать адрес/контакты/марки от сервиса в мастера?');">
+                Наследовать от сервиса
+              </button>
+            </form>
+            <a class="btn btn-outline-primary btn-sm" href="{% url 'sto_owner:station_profile' m.slug %}">Профиль и услуги</a>
+            <a class="btn btn-outline-secondary btn-sm" href="{% url 'sto_owner:station_brands' m.slug %}">Марки</a>
+            <form method="post" action="{% url 'sto_owner:master_delete' m.pk %}" class="d-inline">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('Удалить мастера?');">
+                Удалить
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <div class="collapse mt-3" id="pm-master-quick-{{ m.pk }}">
+          <div class="border rounded p-3 bg-light">
+            <div class="fw-semibold mb-2">Быстрое редактирование</div>
+            <form method="post" action="{% url master_update_url_name m.pk %}" enctype="multipart/form-data" class="row g-2">
+              {% csrf_token %}
+              <div class="col-md-6">
+                <label class="form-label">Имя</label>
+                {{ f.name }}
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Слоган</label>
+                {{ f.tagline }}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Опыт (лет)</label>
+                {{ f.experience_years }}
+              </div>
+              <div class="col-md-8">
+                <label class="form-label">Аватар</label>
+                {{ f.avatar }}
+              </div>
+              <div class="col-12">
+                <label class="form-label">О мастере</label>
+                {{ f.master_bio }}
+              </div>
+              <div class="col-12 d-flex gap-2">
+                <button class="btn btn-primary btn-sm" type="submit">Сохранить</button>
+                <button class="btn btn-outline-secondary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#pm-master-quick-{{ m.pk }}">
+                  Закрыть
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+      {% endwith %}
+    {% empty %}
+      <div class="alert alert-light border text-muted mb-0">
+        Мастера ещё не добавлены.
+      </div>
+    {% endfor %}
+  </div>
+{% endblock %}
+

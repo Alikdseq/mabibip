@@ -1,0 +1,120 @@
+{% extends "erp/_layout.html" %}
+
+{% block erp_title %}ERP → Отчёты → Платежи/подписки{% endblock %}
+{% block erp_subtitle %}Фильтры + XLSX (до 500 строк на экран){% endblock %}
+
+{% block erp_content %}
+  <div class="card mb-4">
+    <div class="card-body">
+      <form method="get" class="row g-2 align-items-end">
+        <div class="col-md-2">
+          <label class="form-label small text-muted" for="start">Начало</label>
+          <input id="start" name="start" type="date" class="form-control" value="{{ start|date:'Y-m-d' }}"/>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small text-muted" for="end">Конец</label>
+          <input id="end" name="end" type="date" class="form-control" value="{{ end|date:'Y-m-d' }}"/>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small text-muted" for="status">Статус платежа</label>
+          <select id="status" name="status" class="form-select">
+            <option value="">Все</option>
+            {% for v, label in status_choices %}
+              <option value="{{ v }}" {% if status == v %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small text-muted" for="provider">Провайдер</label>
+          <input id="provider" name="provider" class="form-control" placeholder="yookassa" value="{{ provider }}"/>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small text-muted" for="currency">Валюта</label>
+          <input id="currency" name="currency" class="form-control" placeholder="RUB" value="{{ currency }}"/>
+        </div>
+        <div class="col-md-2 d-flex gap-2 justify-content-end">
+          <button type="submit" class="btn btn-primary">Показать</button>
+          <a class="btn btn-outline-primary"
+             href="{% url 'erp:billing_xlsx' %}?start={{ start|date:'Y-m-d' }}&end={{ end|date:'Y-m-d' }}&status={{ status }}&provider={{ provider }}&currency={{ currency }}&sub_status={{ sub_status }}">XLSX</a>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small text-muted" for="sub_status">Статус подписки</label>
+          <select id="sub_status" name="sub_status" class="form-select">
+            <option value="">Все</option>
+            {% for v, label in sub_status_choices %}
+              <option value="{{ v }}" {% if sub_status == v %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-9 d-flex align-items-end">
+          <div class="text-muted small">Выручка (успешно) за период: <strong>{{ revenue }} ₽</strong></div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card mb-4">
+    <div class="card-header fw-semibold">Платежи (PaymentIntent)</div>
+    <div class="card-body p-0 table-responsive">
+      <table class="table table-striped mb-0">
+        <thead>
+          <tr>
+            <th>Дата</th>
+            <th>СТО</th>
+            <th>Провайдер</th>
+            <th>Статус</th>
+            <th class="text-end">Сумма</th>
+            <th>Валюта</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for it in intents %}
+            <tr>
+              <td class="small text-nowrap">{{ it.created_at|date:"d.m.Y H:i" }}</td>
+              <td class="small">{{ it.subscription.station.name|default:"—" }}</td>
+              <td class="small">{{ it.provider }}</td>
+              <td class="small"><code>{{ it.status }}</code></td>
+              <td class="small text-end">{{ it.amount }}</td>
+              <td class="small">{{ it.currency }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="6" class="text-muted p-3">Нет платежей за период.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header fw-semibold">Подписки (Subscription)</div>
+    <div class="card-body p-0 table-responsive">
+      <table class="table table-striped mb-0">
+        <thead>
+          <tr>
+            <th>СТО</th>
+            <th>Провайдер</th>
+            <th>Статус</th>
+            <th>Период до</th>
+            <th>След. списание</th>
+            <th class="text-end">Ошибок подряд</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in subs %}
+            <tr>
+              <td class="small">{{ s.station.name }}</td>
+              <td class="small">{{ s.provider }}</td>
+              <td class="small"><code>{{ s.status }}</code></td>
+              <td class="small">{{ s.current_period_end|default:"—" }}</td>
+              <td class="small">{{ s.next_charge_at|date:"d.m.Y H:i"|default:"—" }}</td>
+              <td class="small text-end">{{ s.failed_attempts }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="6" class="text-muted p-3">Нет подписок.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endblock %}
+

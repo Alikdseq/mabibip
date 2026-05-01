@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}{{ version.title }} — МаБибип{% endblock %}
+{% block content %}
+  <article class="legal-doc col-lg-10">
+    <p class="text-muted small">Версия {{ version.version_label }}, вступила в силу: {{ version.effective_at }}</p>
+    <div class="legal-doc-body">
+      {{ html_content|safe }}
+    </div>
+  </article>
+{% endblock %}

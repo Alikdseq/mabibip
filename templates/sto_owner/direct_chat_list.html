@@ -1,0 +1,117 @@
+{% extends "sto_owner/base.html" %}
+{% block title %}Чаты с клиентами — МаБибип{% endblock %}
+{% block sto_owner_main %}
+  <h1 class="h4 mb-3">Чаты с клиентами</h1>
+  <p class="small text-muted mb-4">
+    Переписки начинаются, когда клиент открывает чат на странице вашей станции в каталоге.
+  </p>
+
+  <section class="card border-0 shadow-sm mb-4">
+    <div class="card-body py-3">
+      <form method="post" action="{% url 'sto_owner:direct_chat_settings' %}" class="d-flex flex-wrap align-items-center gap-3 mb-0">
+        {% csrf_token %}
+        <div class="form-check mb-0">
+          <input class="form-check-input" type="checkbox" name="sto_chat_auto_prune_inactive" id="pruneToggle"
+                 {% if prune_enabled %}checked{% endif %}>
+          <label class="form-check-label small" for="pruneToggle">
+            Автоматически удалять переписки без активности более 3 суток
+          </label>
+        </div>
+        <button type="submit" class="btn btn-outline-secondary btn-sm">Сохранить настройку</button>
+      </form>
+    </div>
+  </section>
+
+  {% if threads %}
+    <form method="post" action="{% url 'sto_owner:direct_chat_bulk_delete' %}" id="bulk-chat-form" class="d-none">
+      {% csrf_token %}
+    </form>
+    <button type="submit" class="btn btn-outline-danger btn-sm mb-3" form="bulk-chat-form"
+            onclick="return confirm('Удалить выбранные переписки без восстановления?');">
+      Удалить выбранные
+    </button>
+    <div class="table-responsive">
+      <table class="table table-sm align-middle">
+        <thead>
+          <tr>
+            <th style="width:2rem;"><input type="checkbox" id="chk-all" title="Выбрать все" form="bulk-chat-form"></th>
+            <th>Станция</th>
+            <th>Клиент</th>
+            <th>Последнее сообщение</th>
+            <th>Ответ</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for t in threads %}
+            <tr>
+              <td><input type="checkbox" name="thread_ids" value="{{ t.pk }}" class="thread-chk" form="bulk-chat-form"></td>
+              <td>{{ t.station.name }}</td>
+              <td class="font-monospace small">{{ t.client.phone }}</td>
+              <td class="small text-muted">
+                {% if t.last_message_at %}{{ t.last_message_at|date:"d.m.Y H:i" }}{% else %}—{% endif %}
+              </td>
+              <td style="min-width: 260px;">
+                <form method="post" action="{% url 'sto_owner:direct_chat_reply' %}" class="sto-owner-direct-reply-form d-flex gap-1 align-items-start">
+                  {% csrf_token %}
+                  <input type="hidden" name="thread_id" value="{{ t.pk }}">
+                  <textarea name="text" class="form-control form-control-sm" rows="2" maxlength="2000" placeholder="Ответ…" required></textarea>
+                  <button type="submit" class="btn btn-primary btn-sm align-self-end sto-owner-reply-submit">Отправить</button>
+                </form>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <script>
+      document.getElementById('chk-all')?.addEventListener('change', function () {
+        var on = document.getElementById('chk-all').checked;
+        document.querySelectorAll('.thread-chk').forEach(function (c) { c.checked = on; });
+      });
+
+      function getCookie(name) {
+        var v = document.cookie.match('(^|;) ?' + name + '=([^;]*)(;|$)');
+        return v ? decodeURIComponent(v[2]) : '';
+      }
+      document.querySelectorAll('form.sto-owner-direct-reply-form').forEach(function (form) {
+        form.addEventListener('submit', function (ev) {
+          if (!window.fetch) return;
+          ev.preventDefault();
+          var btn = form.querySelector('.sto-owner-reply-submit');
+          var ta = form.querySelector('textarea[name=\"text\"]');
+          var fd = new FormData(form);
+          var body = (fd.get('text') || '').toString().trim();
+          if (!body) return;
+          if (btn) btn.disabled = true;
+          fetch(form.action, {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: {
+              'Accept': 'application/json',
+              'X-Requested-With': 'XMLHttpRequest',
+              'X-CSRFToken': fd.get('csrfmiddlewaretoken') || getCookie('csrftoken') || ''
+            },
+            body: fd
+          })
+            .then(function (r) {
+              return r.json().then(function (data) {
+                if (!r.ok) throw new Error((data && data.error) || r.statusText);
+                return data;
+              });
+            })
+            .then(function (data) {
+              if (data.ok) {
+                if (ta) ta.value = '';
+              }
+            })
+            .catch(function () { /* показать ошибку можно при необходимости */ })
+            .finally(function () {
+              if (btn) btn.disabled = false;
+            });
+        });
+      });
+    </script>
+  {% else %}
+    <p class="text-muted small">Пока нет сообщений от клиентов.</p>
+  {% endif %}
+{% endblock %}

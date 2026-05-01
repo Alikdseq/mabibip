@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% block title %}Автомагазины и разборки — МаБибип{% endblock %}
+
+{% block content %}
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'home' %}">Главная</a></li>
+      <li class="breadcrumb-item active" aria-current="page">Автомагазины</li>
+    </ol>
+  </nav>
+
+  <div class="d-flex flex-column flex-md-row align-items-start justify-content-between gap-2 mb-3">
+    <div class="min-w-0">
+      <h1 class="h3 mb-1">Автомагазины / Разборки / Автосалоны</h1>
+      <div class="small text-muted">Выберите тип и найдите продавца по городу или названию.</div>
+    </div>
+  </div>
+
+  <div class="card mb-3 border-0 shadow-sm">
+    <div class="card-body">
+      <div class="d-flex flex-wrap gap-2 mb-3" role="tablist" aria-label="Тип продавца">
+        <a class="btn btn-sm {% if kind == 'shop' %}btn-primary{% else %}btn-outline-primary{% endif %}"
+           href="{% url 'classifieds:shops_list' %}?kind=shop{% if q %}&q={{ q|urlencode }}{% endif %}{% if city %}&city={{ city|urlencode }}{% endif %}">Автомагазины</a>
+        <a class="btn btn-sm {% if kind == 'dismantle' %}btn-primary{% else %}btn-outline-primary{% endif %}"
+           href="{% url 'classifieds:shops_list' %}?kind=dismantle{% if q %}&q={{ q|urlencode }}{% endif %}{% if city %}&city={{ city|urlencode }}{% endif %}">Разборки</a>
+        <a class="btn btn-sm {% if kind == 'dealer' %}btn-primary{% else %}btn-outline-primary{% endif %}"
+           href="{% url 'classifieds:shops_list' %}?kind=dealer{% if q %}&q={{ q|urlencode }}{% endif %}{% if city %}&city={{ city|urlencode }}{% endif %}">Автосалоны</a>
+      </div>
+
+      <form method="get" class="row g-2 align-items-end">
+        <input type="hidden" name="kind" value="{{ kind }}"/>
+        <div class="col-md-5">
+          <label class="form-label small text-muted" for="q">Поиск</label>
+          <input id="q" name="q" class="form-control" value="{{ q }}" placeholder="Название продавца…"/>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label small text-muted" for="city">Город</label>
+          <input id="city" name="city" class="form-control" value="{{ city }}" placeholder="Например, Алматы"/>
+        </div>
+        <div class="col-md-3 d-flex gap-2 justify-content-end">
+          <button type="submit" class="btn btn-primary w-100">Показать</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  {% if shops %}
+    <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-3">
+      {% for s in shops %}
+        <div class="col d-flex">
+          {% include "classifieds/partials/shop_card.html" with shop=s only %}
+        </div>
+      {% endfor %}
+    </div>
+
+    {% if is_paginated %}
+      <nav class="mt-4" aria-label="Пагинация">
+        <ul class="pagination justify-content-center flex-wrap">
+          {% if page_obj.has_previous %}
+            <li class="page-item">
+              <a class="page-link" href="?kind={{ kind }}&q={{ q|urlencode }}&city={{ city|urlencode }}&page={{ page_obj.previous_page_number }}">←</a>
+            </li>
+          {% else %}
+            <li class="page-item disabled"><span class="page-link">←</span></li>
+          {% endif %}
+          <li class="page-item disabled">
+            <span class="page-link">Стр. {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+          </li>
+          {% if page_obj.has_next %}
+            <li class="page-item">
+              <a class="page-link" href="?kind={{ kind }}&q={{ q|urlencode }}&city={{ city|urlencode }}&page={{ page_obj.next_page_number }}">→</a>
+            </li>
+          {% else %}
+            <li class="page-item disabled"><span class="page-link">→</span></li>
+          {% endif %}
+        </ul>
+      </nav>
+    {% endif %}
+  {% else %}
+    <div class="alert alert-light border text-muted">Пока нет продавцов в этом разделе.</div>
+  {% endif %}
+{% endblock %}
+

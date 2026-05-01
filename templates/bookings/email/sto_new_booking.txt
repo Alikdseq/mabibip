@@ -1,0 +1,11 @@
+Новая заявка №{{ booking.id }} — {{ station.name }}
+
+Клиент: {{ booking.client.email }}
+Телефон: {{ booking.contact_phone }}
+Авто: {{ booking.car_info }}
+Описание: {{ booking.description }}
+
+Дата и время: {{ booking.slot.date }} {{ booking.slot.start_time }}–{{ booking.slot.end_time }}
+Пост: {{ booking.slot.bay.name }}
+
+Откройте личный кабинет: {{ lk_url }}

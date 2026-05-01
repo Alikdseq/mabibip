@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+{% block title %}Объявление — МаБибип{% endblock %}
+{% block content %}
+  {% include "users/cabinet/_subnav.html" %}
+  <h1 class="h4 mb-3">{% if object %}Редактировать{% else %}Новое объявление{% endif %}</h1>
+  <form method="post" enctype="multipart/form-data" class="col-lg-8">
+    {% csrf_token %}
+    {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+
+    <div class="mb-3">
+      <label class="form-label">Тип</label>
+      {{ form.kind }}
+      {% if form.kind.errors %}<div class="invalid-feedback d-block">{{ form.kind.errors|join:", " }}</div>{% endif %}
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Заголовок</label>
+      {{ form.title }}
+    </div>
+    <div class="row g-2">
+      <div class="col-md-4">
+        <label class="form-label">Цена</label>
+        {{ form.price }}
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Город</label>
+        {{ form.city_label }}
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Опубликовано</label>
+        <div class="form-check mt-2">{{ form.is_published }} <span class="small text-muted">Показывать</span></div>
+      </div>
+    </div>
+
+    <div class="mb-3 mt-3">
+      <label class="form-label">Описание</label>
+      {{ form.description }}
+    </div>
+
+    <div class="border rounded p-3 mb-3">
+      <div class="fw-semibold mb-2">Фото</div>
+      {% if object and object.photos.all %}
+        <div class="d-flex flex-wrap gap-2 mb-2">
+          {% for ph in object.photos.all %}
+            <div class="border rounded p-1 bg-white">
+              <a href="{{ ph.image.url }}" target="_blank" rel="noopener">
+                <img src="{{ ph.image.url }}" alt="Фото" style="width: 96px; height: 96px; object-fit: cover; display:block;">
+              </a>
+              <button type="submit"
+                      class="btn btn-outline-danger btn-sm w-100 mt-1"
+                      formaction="{% url 'classifieds:ad_photo_delete' ph.pk %}"
+                      formmethod="post">Удалить</button>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+      <label class="form-label">Загрузить фото</label>
+      {{ form.photos }}
+      {% if form.photos.help_text %}<div class="form-text">{{ form.photos.help_text }}</div>{% endif %}
+    </div>
+
+    <div id="pm-ad-part-block" class="border rounded p-3 mb-3 {% if form.kind.value == 'car' %}d-none{% endif %}">
+      <div class="fw-semibold mb-2">Запчасть</div>
+      <div class="row g-2">
+        <div class="col-md-6">
+          <label class="form-label">Раздел</label>
+          {{ form.part_category }}
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Марка авто (опционально)</label>
+          {{ form.part_brand }}
+        </div>
+      </div>
+      <div class="mt-2">
+        <label class="form-label">Состояние</label>
+        {{ form.condition }}
+      </div>
+    </div>
+
+    <div id="pm-ad-car-block" class="border rounded p-3 mb-4 {% if form.kind.value != 'car' %}d-none{% endif %}">
+      <div class="fw-semibold mb-2">Автомобиль</div>
+      <p class="small text-muted">Характеристики необязательны, но помогают покупателю и фильтрам каталога.</p>
+      <div class="row g-2">
+        <div class="col-md-6">
+          <label class="form-label">Марка</label>
+          {{ form.car_brand }}
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Модель</label>
+          {{ form.car_model }}
+        </div>
+      </div>
+      <div class="row g-2 mt-1">
+        <div class="col-md-4">
+          <label class="form-label">Год</label>
+          {{ form.car_year }}
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Пробег, км</label>
+          {{ form.car_mileage_km }}
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Поколение</label>
+          {{ form.car_generation }}
+        </div>
+      </div>
+      <div class="row g-2 mt-1">
+        <div class="col-md-4">
+          <label class="form-label">Объём двигателя, л</label>
+          {{ form.car_engine_l }}
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Мощность, л.с.</label>
+          {{ form.car_power_hp }}
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Коробка</label>
+          {{ form.car_transmission }}
+        </div>
+      </div>
+      <div class="row g-2 mt-1">
+        <div class="col-md-4">
+          <label class="form-label">Топливо</label>
+          {{ form.car_fuel }}
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Привод</label>
+          {{ form.car_drive }}
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Кузов</label>
+          {{ form.car_body_type }}
+        </div>
+      </div>
+      <div class="row g-2 mt-1">
+        <div class="col-md-4">
+          <label class="form-label">Цвет</label>
+          {{ form.car_color }}
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Руль</label>
+          {{ form.car_steering }}
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Владельцев по ПТС</label>
+          {{ form.car_owners_count }}
+        </div>
+      </div>
+      <div class="row g-2 mt-1">
+        <div class="col-md-6">
+          <label class="form-label">VIN</label>
+          {{ form.car_vin }}
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Не битый</label>
+          {{ form.car_not_crashed }}
+          <div class="form-text">«Неизвестно» — если не хотите указывать.</div>
+        </div>
+      </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Сохранить</button>
+    <a class="btn btn-link" href="{% url 'classifieds:my_ads' %}">Отмена</a>
+  </form>
+
+  <script>
+    (function () {
+      var kind = document.querySelector('select[name="kind"]');
+      var partBlock = document.getElementById('pm-ad-part-block');
+      var carBlock = document.getElementById('pm-ad-car-block');
+      if (!kind || !partBlock || !carBlock) return;
+      function sync() {
+        var v = kind.value || 'part';
+        if (v === 'car') {
+          partBlock.classList.add('d-none');
+          carBlock.classList.remove('d-none');
+        } else {
+          carBlock.classList.add('d-none');
+          partBlock.classList.remove('d-none');
+        }
+      }
+      kind.addEventListener('change', sync);
+      sync();
+    })();
+  </script>
+{% endblock %}
+

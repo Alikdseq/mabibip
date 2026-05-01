@@ -1,0 +1,249 @@
+🚗 LADA
+Современные модели: 4x4 (Niva Legend), Aura, Granta, Granta Cross, Granta Sport, Iskra, Kalina, Kalina Cross, Kalina Sport, Largus, Largus Cross, Niva Travel, Priora, Samara, Vesta, Vesta Cross, Vesta Sport, XRay, XRay Cross.
+
+Классические модели: 2101, 2102, 2103, 2104, 2105, 2106, 2107, 2110, 2111, 2112, 2121 (Нива), 2123, Oka и другие.
+
+🚗 Audi
+A‑серия: A1, A3, A4, A4L, A5, A6, A6L, A7, A8.
+
+Q‑серия: Q2, Q3, Q5, Q7, Q8, Q6 e-tron (электрический).
+
+Спорткары и купе: TT, R8.
+
+Универсалы и allroad: A4 Avant, A6 Avant, A4 allroad, A6 allroad.
+
+Заряженные серии: S-серия (S3, S4, S5...), RS-серия (RS3, RS5, RS7...).
+
+Электрические модели: Q4 e-tron, Q5 e-tron, A6 e-tron, e-tron GT.
+
+🚗 BMW
+Серия 1: 1 серия (хэтчбек).
+
+Серия 2: 2 серия (купе, кабриолет, Gran Coupe).
+
+Серия 3: 3 серия (седан, универсал).
+
+Серия 4: 4 серия (купе, кабриолет, Gran Coupe).
+
+Серия 5: 5 серия (седан).
+
+Серия 6: 6 серия Gran Turismo.
+
+Серия 7: 7 серия (седан, Long).
+
+Серия 8: 8 серия (купе, кабриолет, Gran Coupe).
+
+X-серия (кроссоверы): X1, X2, X3, X4, X5, X6, X7.
+
+i-серия (электрические): iX3, i4, i5, i7, iX.
+
+M-серия (спортивные): M2, M3, M4, M5, M8, X5 M, X6 M, X7 M и другие.
+
+Z-серия: Z4 (родстер).
+
+🚗 Ford
+Легковые: Focus, Mondeo, Fiesta, Mustang, Fusion, GT, Model T.
+
+Кроссоверы и внедорожники: Kuga, Explorer, Edge, EcoSport, Bronco, Expedition, Maverick, Puma.
+
+Пикапы: F-150, F-250, F-350, Ranger.
+
+Коммерческие: Transit, Transit Connect, Transit Custom, Tourneo.
+
+Электрические: Mustang Mach-E, F-150 Lightning, E-Transit.
+
+🚗 Hyundai
+A-серия: Accent, Atos, Amica, Avante.
+
+C-серия: Click, Coupe, Creta, Custo.
+
+E-серия: Elantra, Entourage, Equus, Excel.
+
+G-серия: Galloper, Genesis, Genesis Coupe, Getz, Grandeur.
+
+i-серия: i10, i20, i30, i40, i800, iLoad, Ioniq, Ioniq 5, Ioniq 6, Ioniq 9.
+
+K-серия: Kona.
+
+L-серия: Lantra, Lavita.
+
+M-серия: Marcia, Matrix.
+
+N-серия: Nexo.
+
+P-серия: Palisade, Pony, Porter, Presto.
+
+S-серия: S-Coupe, Santa Cruz, Santa Fe, Sonata, Sonica, Starex, Staria, Stargazer, Stellar.
+
+T-серия: Terracan, Tiburon, Trajet, Tucson, Tuscani.
+
+V-серия: Veloster, Venue, Veracruz, Verna.
+
+X-серия: XG.
+
+🚗 KIA
+Легковые и хэтчбеки: Cee'd (Ceed), Cerato, K5 (Optima), K9 (Quoris), K900, Cadenza, Rio, Picanto, Rio X-Line, Rio X, Shuma, Mentor, Avella.
+
+Кроссоверы и внедорожники: Seltos, Sportage, Sorento, Soul, Stonic, Niro, Telluride, EV6, EV5, EV9, KX5, Mohave, Borrego.
+
+Минивэны и коммерческие: Carnival (Sedona), Carens, Carstar, Bongo, Pregio.
+
+🚗 Mercedes-Benz
+A‑класс (Компактный): A-Класс.
+
+B‑класс (Компактвэн): B-Класс.
+
+C‑класс (Средний): C-Класс, C-Класс T-Modell.
+
+E‑класс (Бизнес): E-Класс.
+
+S‑класс (Представительский): S-Класс.
+
+CL‑класс (Купе): CL-Класс, CLA-Класс, CLE, CLS-Класс.
+
+G‑класс (Внедорожник): G-Класс, GLA-Класс, GLB-Класс, GLC-Класс, GLE-Класс, GLK-Класс, GLS-Класс.
+
+SL, SLC, SLK (Родстеры/Кабриолеты).
+
+EQ-серия (Электромобили): EQA, EQB, EQC, EQE, EQS, EQS SUV, EQV.
+
+Спортивные: AMG GT, SLS AMG, SLR McLaren.
+
+Maybach: S-Класс, GLS-Класс.
+
+🚗 Nissan
+Легковые: Almera, Micra, Note, Pulsar, Sunny, Sentra, Sylphy, Tiida, Versa, Altima, Maxima, Teana, Skyline, Leaf (электромобиль).
+
+Кроссоверы и внедорожники: Juke, Qashqai, Kicks, Rogue, X-Trail, Murano, Pathfinder, Patrol, Armada, Terrano.
+
+Спорткары и купе: GT-R, 370Z, Fairlady Z.
+
+Пикапы: Navara, Frontier, Titan.
+
+Минивэны: Note, Elgrand, Serena, Quest, Prairie, Vanette.
+
+🚗 Toyota
+Легковые: Camry, Corolla, Prius, Yaris, Aygo, Avensis, Crown, Mirai, Supra, GR86.
+
+Кроссоверы и внедорожники: RAV4, Highlander, Land Cruiser (Prado, 300), 4Runner, Sequoia, bZ4X (электрический), C-HR.
+
+Пикапы: Hilux, Tacoma, Tundra.
+
+Минивэны: Sienna, Alphard, Vellfire, Noah, Voxy, Previa.
+
+Купе: GR Supra, GR86.
+
+🚗 Volkswagen
+Хэтчбеки: Golf, Polo, up!, ID.3 (электрический).
+
+Седаны и лифтбеки: Passat, Jetta, Arteon, Phaeton, ID.7 (электрический).
+
+Кроссоверы и внедорожники: Tiguan, Touareg, T-Roc, T-Cross, Taos, ID.4, ID.5 (электрические), Atlas.
+
+Минивэны: Touran, Sharan, Multivan, ID. Buzz (электрический).
+
+Коммерческие: Caddy, Transporter, Crafter, Amarok.
+
+Купе и кабриолеты: Beetle, Scirocco, Eos.
+
+🚗 Renault
+Легковые: Clio, Megane, Fluence, Talisman, Logan, Symbol, Sandero, Twingo, Zoe (электрический).
+
+Кроссоверы и внедорожники: Captur, Kadjar, Koleos, Austral, Arkana, Duster, Kiger, Kwid.
+
+Минивэны: Scenic, Espace, Grand Scenic, Modus.
+
+Спорткары: Alpine A110.
+
+Коммерческие: Kangoo, Trafic, Master, Express.
+
+🚗 Škoda
+Легковые: Fabia, Scala, Octavia, Superb, Rapid.
+
+Кроссоверы и внедорожники: Kamiq, Karoq, Kodiaq, Kushaq, Yeti.
+
+Электрические: Enyaq iV, Elroq.
+
+Минивэны: Roomster.
+
+🚗 Chevrolet
+Легковые и хэтчбеки: Spark, Aveo, Sonic, Onix, Cobalt, Cruze, Malibu, Impala, SS.
+
+Кроссоверы и внедорожники: Tracker, Trax, Equinox, Blazer, Captiva, TrailBlazer, Traverse, Tahoe, Suburban, Niva.
+
+Спорткары и купе: Camaro, Corvette, Corvette Stingray, Bolt EUV.
+
+Пикапы: Silverado, Colorado, S10, Montana.
+
+Электрические: Bolt EV, Bolt EUV, Blazer EV, Equinox EV, Silverado EV.
+
+🚗 Mazda
+Легковые: Mazda2, Mazda3, Mazda6, Mazda 323, Mazda 626.
+
+Кроссоверы и внедорожники: CX-3, CX-5, CX-30, CX-50, CX-60, CX-70, CX-80, CX-90.
+
+Спорткары и купе: MX-5 (Miata), RX-7, RX-8.
+
+Минивэны: Mazda5, MPV.
+
+Пикапы: BT-50.
+
+🚗 Mitsubishi
+Легковые: Lancer, Colt, Mirage, Attrage, Galant, Sigma.
+
+Кроссоверы и внедорожники: ASX, Eclipse Cross, Outlander, Pajero, Pajero Sport, Montero, RVR, Airtrek.
+
+Пикапы: L200, Triton, Strada, Mighty Max.
+
+Электрические: i-MiEV, Minicab MiEV.
+
+Минивэны: Delica, Grandis, Space Gear, Space Wagon.
+
+🚗 Opel
+Легковые и хэтчбеки: Corsa, Adam, Astra, Insignia.
+
+Кроссоверы и внедорожники: Mokka, Crossland X, Grandland X, Antara.
+
+Минивэны: Zafira, Zafira Life, Meriva, Combo.
+
+Электрические: Ampera-e, Corsa-e, Mokka-e, Zafira-e Life, Combo-e Life.
+
+Спорткары: Speedster, GT.
+
+🚗 Peugeot
+Легковые: 208, 301, 308, 408, 508, 108, 107, 206.
+
+Кроссоверы и внедорожники: 2008, 3008, 4007, 4008, 5008.
+
+Коммерческие: Partner, Expert, Boxer, Traveller, Rifter.
+
+Электрические: e-208, e-2008, e-308, e-408, e-Rifter, e-Traveller, e-Partner, e-Expert, e-Boxer, iOn.
+
+Спорткары: RCZ, 308 GTi.
+
+🚗 Honda
+Легковые: Civic, Accord, Insight, Jazz, City, Fit, Clarity, e.
+
+Кроссоверы и внедорожники: CR-V, HR-V, ZR-V, Pilot, Passport, Prologue (электрический).
+
+Минивэны: Odyssey, Stepwgn, Freed, Elysion.
+
+Пикапы: Ridgeline.
+
+🚗 Lexus
+Седаны и купе: LS, ES, GS, IS, RC, LC.
+
+Кроссоверы и внедорожники: LX, GX, RX, NX, UX, TX, RZ (электрический).
+
+Спорткары: LFA, RC F, GS F.
+
+Хэтчбеки: CT.
+
+🚗 Geely
+Седаны: Emgrand, Preface (Xingrui), Binray (Binrui), Otaka.
+
+Кроссоверы и внедорожники: Atlas, Atlas Pro, Coolray, Tugella, Monjaro (Tugella L), Starray (Boyue L), Azkarra (Boyue), ICON, Haoyue, Okavango, Pro, Haoyue L, Galaxy series, Geometry series.
+
+Минивэны: Jiaji.
+
+Электрические: Panda, Geometry C, Geometry A, EX5, ZEEKR 001.

@@ -1,0 +1,46 @@
+{# Поднавигация ЛК клиента #}
+{% load booking_chat_tags %}
+{% load support_tags %}
+{% load static %}
+{% client_booking_unread_count user as booking_chat_unread %}
+{% support_user_unread_count user as support_unread %}
+<ul class="nav nav-pills flex-nowrap flex-md-wrap gap-1 mb-4 small overflow-auto" style="scrollbar-width: thin;">
+  <li class="nav-item">
+    <a class="nav-link text-nowrap {% if cabinet_section == 'hub' %}active{% endif %}" href="{% url 'cabinet:index' %}">Обзор</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link text-nowrap {% if cabinet_section == 'bookings' %}active{% endif %}" href="{% url 'cabinet:bookings' %}">Мои записи</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link text-nowrap {% if cabinet_section == 'profile' %}active{% endif %}" href="{% url 'cabinet:profile' %}">Профиль</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link text-nowrap {% if cabinet_section == 'cars' %}active{% endif %}" href="{% url 'cabinet:cars' %}">Мои авто</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link text-nowrap {% if cabinet_section == 'favorites' %}active{% endif %}" href="{% url 'cabinet:favorites' %}">Избранные</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link text-nowrap {% if cabinet_section == 'reviews' %}active{% endif %}" href="{% url 'cabinet:reviews' %}">Мои отзывы</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link text-nowrap d-flex align-items-center gap-2 {% if cabinet_section == 'support' %}active{% endif %}" href="{% url 'cabinet:support' %}">
+      <span class="flex-grow-1">Поддержка</span>
+      <span class="badge rounded-pill bg-danger {% if not support_unread %}d-none{% endif %}"
+            aria-live="polite">{{ support_unread }}</span>
+    </a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link text-nowrap {% if cabinet_section == 'ads' %}active{% endif %}" href="{% url 'classifieds:my_ads' %}">Объявления</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link text-nowrap d-flex align-items-center gap-2 {% if cabinet_section == 'chats' %}active{% endif %}" href="{% url 'cabinet:chats' %}">
+      <span class="flex-grow-1">Чаты</span>
+      <span id="cabinet-chat-unread"
+            class="badge rounded-pill bg-danger {% if not booking_chat_unread %}d-none{% endif %}"
+            aria-live="polite">{{ booking_chat_unread }}</span>
+    </a>
+  </li>
+</ul>
+
+<script type="module" src="{% static 'js/pages/cabinet-subnav.js' %}"></script>

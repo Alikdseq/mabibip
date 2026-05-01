@@ -1,0 +1,17 @@
+{% extends "sto_owner/base.html" %}
+{% block title %}Заявка на проверке — МаБибип{% endblock %}
+{% block sto_owner_main %}
+  <h1 class="h4 mb-3">Заявка отправлена на модерацию</h1>
+  <p class="text-muted">
+    Мы проверим данные и свяжемся с вами. После одобрения вы сможете пользоваться полным кабинетом СТО:
+    слоты, заявки, отзывы и подписка.
+  </p>
+  <p class="small text-body-secondary mb-0">
+    Пока заявка на рассмотрении, профиль сервиса в общем каталоге не отображается.
+    Вы можете <a href="{% url 'home' %}">вернуться на главную</a> или
+    <form method="post" action="{% url 'users:logout' %}" class="d-inline">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-link p-0 align-baseline">выйти из аккаунта</button>
+    </form>.
+  </p>
+{% endblock %}

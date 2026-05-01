@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{{ seo_og_title }}{% endblock %}
+{% block content %}
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'home' %}">Главная</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'stations:list' %}">Каталог</a></li>
+      <li class="breadcrumb-item active" aria-current="page">{{ brand.name }}</li>
+    </ol>
+  </nav>
+
+  <header class="mb-4">
+    <h1 class="h2 mb-2">Обслуживание и ремонт {{ brand.name }}</h1>
+    <p class="lead text-muted mb-0">
+      {% if provider_count %}
+        <strong>{{ provider_count }}</strong>
+        {% if provider_count == 1 %}исполнитель{% elif provider_count < 5 %}исполнителя{% else %}исполнителей{% endif %}
+        в каталоге работают с {{ brand.name }} (или со всеми марками). Запись онлайн — без звонков.
+      {% else %}
+        Пока нет исполнителей по этой марке в выбранном городе — откройте
+        <a href="{% url 'stations:list' %}">каталог</a> или смените город.
+      {% endif %}
+    </p>
+  </header>
+
+  <div class="d-flex flex-wrap gap-2 mb-5">
+    <a class="btn btn-primary" href="{{ catalog_href }}">{{ brand.name }} в каталоге</a>
+    {% if MAP_FEATURE_ENABLED %}
+    <a class="btn btn-outline-secondary" href="{% url 'stations:nearby_map' %}">На карте рядом</a>
+    {% endif %}
+  </div>
+
+  {% if top_sections %}
+    <section class="mb-5">
+      <h2 class="h4 mb-3">Разделы услуг по {{ brand.name }}</h2>
+      <div class="row row-cols-2 row-cols-sm-4 g-2 g-md-3">
+        {% for s in top_sections %}
+          <div class="col">
+            <a href="{{ s.href }}" class="text-decoration-none">
+              <div class="card h-100 border shadow-sm hover-shadow transition-all py-3 text-center">
+                <i class="bi {{ s.icon }} fs-3 text-primary mb-2" aria-hidden="true"></i>
+                <div class="small fw-medium text-body px-1">{{ s.name }}</div>
+              </div>
+            </a>
+          </div>
+        {% endfor %}
+      </div>
+      <p class="small text-muted mb-0">Открывается каталог с фильтром по марке {{ brand.name }} и разделу услуг.</p>
+    </section>
+  {% endif %}
+{% endblock %}

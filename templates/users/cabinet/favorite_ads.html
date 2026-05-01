@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Избранные объявления — МаБибип{% endblock %}
+{% block content %}
+  {% include "users/cabinet/_subnav.html" %}
+  <h1 class="h4 mb-3">Избранные объявления</h1>
+
+  {% if favorites %}
+    <div class="d-flex flex-column gap-0">
+      {% for f in favorites %}
+        {% include "classifieds/_ad_card.html" with ad=f.ad ad_call_map=ad_call_map favorite_ad_ids=favorite_ad_ids seller_review_done_owner_ids=seller_review_done_owner_ids %}
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="alert alert-light border text-muted">Пока нет избранных объявлений.</div>
+    <a class="btn btn-outline-primary" href="{% url 'classifieds:ads_list' %}">Перейти к объявлениям</a>
+  {% endif %}
+{% endblock %}
+

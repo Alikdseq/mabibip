@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Чат — МаБибип{% endblock %}
+{% block content %}
+  {% include "users/cabinet/_subnav.html" %}
+
+  <div class="d-flex align-items-start justify-content-between gap-2 mb-3 pm-chat-header">
+    <div class="d-flex align-items-start gap-2 min-w-0 flex-grow-1">
+      {% if peer_avatar_url %}
+        <img src="{{ peer_avatar_url }}" alt="" width="44" height="44" class="rounded-circle flex-shrink-0 object-fit-cover" style="object-fit:cover;">
+      {% endif %}
+      <div class="min-w-0">
+        <h1 class="h5 mb-0 pm-chat-title">
+          Чат по объявлению
+          <a href="{{ ad_detail_url }}" class="text-decoration-none">«{{ thread.ad.title }}»</a>
+        </h1>
+        <div class="small text-muted">{{ other_label }}: {{ other_display }}</div>
+        <div class="small mt-1"><a href="{{ ad_detail_url }}" class="text-decoration-none">Перейти к объявлению</a></div>
+      </div>
+    </div>
+    <div class="pm-chat-actions">
+      {% if calls_enabled and peer_user_id and peer_user_id != request.user.pk %}
+        <button type="button"
+                class="btn btn-outline-primary btn-sm pm-nowrap js-pm-call"
+                data-receiver-user-id="{{ peer_user_id }}"
+                data-context-kind="{{ call_context_kind|default:'ad_direct' }}"
+                data-context-id="{{ call_context_id|default:'' }}"
+                data-ad-id="{{ call_ad_id|default:'' }}">
+          Позвонить
+        </button>
+      {% endif %}
+      <a class="btn btn-outline-secondary btn-sm pm-nowrap" href="{% url 'cabinet:chats' %}?tab=ads">К списку</a>
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-body">
+      <div id="direct-chat-log"
+           class="small border rounded bg-white p-2 mb-3"
+           style="max-height: 55vh; overflow-y: auto;"
+           data-user-pk="{{ request.user.pk }}"
+           aria-live="polite">
+        {% for m in chat_messages %}
+          <div class="mb-2 {% if m.sender_id == request.user.pk %}text-end{% endif %}">
+            <span class="badge {% if m.sender_id == request.user.pk %}text-bg-primary{% else %}text-bg-secondary{% endif %}">
+              {% if m.sender_id == request.user.pk %}Вы{% else %}{{ other_display }}{% endif %}
+            </span>
+            <span class="text-muted">{{ m.created_at|date:"d.m.Y H:i" }}</span>
+            <div class="mt-1">{{ m.text|linebreaksbr }}</div>
+          </div>
+        {% empty %}
+          <p class="text-muted mb-0">Пока нет сообщений — напишите первым.</p>
+        {% endfor %}
+      </div>
+
+      <div id="direct-chat-send-alert" class="alert alert-danger py-2 px-3 small d-none" role="alert"></div>
+      <form id="direct-chat-send-form" method="post" action="{% url 'cabinet:ad_direct_thread_send' thread.pk %}" class="d-flex gap-2 flex-wrap align-items-start">
+        {% csrf_token %}
+        <label class="visually-hidden" for="direct-chat-textarea">Ваше сообщение</label>
+        <textarea id="direct-chat-textarea" name="text" class="form-control form-control-sm flex-grow-1" rows="2" maxlength="2000"
+                  placeholder="Ваше сообщение…" required autocomplete="off"></textarea>
+        <button type="submit" class="btn btn-primary btn-sm" id="direct-chat-submit">Отправить</button>
+      </form>
+    </div>
+  </div>
+
+  {% if chat_ws_path %}
+    <div id="direct-chat-root"
+         data-ws-path="{{ chat_ws_path }}"
+         data-mine-label="Вы"
+         data-other-label="{{ other_display }}"></div>
+  {% endif %}
+{% endblock %}
+
+{% block extra_js %}
+  {{ block.super }}
+  {% if chat_ws_path %}
+    <script type="module" src="{% static 'js/pages/direct-chat.js' %}"></script>
+  {% endif %}
+{% endblock %}
+

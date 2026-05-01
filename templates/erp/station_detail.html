@@ -1,0 +1,307 @@
+{% extends "erp/_layout.html" %}
+
+{% block erp_title %}ERP → СТО #{{ st.id }}{% endblock %}
+{% block erp_subtitle %}Профиль + подписка + записи + отзывы + аудит{% endblock %}
+
+{% block erp_content %}
+  <div class="card mb-4">
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-6">
+          <div class="text-muted small">Название</div>
+          <div class="fs-5 fw-semibold">{{ st.name }}</div>
+          <div class="small text-muted">{{ st.address }}</div>
+        </div>
+        <div class="col-md-3">
+          <div class="text-muted small">Владелец</div>
+          <div class="fw-semibold">{{ st.owner.phone|default:st.owner_id }}</div>
+          <div class="small"><a href="{% url 'erp:user_detail' st.owner_id %}">Открыть пользователя</a></div>
+        </div>
+        <div class="col-md-3">
+          <div class="text-muted small">Статус</div>
+          <div class="fw-semibold">{% if st.is_active %}Активна{% else %}<span class="text-danger">Выключена</span>{% endif %}</div>
+          <div class="small text-muted">Создано: {{ st.created_at|date:"d.m.Y" }}</div>
+        </div>
+        <div class="col-md-4">
+          <div class="text-muted small">Тариф / оплачено до</div>
+          <div class="fw-semibold"><code>{{ st.subscription_plan }}</code> · {{ st.subscription_paid_until|default:"—" }}</div>
+        </div>
+        <div class="col-md-4">
+          <div class="text-muted small">Тип</div>
+          <div class="fw-semibold">{{ st.get_executor_kind_display }}</div>
+        </div>
+        <div class="col-md-4">
+          <div class="text-muted small">Проверен</div>
+          <div class="fw-semibold">{% if st.is_verified %}Да{% else %}Нет{% endif %}</div>
+        </div>
+      </div>
+
+      <div class="d-flex flex-wrap gap-2 mt-3">
+        {% if st.is_active %}
+          <form method="post" action="{% url 'erp:station_deactivate' st.id %}">
+            {% csrf_token %}
+            <button class="btn btn-outline-danger btn-sm" type="submit">Выключить СТО</button>
+          </form>
+        {% else %}
+          <form method="post" action="{% url 'erp:station_activate' st.id %}">
+            {% csrf_token %}
+            <button class="btn btn-outline-success btn-sm" type="submit">Активировать СТО</button>
+          </form>
+        {% endif %}
+
+        <form method="post" action="{% url 'erp:station_set_subscription' st.id %}" class="d-flex flex-wrap gap-2 align-items-end">
+          {% csrf_token %}
+          <div style="min-width: 180px;">
+            <label class="form-label small text-muted">Тариф</label>
+            <select name="plan" class="form-select form-select-sm">
+              {% for v, label in subscription_plan_choices %}
+                <option value="{{ v }}" {% if st.subscription_plan == v %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div style="min-width: 180px;">
+            <label class="form-label small text-muted">Оплачено до</label>
+            <input type="date" name="paid_until" class="form-control form-control-sm" value="{{ st.subscription_paid_until|date:'Y-m-d' }}"/>
+          </div>
+          <button class="btn btn-outline-primary btn-sm" type="submit">Сохранить подписку</button>
+        </form>
+
+        <a class="btn btn-outline-primary btn-sm" href="{% url 'erp:station_bookings_xlsx' st.id %}">Скачать XLSX (записи СТО)</a>
+        <a class="btn btn-outline-primary btn-sm" href="{% url 'erp:station_reviews_xlsx' st.id %}">Скачать XLSX (отзывы/жалобы)</a>
+        <a class="btn btn-outline-primary btn-sm" href="{% url 'erp:station_payments_xlsx' st.id %}">Скачать XLSX (платежи)</a>
+      </div>
+
+      <hr/>
+      <div class="row g-3">
+        <div class="col-md-6">
+          <div class="text-muted small">Категории услуг</div>
+          <div>
+            {% for c in st.categories.all %}
+              <span class="badge text-bg-light border">{{ c.name }}</span>
+            {% empty %}
+              <span class="text-muted">—</span>
+            {% endfor %}
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="text-muted small">Марки авто</div>
+          <div>
+            {% if st.car_brands_all %}<span class="badge text-bg-success">Все марки</span>{% endif %}
+            {% for b in st.car_brands.all %}
+              <span class="badge text-bg-light border">{{ b.name }}</span>
+            {% empty %}
+              {% if not st.car_brands_all %}<span class="text-muted">—</span>{% endif %}
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card mb-4">
+    <div class="card-header fw-semibold">Подписка (billing.Subscription)</div>
+    <div class="card-body">
+      {% if sub %}
+        <div class="row g-3">
+          <div class="col-md-3"><div class="text-muted small">Провайдер</div><div><code>{{ sub.provider }}</code></div></div>
+          <div class="col-md-3"><div class="text-muted small">Статус</div><div><code>{{ sub.status }}</code></div></div>
+          <div class="col-md-3"><div class="text-muted small">Период до</div><div>{{ sub.current_period_end|default:"—" }}</div></div>
+          <div class="col-md-3"><div class="text-muted small">След. списание</div><div>{{ sub.next_charge_at|date:"d.m.Y H:i"|default:"—" }}</div></div>
+        </div>
+        <div class="mt-2 small text-muted">Ошибок подряд: <strong>{{ sub.failed_attempts }}</strong> · Последняя ошибка: {{ sub.last_failure_at|date:"d.m.Y H:i"|default:"—" }}</div>
+      {% else %}
+        <div class="text-muted">Подписка в `billing` не найдена (возможно, используется только витрина `subscription_*` в `stations`).</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="card mb-4">
+    <div class="card-header fw-semibold">Платежи по подписке (последние 200)</div>
+    <div class="card-body">
+      <form method="get" class="row g-2 align-items-end">
+        <div class="col-md-3">
+          <label class="form-label small text-muted">Начало</label>
+          <input type="date" name="p_start" class="form-control form-control-sm" value="{{ payment_filters.start|date:'Y-m-d' }}"/>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small text-muted">Конец</label>
+          <input type="date" name="p_end" class="form-control form-control-sm" value="{{ payment_filters.end|date:'Y-m-d' }}"/>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small text-muted">Статус</label>
+          <select name="p_status" class="form-select form-select-sm">
+            <option value="">Все</option>
+            {% for v, label in payment_status_choices %}
+              <option value="{{ v }}" {% if payment_filters.status == v %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-3 d-flex gap-2 justify-content-end">
+          <button class="btn btn-outline-primary btn-sm" type="submit">Показать</button>
+          <a class="btn btn-outline-secondary btn-sm" href="?p_status=succeeded&p_start={{ payment_filters.start|date:'Y-m-d' }}&p_end={{ payment_filters.end|date:'Y-m-d' }}">Только SUCCEEDED</a>
+          <a class="btn btn-outline-secondary btn-sm" href="?p_status=failed&p_start={{ payment_filters.start|date:'Y-m-d' }}&p_end={{ payment_filters.end|date:'Y-m-d' }}">Только FAILED</a>
+        </div>
+      </form>
+
+      <div class="row g-3 mt-1">
+        <div class="col-md-3">
+          <div class="text-muted small">Успешно (₽ / шт)</div>
+          <div class="fw-semibold">{{ payment_kpis.sum_succeeded }} ₽ · {{ payment_kpis.cnt_succeeded }}</div>
+        </div>
+        <div class="col-md-3">
+          <div class="text-muted small">Ошибки/отмены (₽ / шт)</div>
+          <div class="fw-semibold">{{ payment_kpis.sum_failed }} ₽ · {{ payment_kpis.cnt_failed }}</div>
+        </div>
+        <div class="col-md-6">
+          <div class="text-muted small">Оплаты по дням</div>
+          <div style="height: 220px;"><canvas id="chartStationPayments"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card-body p-0 table-responsive">
+      <table class="table table-striped mb-0">
+        <thead>
+          <tr>
+            <th>Дата</th>
+            <th>Провайдер</th>
+            <th>Статус</th>
+            <th class="text-end">Сумма</th>
+            <th>Валюта</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if payments %}
+            {% for p in payments %}
+              <tr>
+                <td class="small text-nowrap">{{ p.created_at|date:"d.m.Y H:i" }}</td>
+                <td class="small">{{ p.provider }}</td>
+                <td class="small"><code>{{ p.status }}</code></td>
+                <td class="small text-end">{{ p.amount }}</td>
+                <td class="small">{{ p.currency }}</td>
+              </tr>
+            {% endfor %}
+          {% else %}
+            <tr><td colspan="5" class="text-muted p-3">Платежей нет.</td></tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script>
+    (function () {
+      const labels = {{ payment_chart.labels_json|safe }};
+      const succeededRub = {{ payment_chart.succeeded_amounts_json|safe }};
+      const failedCnt = {{ payment_chart.failed_counts_json|safe }};
+
+      const el = document.getElementById('chartStationPayments');
+      if (!el) return;
+      new Chart(el, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            { label: 'Успешно, ₽', data: succeededRub },
+            { label: 'Ошибки/отмены, шт', data: failedCnt, yAxisID: 'y2' },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: 'bottom' } },
+          scales: {
+            y: { beginAtZero: true, title: { display: true, text: '₽ (успешно)' } },
+            y2: { beginAtZero: true, position: 'right', grid: { drawOnChartArea: false }, title: { display: true, text: 'шт (ошибки/отмены)' } },
+          },
+        },
+      });
+    })();
+  </script>
+
+  <div class="card mb-4">
+    <div class="card-header fw-semibold">Записи по СТО (последние 200)</div>
+    <div class="card-body p-0 table-responsive">
+      <table class="table table-striped mb-0">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Клиент</th>
+            <th>Статус</th>
+            <th>Создано</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for b in bookings %}
+            <tr>
+              <td class="small">{{ b.id }}</td>
+              <td class="small"><a href="{% url 'erp:user_detail' b.client_id %}">{{ b.client.phone|default:b.client_id }}</a></td>
+              <td class="small"><code>{{ b.status }}</code></td>
+              <td class="small text-nowrap">{{ b.created_at|date:"d.m.Y H:i" }}</td>
+              <td class="small text-end"><a href="{% url 'erp:booking_detail' b.id %}">Открыть</a></td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="5" class="text-muted p-3">Нет записей.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card mb-4">
+    <div class="card-header fw-semibold">Отзывы по СТО (последние 200)</div>
+    <div class="card-body p-0 table-responsive">
+      <table class="table table-striped mb-0">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Клиент</th>
+            <th class="text-end">★</th>
+            <th>Статус</th>
+            <th>Дата</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in reviews %}
+            <tr>
+              <td class="small">{{ r.id }}</td>
+              <td class="small"><a href="{% url 'erp:user_detail' r.booking.client_id %}">{{ r.booking.client.phone|default:r.booking.client_id }}</a></td>
+              <td class="small text-end">{{ r.rating }}</td>
+              <td class="small"><code>{{ r.moderation_status }}</code></td>
+              <td class="small text-nowrap">{{ r.created_at|date:"d.m.Y" }}</td>
+              <td class="small text-end"><a href="{% url 'erp:review_detail' r.id %}">Открыть</a></td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="6" class="text-muted p-3">Нет отзывов.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header fw-semibold">Аудит по СТО</div>
+    <div class="card-body p-0 table-responsive">
+      <table class="table table-sm mb-0">
+        <thead>
+          <tr><th>Когда</th><th>Событие</th><th>Детали</th></tr>
+        </thead>
+        <tbody>
+          {% for e in audit %}
+            <tr>
+              <td class="small text-nowrap">{{ e.created_at|date:"d.m.Y H:i" }}</td>
+              <td class="small"><code>{{ e.event_type }}</code> {{ e.action }}</td>
+              <td class="small">{{ e.payload }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="3" class="text-muted p-3">Нет событий.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endblock %}
+

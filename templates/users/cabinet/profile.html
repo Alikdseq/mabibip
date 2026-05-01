@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Профиль — МаБибип{% endblock %}
+{% block content %}
+  {% include "users/cabinet/_subnav.html" %}
+  <h1 class="h4 mb-3">Профиль</h1>
+  <div class="row">
+    <div class="col-lg-6">
+      <form method="post" enctype="multipart/form-data" class="card card-body border shadow-sm">
+        {% csrf_token %}
+        {% if user.avatar %}
+          <div class="mb-3 d-flex align-items-center gap-3">
+            <img src="{{ user.avatar.url }}" alt="" width="72" height="72" class="rounded-circle object-fit-cover border" style="object-fit:cover;">
+            <span class="small text-muted">Текущее фото. Чтобы заменить — выберите файл ниже. Чтобы удалить — отметьте «Очистить» у поля файла и нажмите «Сохранить».</span>
+          </div>
+        {% endif %}
+        {% for field in form %}
+          <div class="mb-3">
+            <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% for err in field.errors %}<div class="invalid-feedback d-block">{{ err }}</div>{% endfor %}
+            {% if field.name == 'contact_phone' %}
+              <div class="form-text">Телефон для связи. Можно вводить с +7, 7, 8 или 10 цифр — сохраним в формате +7…</div>
+              {% if field.field.disabled %}
+                <div class="mt-2">
+                  {% if contact_phone_pending_request %}
+                    <div class="alert alert-warning py-2 mb-0">
+                      Заявка на смену телефона уже отправлена и находится на рассмотрении.
+                    </div>
+                  {% else %}
+                    <a class="btn btn-outline-primary btn-sm" href="{% url 'cabinet:contact_phone_change' %}">Запросить смену телефона</a>
+                  {% endif %}
+                </div>
+              {% endif %}
+            {% endif %}
+            {% if field.name == 'avatar' %}
+              <div class="form-text">JPG, PNG или WEBP, до 5 МБ.</div>
+            {% endif %}
+          </div>
+        {% endfor %}
+        <p class="small text-muted">
+          Телефон <strong class="text-body">{{ user.phone }}</strong> — логин аккаунта. Смена номера через поддержку.
+          {% if user.contact_phone %}<br>Телефон для связи: <strong class="text-body">{{ user.contact_phone }}</strong>{% endif %}
+        </p>
+        <button type="submit" class="btn btn-primary">Сохранить</button>
+      </form>
+    </div>
+  </div>
+  <script src="https://unpkg.com/imask"></script>
+  <script>
+    (function () {
+      var el = document.getElementById('id_contact_phone');
+      if (el && window.IMask) {
+        IMask(el, { mask: '+{7} (000) 000-00-00' });
+      }
+    })();
+  </script>
+{% endblock %}

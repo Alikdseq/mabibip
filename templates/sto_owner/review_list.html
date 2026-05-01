@@ -1,0 +1,69 @@
+{% extends "sto_owner/base.html" %}
+{% block title %}Отзывы — кабинет СТО{% endblock %}
+{% block sto_owner_main %}
+  <nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb mb-0">
+      <li class="breadcrumb-item"><a href="{% url 'sto_owner:dashboard' %}">Кабинет СТО</a></li>
+      <li class="breadcrumb-item active" aria-current="page">Отзывы</li>
+    </ol>
+  </nav>
+
+  <h1 class="h4 mb-3">Отзывы клиентов</h1>
+  <p class="text-muted small mb-4">Ответ публикуется под отзывом на странице вашей станции. Жалоба уходит модератору платформы.</p>
+
+  {% if reviews %}
+    <div class="vstack gap-4">
+      {% for r in reviews %}
+        <div class="card border-0 shadow-sm">
+          <div class="card-body">
+            <div class="d-flex flex-wrap justify-content-between gap-2 mb-2">
+              <div>
+                <span class="text-warning">★</span><strong>{{ r.rating }}</strong>
+                <span class="text-muted small">· {{ r.booking.station.name }} · запись №{{ r.booking.pk }}</span>
+              </div>
+              <time class="small text-muted" datetime="{{ r.created_at|date:'c' }}">{{ r.created_at|date:"d.m.Y H:i" }}</time>
+            </div>
+            <p class="mb-2">{{ r.text|default:"(без текста)"|linebreaksbr }}</p>
+            {% include "reviews/_review_photo.html" with review=r only %}
+            {% if r.owner_reply %}
+              <div class="alert alert-light border small mb-0">
+                <strong>Ваш ответ:</strong> {{ r.owner_reply.text|linebreaksbr }}
+              </div>
+            {% endif %}
+            <div class="mt-3 d-flex flex-wrap gap-2">
+              <a class="btn btn-primary btn-sm" href="{% url 'sto_owner:review_reply' r.pk %}">
+                {% if r.owner_reply %}Изменить ответ{% else %}Ответить{% endif %}
+              </a>
+            </div>
+
+            <details class="mt-3 small">
+              <summary class="text-muted">Пожаловаться на отзыв</summary>
+              <form method="post" action="{% url 'sto_owner:review_complaint' r.pk %}" class="mt-2">
+                {% csrf_token %}
+                <label class="form-label small mb-1" for="complaint-{{ r.pk }}">Причина (увидит только модератор)</label>
+                <textarea id="complaint-{{ r.pk }}" name="reason" class="form-control form-control-sm mb-2" rows="2" maxlength="300" required placeholder="Например: клевета, заказ не выполнялся у нас"></textarea>
+                <button type="submit" class="btn btn-outline-secondary btn-sm">Отправить жалобу</button>
+              </form>
+            </details>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+
+    {% if is_paginated %}
+      <nav class="mt-4" aria-label="Страницы отзывов">
+        <ul class="pagination pagination-sm mb-0">
+          {% if page_obj.has_previous %}
+            <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">Назад</a></li>
+          {% endif %}
+          <li class="page-item disabled"><span class="page-link">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span></li>
+          {% if page_obj.has_next %}
+            <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">Вперёд</a></li>
+          {% endif %}
+        </ul>
+      </nav>
+    {% endif %}
+  {% else %}
+    <p class="text-muted">Пока нет отзывов.</p>
+  {% endif %}
+{% endblock %}

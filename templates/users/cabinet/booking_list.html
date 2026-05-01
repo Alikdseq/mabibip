@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}Мои записи — МаБибип{% endblock %}
+{% block content %}
+  {% include "users/cabinet/_subnav.html" %}
+  <h1 class="h4 mb-3">Мои записи</h1>
+  {% if user.is_superuser %}
+    <p class="mb-3">
+      <a class="btn btn-sm btn-outline-warning" href="{% url 'erp:dashboard' %}">Аналитика для администратора</a>
+    </p>
+  {% endif %}
+  {% if bookings %}
+    <div class="table-responsive">
+      <table class="table table-sm align-middle">
+        <thead>
+          <tr>
+            <th>Дата и время</th>
+            <th>СТО</th>
+            <th>Авто</th>
+            <th>Статус</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for b in bookings %}
+            <tr>
+              <td>
+                {{ b.slot.date|date:"d.m.Y" }} {{ b.slot.start_time|time:"H:i" }}–{{ b.slot.end_time|time:"H:i" }}
+                {% if b.status == 'pending' and b.reschedule_proposed_slot_id %}
+                  <div class="small text-primary mt-1">
+                    <strong>Предложение СТО:</strong>
+                    {{ b.reschedule_proposed_slot.date|date:"d.m.Y" }}
+                    {{ b.reschedule_proposed_slot.start_time|time:"H:i" }}–{{ b.reschedule_proposed_slot.end_time|time:"H:i" }}
+                    {% if b.reschedule_owner_message %}
+                      <br><span class="text-muted">{{ b.reschedule_owner_message }}</span>
+                    {% endif %}
+                  </div>
+                {% endif %}
+              </td>
+              <td><a href="{% url 'stations:detail' b.station.slug %}">{{ b.station.name }}</a></td>
+              <td class="small">{{ b.car_info }}</td>
+              <td>
+                {% if b.status == 'pending' %}
+                  <span class="badge text-bg-warning text-dark">{{ b.get_status_display }}</span>
+                {% elif b.status == 'confirmed' %}
+                  <span class="badge text-bg-success">{{ b.get_status_display }}</span>
+                {% elif b.status == 'in_progress' %}
+                  <span class="badge text-bg-info text-dark">{{ b.get_status_display }}</span>
+                {% elif b.status == 'completed' %}
+                  <span class="badge text-bg-primary">{{ b.get_status_display }}</span>
+                {% elif b.status == 'canceled' %}
+                  <span class="badge text-bg-secondary">{{ b.get_status_display }}</span>
+                {% else %}
+                  <span class="badge text-bg-secondary">{{ b.get_status_display }}</span>
+                {% endif %}
+              </td>
+              <td class="text-nowrap">
+                {% if b.status == 'pending' and b.reschedule_proposed_slot_id %}
+                  <form method="post" action="{% url 'cabinet:booking_reschedule_accept' b.pk %}" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-success">Подтвердить перенос</button>
+                  </form>
+                  <form method="post" action="{% url 'cabinet:booking_reschedule_decline' b.pk %}" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-outline-secondary">Отказаться</button>
+                  </form>
+                {% endif %}
+                {% if b.pk in cancelable_booking_ids %}
+                  <form method="post" action="{% url 'cabinet:booking_cancel' b.pk %}" class="d-inline"
+                        onsubmit="return confirm('Отменить запись?');">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-outline-danger">Отменить</button>
+                  </form>
+                {% elif b.status != 'completed' and b.status != 'canceled' and b.client_cancel_hint %}
+                  <span class="small text-muted d-inline-block" style="max-width: 11rem;">{{ b.client_cancel_hint }}</span>
+                {% endif %}
+                {% if b.status == 'completed' and not b.has_review %}
+                  <a class="btn btn-sm btn-outline-primary" href="{% url 'cabinet:review_create' b.pk %}">Оставить отзыв</a>
+                {% elif b.status == 'completed' and b.has_review %}
+                  <span class="text-muted small">Отзыв оставлен</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="text-muted">У вас пока нет записей. <a href="{% url 'stations:list' %}">Мастера</a></p>
+  {% endif %}
+  <p class="mt-4 small"><a href="{% url 'users:account_delete' %}">Удалить аккаунт (обезличивание)</a></p>
+{% endblock %}

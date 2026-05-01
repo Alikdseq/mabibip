@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{# Общий каркас ЛК СТО: верхняя навигация из base.html + колонка с боковым меню. #}
+{# header-inbox.js уже подключается в base.html для всех авторизованных — дублирование давало два WS и двойные модалки. #}
+{% block extra_js %}{{ block.super }}{% endblock %}
+{% block content %}
+  <style>
+    .sto-owner-sidebar-nav .list-group-item.active {
+      background-color: var(--bs-primary);
+      border-color: var(--bs-primary);
+      color: #fff;
+    }
+    .sto-owner-sidebar-nav .list-group-item.active .bi {
+      color: #fff !important;
+    }
+    @media (min-width: 992px) {
+      .sto-owner-sidebar-sticky {
+        position: sticky;
+        top: 1rem;
+      }
+    }
+  </style>
+  <div class="row g-4 align-items-start sto-owner-layout">
+    <aside class="col-lg-4 col-xl-3">
+      <div class="sto-owner-sidebar-sticky">
+        {% include "sto_owner/_sidebar_nav.html" %}
+      </div>
+    </aside>
+    <div class="col-lg-8 col-xl-9 min-w-0">
+      {% block sto_owner_main %}{% endblock %}
+    </div>
+  </div>
+{% endblock %}

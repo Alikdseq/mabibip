@@ -1,0 +1,105 @@
+{% extends "erp/_layout.html" %}
+
+{% block erp_title %}ERP → Отзывы/жалобы{% endblock %}
+{% block erp_subtitle %}Отзывы (модерация) и жалобы{% endblock %}
+
+{% block erp_content %}
+  <div class="card mb-4">
+    <div class="card-body">
+      <form method="get" class="row g-2 align-items-end">
+        <div class="col-md-5">
+          <label class="form-label small text-muted" for="q">Поиск</label>
+          <input id="q" name="q" class="form-control" placeholder="текст / СТО / телефон" value="{{ q }}"/>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small text-muted" for="mod">Статус отзыва</label>
+          <select id="mod" name="mod" class="form-select">
+            <option value="">Все</option>
+            {% for v, label in mod_choices %}
+              <option value="{{ v }}" {% if mod == v %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small text-muted" for="comp">Жалобы</label>
+          <select id="comp" name="comp" class="form-select">
+            <option value="">Любые</option>
+            {% for v, label in comp_choices %}
+              <option value="{{ v }}" {% if comp == v %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2 d-flex justify-content-end">
+          <button class="btn btn-primary" type="submit">Показать</button>
+        </div>
+      </form>
+      <div class="d-flex justify-content-end mt-2">
+        <a class="btn btn-outline-primary btn-sm"
+           href="{% url 'erp:reviews_xlsx' %}?q={{ q }}&mod={{ mod }}">Скачать XLSX</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="card mb-4">
+    <div class="card-header fw-semibold">Отзывы (до 500)</div>
+    <div class="card-body p-0 table-responsive">
+      <table class="table table-striped mb-0">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>СТО</th>
+            <th>Клиент</th>
+            <th class="text-end">★</th>
+            <th>Статус</th>
+            <th>Дата</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in reviews %}
+            <tr>
+              <td class="small">{{ r.id }}</td>
+              <td class="small">{{ r.booking.station.name|default:"—" }}</td>
+              <td class="small">{{ r.booking.client.phone|default:"—" }}</td>
+              <td class="small text-end">{{ r.rating }}</td>
+              <td class="small"><code>{{ r.moderation_status }}</code></td>
+              <td class="small text-nowrap"><a href="{% url 'erp:review_detail' r.id %}">{{ r.created_at|date:"d.m.Y" }}</a></td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="6" class="text-muted p-3">Нет отзывов.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header fw-semibold">Жалобы на отзывы (до 300)</div>
+    <div class="card-body p-0 table-responsive">
+      <table class="table table-striped mb-0">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Отзыв</th>
+            <th>СТО</th>
+            <th>Статус</th>
+            <th>Дата</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in complaints %}
+            <tr>
+              <td class="small">{{ c.id }}</td>
+              <td class="small">{{ c.review_id }}</td>
+              <td class="small">{{ c.station.name }}</td>
+              <td class="small"><code>{{ c.status }}</code></td>
+              <td class="small text-nowrap">{{ c.created_at|date:"d.m.Y" }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="5" class="text-muted p-3">Нет жалоб.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endblock %}
+

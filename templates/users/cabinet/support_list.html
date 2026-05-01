@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Поддержка — МаБибип{% endblock %}
+{% block content %}
+  {% include "users/cabinet/_subnav.html" %}
+  <h1 class="h4 mb-2">Поддержка «МаБибип»</h1>
+  <p class="small text-muted mb-3">
+    Здесь вы можете написать в службу поддержки: задать вопрос по сервису, сообщить о проблеме или поделиться
+    идеей, как сделать «МаБибип» удобнее. Мы читаем каждое сообщение и стараемся отвечать как можно скорее.
+    Если вы предложили улучшение — оно не пропадёт: так мы понимаем, что важно пользователям.
+  </p>
+
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-header fw-semibold">Новое обращение</div>
+    <div class="card-body">
+      <form method="post" action="{% url 'cabinet:support_create' %}">
+        {% csrf_token %}
+        <div class="mb-3">
+          <label class="form-label" for="support-subject">Тема <span class="text-muted">(необязательно)</span></label>
+          <input id="support-subject" name="subject" type="text" class="form-control" maxlength="200"
+                 placeholder="Кратко, о чём обращение"/>
+        </div>
+        <div class="mb-3">
+          <label class="form-label" for="support-body">Текст обращения</label>
+          <textarea id="support-body" name="body" class="form-control" rows="5" required
+                    minlength="{{ support_body_min }}"
+                    placeholder="Опишите ситуацию или идею — не менее {{ support_body_min }} символов."></textarea>
+          <div class="form-text">Минимум {{ support_body_min }} символов. После отправки вы сразу увидите авто-подтверждение и сможете открыть переписку.</div>
+        </div>
+        <button type="submit" class="btn btn-primary">Отправить</button>
+      </form>
+    </div>
+  </div>
+
+  <h2 class="h6 text-muted mb-2">Мои обращения</h2>
+  {% if tickets %}
+    <div class="list-group">
+      {% for t in tickets %}
+        <a class="list-group-item list-group-item-action d-flex justify-content-between flex-wrap gap-2 {% if t.pk in support_ticket_unread_ids %}list-group-item-warning{% endif %}"
+           href="{% url 'cabinet:support_detail' t.pk %}">
+          <div>
+            <span class="fw-semibold">#{{ t.id }}</span>
+            {% if t.pk in support_ticket_unread_ids %}
+              <span class="badge text-bg-danger ms-1">Новый ответ</span>
+            {% endif %}
+            {% if t.subject %}
+              <span class="ms-1">{{ t.subject|truncatechars:60 }}</span>
+            {% else %}
+              <span class="ms-1 text-muted">Без темы</span>
+            {% endif %}
+          </div>
+          <div class="small text-muted text-nowrap">
+            <span class="badge bg-light text-dark border">{{ t.get_status_display }}</span>
+            · обновл. {{ t.updated_at|date:"d.m.Y H:i" }}
+          </div>
+        </a>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="text-muted mb-0">Пока нет обращений — форма выше.</p>
+  {% endif %}
+{% endblock %}

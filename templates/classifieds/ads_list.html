@@ -1,0 +1,341 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% load static %}
+{% block title %}
+  {% if tab == 'part' %}Автозапчасти — объявления{% else %}Автомобили — объявления{% endif %} — МаБибип
+{% endblock %}
+{% block content %}
+  <div class="pm-ads-hero rounded-3 p-3 p-md-4 mb-4">
+    <div class="d-flex flex-column flex-md-row align-items-start justify-content-between gap-3">
+      <div class="flex-grow-1 min-w-0">
+        <h1 class="h3 mb-1">Объявления</h1>
+        <p class="text-body-secondary small mb-0">Автозапчасти и автомобили. Фильтры ниже — как в удобном каталоге.</p>
+      </div>
+      <div class="d-flex flex-column align-items-stretch align-items-md-end gap-3 w-100 w-md-auto">
+        <div class="d-flex align-items-center justify-content-between justify-content-md-end gap-2 pm-ads-create-cta">
+          {% if user.is_authenticated %}
+            <a class="text-decoration-none fw-medium text-body pm-ads-create-link" href="{% url 'classifieds:my_ad_create' %}">Создать объявление →</a>
+            <a class="btn btn-primary pm-ads-create-plus flex-shrink-0"
+               href="{% url 'classifieds:my_ad_create' %}"
+               aria-label="Создать объявление"><span class="fs-4 lh-1 fw-light" aria-hidden="true">+</span></a>
+          {% else %}
+            <a class="text-decoration-none fw-medium text-body pm-ads-create-link"
+               href="{% url 'users:login' %}?next={% url 'classifieds:my_ad_create' %}">Создать объявление →</a>
+            <a class="btn btn-primary pm-ads-create-plus flex-shrink-0"
+               href="{% url 'users:login' %}?next={% url 'classifieds:my_ad_create' %}"
+               aria-label="Создать объявление"><span class="fs-4 lh-1 fw-light" aria-hidden="true">+</span></a>
+          {% endif %}
+        </div>
+        <div class="text-md-end">
+          <div class="pm-ads-count display-6 fw-semibold text-body-secondary lh-1">{{ ads_total|intcomma }}</div>
+          <div class="small text-muted">в этом разделе</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="d-flex flex-wrap align-items-center gap-2 mt-3">
+      <div class="btn-group flex-wrap" role="group" aria-label="Тип объявлений">
+        <a class="btn btn-sm {% if tab == 'part' %}btn-primary{% else %}btn-outline-primary{% endif %}"
+           href="{% url 'classifieds:ads_list' %}?tab=part">Автозапчасти</a>
+        <a class="btn btn-sm {% if tab == 'car' %}btn-primary{% else %}btn-outline-primary{% endif %}"
+           href="{% url 'classifieds:ads_list' %}?tab=car">Автомобили</a>
+      </div>
+      {% if user.is_authenticated %}
+        <a class="btn btn-sm btn-outline-secondary ms-md-auto" href="{% url 'classifieds:my_ads' %}">Мои объявления</a>
+      {% else %}
+        <a class="btn btn-sm btn-outline-secondary ms-md-auto" href="{% url 'users:login' %}?next={% url 'classifieds:my_ad_create' %}">Подать объявление</a>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if tab == 'car' and popular_car_brands %}
+    <div class="mb-4">
+      <div class="d-flex align-items-baseline justify-content-between gap-2 mb-2">
+        <h2 class="h6 mb-0">Популярные марки</h2>
+      </div>
+      <div class="row row-cols-2 row-cols-sm-3 row-cols-lg-4 g-2">
+        {% for b in popular_car_brands %}
+          <div class="col">
+            <a class="d-flex justify-content-between align-items-center rounded-3 border bg-white px-3 py-2 small pm-ad-quick-link text-decoration-none"
+               href="{% url 'classifieds:ads_list' %}?tab=car&amp;car_brand={{ b.pk }}">
+              <span class="text-body fw-medium">{{ b.name }}</span>
+              <span class="text-muted">{{ b.ad_count }}</span>
+            </a>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  {% endif %}
+
+  {% if tab == 'part' and popular_part_categories %}
+    <div class="mb-4">
+      <h2 class="h6 mb-2">Популярные разделы запчастей</h2>
+      <div class="row row-cols-2 row-cols-sm-3 row-cols-lg-4 g-2">
+        {% for c in popular_part_categories %}
+          <div class="col">
+            <a class="d-flex justify-content-between align-items-center rounded-3 border bg-white px-3 py-2 small pm-ad-quick-link text-decoration-none"
+               href="{% url 'classifieds:ads_list' %}?tab=part&amp;cat={{ c.slug }}">
+              <span class="text-body fw-medium">{{ c.name }}</span>
+              <span class="text-muted">{{ c.ad_count }}</span>
+            </a>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  {% endif %}
+
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+      <form class="row g-2 g-md-3 align-items-end" method="get" id="pm-ads-filters">
+        <input type="hidden" name="tab" value="{{ tab }}">
+
+        {% if tab == 'part' %}
+        <div class="col-12 col-md-4 col-lg-3 position-relative" id="pm-ads-q-suggest">
+          <label class="form-label small mb-1">Поиск</label>
+          <input class="form-control" type="search" name="q" value="{{ q }}" placeholder="Например: амортизатор, Toyota…" autocomplete="off">
+          <div data-suggest-panel class="d-none"></div>
+        </div>
+        <div class="col-6 col-md-3 col-lg-2">
+          <label class="form-label small mb-1">Город</label>
+          <input class="form-control" type="text" name="city" value="{{ city }}" placeholder="Город" autocomplete="off">
+        </div>
+        <div class="col-6 col-md-3 col-lg-2">
+          <label class="form-label small mb-1">Цена от</label>
+          <input class="form-control" type="number" inputmode="numeric" name="price_min" value="{{ price_min }}" placeholder="0" min="0">
+        </div>
+        <div class="col-6 col-md-3 col-lg-2">
+          <label class="form-label small mb-1">Цена до</label>
+          <input class="form-control" type="number" inputmode="numeric" name="price_max" value="{{ price_max }}" placeholder="∞" min="0">
+        </div>
+        <div class="col-6 col-md-3 col-lg-2">
+          <label class="form-label small mb-1">Сортировка</label>
+          <select class="form-select" name="sort">
+            <option value="new" {% if sort == 'new' %}selected{% endif %}>Сначала новые</option>
+            <option value="price_asc" {% if sort == 'price_asc' %}selected{% endif %}>Цена ↑</option>
+            <option value="price_desc" {% if sort == 'price_desc' %}selected{% endif %}>Цена ↓</option>
+          </select>
+        </div>
+          <div class="col-12 col-md-4 col-lg-3">
+            <label class="form-label small mb-1">Раздел</label>
+            <select class="form-select" name="cat">
+              <option value="">Все разделы</option>
+              {% for c in part_categories %}
+                <option value="{{ c.slug }}" {% if cat == c.slug %}selected{% endif %}>{{ c.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-6 col-md-3 col-lg-2">
+            <label class="form-label small mb-1">Состояние</label>
+            <select class="form-select" name="condition">
+              <option value="" {% if not condition %}selected{% endif %}>Любое</option>
+              <option value="new" {% if condition == 'new' %}selected{% endif %}>Новая</option>
+              <option value="used" {% if condition == 'used' %}selected{% endif %}>Б/у</option>
+            </select>
+          </div>
+          <div class="col-6 col-md-4 col-lg-3">
+            <label class="form-label small mb-1">Марка авто (применимость)</label>
+            <select class="form-select" name="part_brand">
+              <option value="">Любая</option>
+              {% for b in car_brand_choices %}
+                <option value="{{ b.pk }}" {% if part_brand == b.pk|stringformat:"d" %}selected{% endif %}>{{ b.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        {% else %}
+          <div class="col-12 col-md-6 col-lg-4">
+            <label class="form-label small mb-1">Марка</label>
+            <select class="form-select" name="car_brand">
+              <option value="">Любая</option>
+              {% for b in car_brand_choices %}
+                <option value="{{ b.pk }}" {% if car_brand == b.pk|stringformat:"d" %}selected{% endif %}>{{ b.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-12 col-md-6 col-lg-4">
+            <label class="form-label small mb-1">Модель</label>
+            <input type="hidden" name="car_model" value="{{ car_model }}" id="pm-ads-car-model">
+            <div class="input-group">
+              <input class="form-control" type="text" value="{{ car_model }}" placeholder="Выберите модель" autocomplete="off"
+                     id="pm-ads-car-model-label" readonly>
+              <button class="btn btn-outline-secondary" type="button" id="pm-ads-pick-model-btn" data-bs-toggle="modal" data-bs-target="#pmCarModelModal" disabled>
+                Выбрать
+              </button>
+            </div>
+            <div class="small mt-1">
+              <button type="button" class="btn btn-link p-0 small text-decoration-none" id="pm-ads-clear-model" {% if not car_model %}disabled{% endif %}>
+                Сбросить модель
+              </button>
+            </div>
+          </div>
+          <div class="col-6 col-md-3 col-lg-2">
+            <label class="form-label small mb-1">Цена от</label>
+            <input class="form-control" type="number" inputmode="numeric" name="price_min" value="{{ price_min }}" placeholder="0" min="0">
+          </div>
+          <div class="col-6 col-md-3 col-lg-2">
+            <label class="form-label small mb-1">Цена до</label>
+            <input class="form-control" type="number" inputmode="numeric" name="price_max" value="{{ price_max }}" placeholder="∞" min="0">
+          </div>
+          <div class="col-6 col-md-3 col-lg-2">
+            <label class="form-label small mb-1">Год от</label>
+            <input class="form-control" type="number" name="year_min" value="{{ year_min }}" placeholder="1990" min="1950" max="2100">
+          </div>
+          <div class="col-6 col-md-3 col-lg-2">
+            <label class="form-label small mb-1">Год до</label>
+            <input class="form-control" type="number" name="year_max" value="{{ year_max }}" placeholder="2026" min="1950" max="2100">
+          </div>
+
+          <div class="col-12">
+            <details class="pm-ads-filter-more border rounded-3 px-3 py-2 bg-body-secondary bg-opacity-10" {% if car_advanced_filters_active %}open{% endif %}>
+              <summary class="pm-ads-filter-more-summary fw-medium py-1 user-select-none">Ещё фильтры</summary>
+              <div class="row g-2 g-md-3 align-items-end mt-2 pb-1">
+                <div class="col-12 col-md-4 col-lg-3 position-relative" id="pm-ads-q-suggest-advanced">
+                  <label class="form-label small mb-1">Поиск по тексту</label>
+                  <input class="form-control" type="search" name="q" value="{{ q }}" placeholder="Слова из заголовка или описания" autocomplete="off">
+                  <div data-suggest-panel class="d-none"></div>
+                </div>
+                <div class="col-6 col-md-3 col-lg-2">
+                  <label class="form-label small mb-1">Город</label>
+                  <input class="form-control" type="text" name="city" value="{{ city }}" placeholder="Город" autocomplete="off">
+                </div>
+                <div class="col-6 col-md-3 col-lg-2">
+                  <label class="form-label small mb-1">Сортировка</label>
+                  <select class="form-select" name="sort">
+                    <option value="new" {% if sort == 'new' %}selected{% endif %}>Сначала новые</option>
+                    <option value="price_asc" {% if sort == 'price_asc' %}selected{% endif %}>Цена ↑</option>
+                    <option value="price_desc" {% if sort == 'price_desc' %}selected{% endif %}>Цена ↓</option>
+                  </select>
+                </div>
+                <div class="col-6 col-md-3 col-lg-2">
+                  <label class="form-label small mb-1">Пробег от, км</label>
+                  <input class="form-control" type="number" name="mileage_min" value="{{ mileage_min }}" min="0">
+                </div>
+                <div class="col-6 col-md-3 col-lg-2">
+                  <label class="form-label small mb-1">Пробег до, км</label>
+                  <input class="form-control" type="number" name="mileage_max" value="{{ mileage_max }}" min="0">
+                </div>
+                <div class="col-6 col-md-3 col-lg-2">
+                  <label class="form-label small mb-1">Коробка</label>
+                  <select class="form-select" name="car_transmission">
+                    <option value="">Любая</option>
+                    {% for val, label in car_transmission_choices %}
+                      <option value="{{ val }}" {% if car_transmission == val %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <div class="col-6 col-md-3 col-lg-2">
+                  <label class="form-label small mb-1">Топливо</label>
+                  <select class="form-select" name="car_fuel">
+                    <option value="">Любое</option>
+                    {% for val, label in car_fuel_choices %}
+                      <option value="{{ val }}" {% if car_fuel == val %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <div class="col-6 col-md-3 col-lg-2">
+                  <label class="form-label small mb-1">Привод</label>
+                  <select class="form-select" name="car_drive">
+                    <option value="">Любой</option>
+                    {% for val, label in car_drive_choices %}
+                      <option value="{{ val }}" {% if car_drive == val %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <div class="col-6 col-md-4 col-lg-3">
+                  <label class="form-label small mb-1">Кузов</label>
+                  <select class="form-select" name="car_body">
+                    <option value="">Любой</option>
+                    {% for val, label in car_body_choices %}
+                      <option value="{{ val }}" {% if car_body == val %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <div class="col-6 col-md-4 col-lg-3">
+                  <label class="form-label small mb-1">Не битый</label>
+                  <select class="form-select" name="car_not_crashed">
+                    <option value="" {% if not car_not_crashed %}selected{% endif %}>Не важно</option>
+                    <option value="1" {% if car_not_crashed == '1' %}selected{% endif %}>Да</option>
+                    <option value="0" {% if car_not_crashed == '0' %}selected{% endif %}>Нет</option>
+                  </select>
+                </div>
+              </div>
+            </details>
+          </div>
+        {% endif %}
+
+        <div class="col-12 d-flex flex-wrap gap-2">
+          <button class="btn btn-primary" type="submit">Применить</button>
+          <a class="btn btn-outline-secondary" href="{% url 'classifieds:ads_list' %}?tab={{ tab }}">Сбросить</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  {% if ads %}
+    <div class="row {% if ads_mobile_two_column %}row-cols-2 row-cols-md-1 g-2 pm-ads-dense-mobile{% else %}row-cols-1 g-3{% endif %}">
+      {% for a in ads %}
+        <div class="col d-flex">
+          {% include "classifieds/_ad_card.html" with ad=a ad_call_map=ad_call_map favorite_ad_ids=favorite_ad_ids seller_review_done_owner_ids=seller_review_done_owner_ids %}
+        </div>
+      {% endfor %}
+    </div>
+
+    {% if is_paginated %}
+      <nav class="mt-4" aria-label="Страницы">
+        <ul class="pagination justify-content-center flex-wrap">
+          {% if page_obj.has_previous %}
+            <li class="page-item"><a class="page-link" href="?{% if filter_query %}{{ filter_query }}&amp;{% endif %}page={{ page_obj.previous_page_number }}">Назад</a></li>
+          {% endif %}
+          <li class="page-item disabled"><span class="page-link">Стр. {{ page_obj.number }} из {{ paginator.num_pages }}</span></li>
+          {% if page_obj.has_next %}
+            <li class="page-item"><a class="page-link" href="?{% if filter_query %}{{ filter_query }}&amp;{% endif %}page={{ page_obj.next_page_number }}">Вперёд</a></li>
+          {% endif %}
+        </ul>
+      </nav>
+    {% endif %}
+  {% else %}
+    <div class="alert alert-light border text-muted">По выбранным фильтрам ничего не найдено. Измените условия или сбросьте фильтры.</div>
+  {% endif %}
+
+  {# Модальное окно выбора модели (показывается после выбора марки) #}
+  <div class="modal fade" id="pmCarModelModal" tabindex="-1" aria-labelledby="pmCarModelModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title h5" id="pmCarModelModalLabel">Выберите модель</h2>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-2">
+            <input type="search" class="form-control" id="pm-ads-model-search" placeholder="Начните вводить модель…">
+          </div>
+          <div class="list-group" id="pm-ads-model-list"></div>
+          <div class="small text-muted mt-2 d-none" id="pm-ads-model-empty">Моделей по выбранной марке не найдено.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block extra_js %}
+  {% url "api_search_suggest" as suggest_url %}
+  {{ suggest_url|json_script:"suggest-url" }}
+  {{ car_models_by_brand_id|json_script:"pm-ads-car-models-by-brand" }}
+  <script type="module">
+    import { initSearchSuggest } from "{% static 'js/app/search-suggest.js' %}";
+    const q1 = document.getElementById('pm-ads-q-suggest');
+    if (q1) initSearchSuggest(q1, { suggestUrlScriptId: 'suggest-url' });
+    const q2 = document.getElementById('pm-ads-q-suggest-advanced');
+    if (q2) initSearchSuggest(q2, { suggestUrlScriptId: 'suggest-url' });
+  </script>
+  <script type="module" src="{% static 'js/pages/ads-list.js' %}"></script>
+  <script type="module">
+    import { initAdCardSliders } from "{% static 'js/pages/ad-card-swipe.js' %}";
+    initAdCardSliders(document);
+  </script>
+  {% if user.is_authenticated %}
+    <script type="module">
+      import { initClassifiedsCallTrack } from "{% static 'js/pages/classifieds-call-track.js' %}";
+      initClassifiedsCallTrack(document);
+    </script>
+  {% endif %}
+{% endblock %}

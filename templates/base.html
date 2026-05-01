@@ -1,0 +1,373 @@
+{% load static %}
+{% load booking_chat_tags %}
+{% load sto_booking_tags %}
+{% load support_tags %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="csrf-token" content="{{ csrf_token }}">
+  <title>{% block title %}МаБибип{% endblock %}</title>
+  {% if canonical_url %}
+    <link rel="canonical" href="{{ canonical_url }}">
+  {% endif %}
+  {% if seo_meta_description %}
+    <meta name="description" content="{{ seo_meta_description }}">
+  {% endif %}
+  {% if canonical_url and seo_og_title and seo_meta_description %}
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="МаБибип">
+    <meta property="og:locale" content="ru_RU">
+    <meta property="og:url" content="{{ canonical_url }}">
+    <meta property="og:title" content="{{ seo_og_title }}">
+    <meta property="og:description" content="{{ seo_meta_description }}">
+    {% firstof seo_og_image seo_og_image_default as seo_og_image_resolved %}
+    {% if seo_og_image_resolved %}
+      <meta property="og:image" content="{{ seo_og_image_resolved }}">
+    {% endif %}
+    {% if seo_og_image_resolved %}
+      <meta name="twitter:card" content="summary_large_image">
+      <meta name="twitter:image" content="{{ seo_og_image_resolved }}">
+    {% else %}
+      <meta name="twitter:card" content="summary">
+    {% endif %}
+    <meta name="twitter:title" content="{{ seo_og_title }}">
+    <meta name="twitter:description" content="{{ seo_meta_description }}">
+  {% endif %}
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="{% static 'theme.css' %}" rel="stylesheet">
+  {% block extra_head %}{% endblock %}
+</head>
+<body class="d-flex flex-column min-vh-100"
+      data-sto-approved="{% if user.is_authenticated and user.is_sto_owner and user.sto_moderation_status == 'approved' %}1{% else %}0{% endif %}"
+      data-calls-enabled="{% if calls_enabled and user.is_authenticated %}1{% else %}0{% endif %}"
+      data-ws-base="{{ channels_ws_client_base }}">
+{% if show_email_verification_banner %}
+  <div class="alert alert-warning border-0 rounded-0 py-2 mb-0 small text-center" role="status">
+    Подтвердите email, чтобы пользоваться объявлениями и кабинетом магазина.
+    <a href="{% url 'users:email_verification_notice' %}" class="alert-link">Инструкция и повторная отправка</a>
+  </div>
+{% endif %}
+{% if user.is_authenticated %}
+  {% if not user.contact_phone %}
+    <div class="alert alert-info border-0 rounded-0 py-2 mb-0 small text-center" role="status">
+      Заполните телефон для связи, чтобы пользоваться контактами, чатами и звонками.
+      <a href="{% url 'cabinet:profile' %}?next={{ request.get_full_path|urlencode }}" class="alert-link">Заполнить телефон</a>
+    </div>
+  {% endif %}
+{% endif %}
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+  <div class="container">
+    <a class="navbar-brand d-flex flex-column align-items-start py-2 lh-sm" href="{% url 'home' %}">
+      <span class="fw-bold">МаБибип</span>
+      <span class="text-white-50 small fw-normal" style="font-size: 0.72rem;">ИНН&nbsp;151606543107</span>
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMain"
+            aria-controls="navMain" aria-expanded="false" aria-label="Меню">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navMain">
+      <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+        {% if visitor_city_choices %}
+          {% if visitor_city_choices|length > 1 %}
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" href="#" id="navCity" role="button"
+                 data-bs-toggle="dropdown" aria-expanded="false">{{ visitor_city_label }}</a>
+              <div class="dropdown-menu p-3" aria-labelledby="navCity" style="min-width: 18rem;">
+                <form method="post" action="{{ visitor_city_set_url }}" class="m-0">
+                  {% csrf_token %}
+                  <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                  <label class="form-label small mb-1" for="pmHeaderCitySelect">Город</label>
+                  <select id="pmHeaderCitySelect" name="city_label" class="form-select form-select-sm" size="8" required>
+                    {% for c in visitor_city_choices %}
+                      <option value="{{ c }}"{% if c == visitor_city_label %} selected{% endif %}>{{ c }}</option>
+                    {% endfor %}
+                  </select>
+                  <div class="d-flex gap-2 mt-2">
+                    <button type="submit" class="btn btn-sm btn-primary">Выбрать</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="dropdown">Закрыть</button>
+                  </div>
+                </form>
+              </div>
+            </li>
+          {% else %}
+            <li class="nav-item">
+              <span class="nav-link disabled pe-none opacity-75" tabindex="-1">{{ visitor_city_label }}</span>
+            </li>
+          {% endif %}
+        {% endif %}
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'stations:list' %}">Мастера</a>
+        </li>
+        {% if MAP_FEATURE_ENABLED %}
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'stations:nearby_map' %}">Рядом на карте</a>
+        </li>
+        {% endif %}
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'classifieds:ads_list' %}">Объявления</a>
+        </li>
+        {# «Для бизнеса» убрали из хедера: вход в B2B через кабинет СТО #}
+      </ul>
+      <ul class="navbar-nav ms-auto">
+        {% if user.is_authenticated %}
+          {% header_chats_unread_total user as header_chat_unread %}
+          <li class="nav-item d-flex align-items-center me-3">
+            {% if user.avatar %}
+              <img src="{{ user.avatar.url }}" alt="" width="28" height="28"
+                   class="rounded-circle object-fit-cover border me-2 flex-shrink-0" style="object-fit:cover;">
+            {% endif %}
+            <span class="navbar-text">{{ user.phone }}{% if user.email %} · {{ user.email }}{% endif %}</span>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link d-flex align-items-center gap-2" href="{% if user.is_sto_owner and user.sto_moderation_status == 'approved' %}{% url 'sto_owner:chats' %}{% else %}{% url 'cabinet:chats' %}{% endif %}">
+              <span class="fw-semibold">Чаты</span>
+              <span id="header-chat-unread"
+                    class="badge rounded-pill bg-danger {% if not header_chat_unread %}d-none{% endif %}"
+                    aria-live="polite">{{ header_chat_unread }}</span>
+            </a>
+          </li>
+          {% if user.is_sto_owner %}
+            {% if user.business_role == 'autoshop' %}
+              <li class="nav-item">
+                <a class="nav-link fw-semibold" href="{% url 'shop_owner:dashboard' %}">Кабинет бизнеса</a>
+              </li>
+            {% else %}
+              {% if user.sto_moderation_status == 'approved' %}
+                <li class="nav-item">
+                  <a class="nav-link fw-semibold" href="{% url 'sto_owner:dashboard' %}">Кабинет бизнеса</a>
+                </li>
+              {% elif user.sto_moderation_status == 'pending' %}
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'sto_owner:pending_moderation' %}">Заявка СТО</a>
+                </li>
+              {% elif user.sto_moderation_status == 'rejected' %}
+                <li class="nav-item">
+                  <a class="nav-link text-warning" href="{% url 'sto_owner:moderation_rejected' %}">Заявка СТО</a>
+                </li>
+              {% endif %}
+            {% endif %}
+          {% endif %}
+          {% if user.is_superuser %}
+            <li class="nav-item">
+              <a class="nav-link text-warning" href="{% url 'erp:dashboard' %}">Админ-панель</a>
+            </li>
+          {% endif %}
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'cabinet:profile' %}">
+              {% if user.is_sto_owner and user.sto_moderation_status == 'approved' %}Как клиент{% else %}Личный кабинет{% endif %}
+            </a>
+          </li>
+          <li class="nav-item">
+            <form method="post" action="{% url 'users:logout' %}" class="d-inline">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-link nav-link px-0">Выход</button>
+            </form>
+          </li>
+        {% else %}
+          <li class="nav-item"><a class="nav-link" href="{% url 'users:login' %}">Вход</a></li>
+          <li class="nav-item"><a class="nav-link" href="{% url 'users:register' %}">Регистрация</a></li>
+        {% endif %}
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<main class="container py-4 flex-grow-1">
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{% if 'error' in message.tags %}danger{% elif 'success' in message.tags %}success{% elif 'warning' in message.tags %}warning{% else %}info{% endif %}" role="alert">{{ message }}</div>
+    {% endfor %}
+  {% endif %}
+  {% block content %}{% endblock %}
+</main>
+
+{# Mobile bottom navigation (Avito-like). Desktop header stays unchanged. #}
+<nav class="d-md-none fixed-bottom bg-dark border-top border-secondary-subtle" style="padding-bottom: env(safe-area-inset-bottom);">
+  <div class="container">
+    <div class="d-flex justify-content-between text-center py-2">
+      <a href="{% url 'home' %}" class="flex-fill text-decoration-none text-light small">
+        <div><i class="bi bi-house-door fs-5" aria-hidden="true"></i></div>
+        <div>Главная</div>
+      </a>
+      {% if user.is_authenticated and user.is_sto_owner %}
+        <a href="{% url 'classifieds:ads_list' %}" class="flex-fill text-decoration-none text-light small">
+          <div><i class="bi bi-megaphone fs-5" aria-hidden="true"></i></div>
+          <div>Объявления</div>
+        </a>
+      {% else %}
+        <a href="{% url 'stations:list' %}" class="flex-fill text-decoration-none text-light small">
+          <div><i class="bi bi-search fs-5" aria-hidden="true"></i></div>
+          <div>Мастера</div>
+        </a>
+      {% endif %}
+      <a href="{% if user.is_authenticated %}{% if user.is_sto_owner and user.sto_moderation_status == 'approved' %}{% url 'sto_owner:chats' %}{% else %}{% url 'cabinet:chats' %}{% endif %}{% else %}{% url 'users:login' %}{% endif %}"
+         class="flex-fill text-decoration-none text-light small position-relative">
+        <div>
+          <i class="bi bi-chat-dots fs-5" aria-hidden="true"></i>
+          {% if user.is_authenticated %}
+            {% header_chats_unread_total user as mobile_chat_unread %}
+            <span class="position-absolute top-0 start-50 translate-middle badge rounded-pill bg-danger {% if not mobile_chat_unread %}d-none{% endif %}">
+              {{ mobile_chat_unread }}
+            </span>
+          {% endif %}
+        </div>
+        <div>Чаты</div>
+      </a>
+      {% if user.is_authenticated and user.is_sto_owner %}
+        <a href="{% if user.business_role == 'autoshop' %}{% url 'shop_owner:dashboard' %}{% elif user.sto_moderation_status == 'approved' %}{% url 'sto_owner:dashboard' %}{% elif user.sto_moderation_status == 'pending' %}{% url 'sto_owner:pending_moderation' %}{% else %}{% url 'sto_owner:moderation_rejected' %}{% endif %}"
+           class="flex-fill text-decoration-none text-light small position-relative">
+          {% sto_pending_booking_count user as pending_bookings %}
+          <div>
+            <i class="bi bi-briefcase fs-5" aria-hidden="true"></i>
+            <span id="mobile-business-badge"
+                  class="position-absolute top-0 start-50 translate-middle badge rounded-pill bg-danger {% if user.business_role == 'autoshop' or not pending_bookings %}d-none{% endif %}">
+              {{ pending_bookings }}
+            </span>
+          </div>
+          <div>Бизнес</div>
+        </a>
+      {% else %}
+        <a href="{% url 'classifieds:ads_list' %}" class="flex-fill text-decoration-none text-light small">
+          <div><i class="bi bi-megaphone fs-5" aria-hidden="true"></i></div>
+          <div>Объявления</div>
+        </a>
+      {% endif %}
+      <a href="{% if user.is_authenticated %}{% url 'cabinet:profile' %}{% else %}{% url 'users:login' %}{% endif %}"
+         class="flex-fill text-decoration-none text-light small position-relative">
+        <div>
+          <i class="bi bi-person fs-5" aria-hidden="true"></i>
+          {% if user.is_authenticated %}
+            {% support_user_unread_count user as mobile_support_unread %}
+            {% if mobile_support_unread %}
+              <span class="position-absolute top-0 start-50 translate-middle badge rounded-pill bg-danger"
+                    title="Новый ответ в поддержке">{{ mobile_support_unread }}</span>
+            {% endif %}
+          {% endif %}
+        </div>
+        <div>Профиль</div>
+      </a>
+    </div>
+  </div>
+</nav>
+
+<footer class="border-top py-3 mt-auto bg-light">
+  <div class="container small text-muted">
+    <a href="{% url 'legal:archive' %}">Юридические документы</a>
+    ·
+    <a href="{% url 'legal:document' key='privacy' %}">Конфиденциальность</a>
+    ·
+    <a href="{% url 'legal:document' key='user_agreement' %}">Пользовательское соглашение</a>
+    ·
+    <a href="{% url 'legal:document' key='pd_consent' %}">Согласие на ПДн</a>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+        crossorigin="anonymous"></script>
+<script src="https://unpkg.com/htmx.org@2.0.4"></script>
+<script type="module" src="{% static 'js/app/csrf-htmx.js' %}"></script>
+{% if user.is_authenticated %}
+  <script type="module" src="{% static 'js/app/header-inbox.js' %}"></script>
+  <script type="module" src="{% static 'js/app/reveal-phone.js' %}"></script>
+  {% if calls_enabled %}
+    <script type="module" src="{% static 'js/app/calls.js' %}"></script>
+  {% endif %}
+{% endif %}
+{% block extra_js %}{% endblock %}
+{# Page modules may register Alpine.data; load Alpine after them. #}
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.3/dist/cdn.min.js"></script>
+
+{# Toast container for new booking notifications (shown via JS). #}
+<div class="toast-container position-fixed bottom-0 end-0 p-3" style="padding-bottom: calc(84px + env(safe-area-inset-bottom)); z-index: 1100;">
+  <div id="pm-booking-toast" class="toast text-bg-dark border-0" role="alert" aria-live="assertive" aria-atomic="true">
+    <div class="d-flex">
+      <div class="toast-body">
+        Новая заявка на запись. Проверьте «Кабинет бизнеса».
+      </div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Закрыть"></button>
+    </div>
+  </div>
+  <div id="pm-review-toast" class="toast text-bg-primary border-0 mt-2" role="alert" aria-live="polite" aria-atomic="true">
+    <div class="d-flex">
+      <div class="toast-body">
+        <div class="fw-semibold mb-1">Визит завершён</div>
+        <div id="pm-review-toast-text">Оставьте отзыв — это поможет другим водителям.</div>
+        <div class="mt-2">
+          <a id="pm-review-toast-link" class="btn btn-light btn-sm" href="#">Оставить отзыв</a>
+        </div>
+      </div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Закрыть"></button>
+    </div>
+  </div>
+  <div id="pm-reschedule-client-toast" class="toast text-bg-dark border-0 mt-2" role="alert" aria-live="polite" aria-atomic="true">
+    <div class="d-flex">
+      <div class="toast-body w-100">
+        <div class="fw-semibold mb-1">Перенос времени</div>
+        <div id="pm-rs-client-text" class="small">—</div>
+        <div class="mt-2 d-flex flex-wrap gap-2">
+          <button type="button" id="pm-rs-accept-btn" class="btn btn-success btn-sm">Подтвердить</button>
+          <button type="button" id="pm-rs-decline-btn" class="btn btn-outline-light btn-sm">Отказаться</button>
+        </div>
+      </div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Закрыть"></button>
+    </div>
+  </div>
+  <div id="pm-sto-reschedule-toast" class="toast text-bg-secondary border-0 mt-2" role="alert" aria-live="polite" aria-atomic="true">
+    <div class="d-flex">
+      <div class="toast-body w-100">
+        <div class="fw-semibold mb-1" id="pm-sto-rs-title">Запись</div>
+        <div id="pm-sto-rs-text" class="small">—</div>
+        <div class="mt-2 d-flex flex-wrap gap-2" id="pm-sto-rs-actions">
+          <a id="pm-sto-rs-call" class="btn btn-light btn-sm d-none" href="#">Позвонить</a>
+          <a id="pm-sto-rs-chat" class="btn btn-outline-light btn-sm d-none" href="#">Чат</a>
+        </div>
+      </div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Закрыть"></button>
+    </div>
+  </div>
+  <div id="pm-client-booking-status-toast" class="toast text-bg-success border-0 mt-2" role="alert" aria-live="polite" aria-atomic="true">
+    <div class="d-flex">
+      <div class="toast-body w-100">
+        <div class="fw-semibold mb-1" id="pm-client-booking-status-title">Запись</div>
+        <div id="pm-client-booking-status-text" class="small">—</div>
+        <div class="mt-2">
+          <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="toast">Отлично</button>
+        </div>
+      </div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Закрыть"></button>
+    </div>
+  </div>
+</div>
+
+{# Модалка новой заявки для владельца СТО (любая страница; закрытие без действия — событие остаётся непрочитанным до следующего входа). #}
+<div class="modal fade" id="pm-owner-new-booking-modal" tabindex="-1" aria-labelledby="pm-owner-new-booking-modal-title" aria-hidden="true" style="z-index: 1105;">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="pm-owner-new-booking-modal-title">Новая заявка на запись</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+      </div>
+      <div class="modal-body">
+        <p id="pm-owner-new-booking-modal-text" class="mb-0 small">—</p>
+        <p class="small text-muted mt-3 mb-0">Если закрыть окно без действия, напоминание снова появится при следующем заходе в кабинет.</p>
+      </div>
+      <div class="modal-footer flex-wrap gap-2 justify-content-between">
+        <div class="d-flex flex-wrap gap-2">
+          <button type="button" id="pm-owner-new-booking-modal-confirm" class="btn btn-success">Подтвердить</button>
+          <a id="pm-owner-new-booking-modal-open" class="btn btn-primary" href="#">Открыть заявку</a>
+        </div>
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Закрыть</button>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,71 @@
+{% extends "erp/_layout.html" %}
+
+{% block erp_title %}ERP → Записи{% endblock %}
+{% block erp_subtitle %}Фильтр по статусу и быстрый поиск{% endblock %}
+
+{% block erp_content %}
+  <div class="card mb-4">
+    <div class="card-body">
+      <form method="get" class="row g-2 align-items-end">
+        <div class="col-md-5">
+          <label class="form-label small text-muted" for="q">Поиск</label>
+          <input id="q" name="q" class="form-control" placeholder="телефон / СТО" value="{{ q }}"/>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small text-muted" for="status">Статус</label>
+          <select id="status" name="status" class="form-select">
+            <option value="">Все</option>
+            {% for v, label in status_choices %}
+              <option value="{{ v }}" {% if status == v %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-4 d-flex justify-content-end">
+          <button class="btn btn-primary" type="submit">Показать</button>
+        </div>
+      </form>
+      <div class="d-flex justify-content-end mt-2">
+        <a class="btn btn-outline-primary btn-sm"
+           href="{% url 'erp:bookings_xlsx' %}?q={{ q }}&status={{ status }}">Скачать XLSX</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body p-0 table-responsive">
+      <table class="table table-striped mb-0">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Клиент</th>
+            <th>СТО</th>
+            <th>Слот</th>
+            <th>Статус</th>
+            <th>Создано</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for b in bookings %}
+            <tr>
+              <td class="small">{{ b.id }}</td>
+              <td class="small"><a href="{% url 'erp:user_detail' b.client_id %}">{{ b.client.phone|default:b.client_id }}</a></td>
+              <td class="small"><strong><a href="{% url 'erp:booking_detail' b.id %}">{{ b.station.name }}</a></strong></td>
+              <td class="small">
+                {% if b.slot_id %}
+                  {{ b.slot.date }} {{ b.slot.start_time }}–{{ b.slot.end_time }}
+                {% else %}
+                  —
+                {% endif %}
+              </td>
+              <td class="small"><code>{{ b.status }}</code></td>
+              <td class="small text-nowrap"><a href="{% url 'erp:booking_detail' b.id %}">{{ b.created_at|date:"d.m.Y H:i" }}</a></td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="6" class="text-muted p-3">Нет данных.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endblock %}
+

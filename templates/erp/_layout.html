@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% load support_tags %}
+
+{% block title %}ERP — МаБибип{% endblock %}
+
+{% block content %}
+  {% if erp_city_signals_count %}
+    <div class="alert alert-warning d-flex flex-wrap align-items-center justify-content-between gap-2">
+      <div class="min-w-0">
+        <div class="fw-semibold">Новые города для расширения: {{ erp_city_signals_count }}</div>
+        <div class="small text-muted">
+          Появились регистрации бизнеса из новых городов. Нажмите «Отлично», чтобы убрать из списка.
+        </div>
+        <div class="mt-2 d-flex flex-wrap gap-2">
+          {% for s in erp_city_signals %}
+            <form method="post" action="{% url 'erp:city_signal_ack' s.id %}" class="d-inline-flex align-items-center gap-2">
+              {% csrf_token %}
+              <span class="badge text-bg-light text-dark border">{{ s.city_label }} · {{ s.seen_count }}</span>
+              <button type="submit" class="btn btn-sm btn-outline-success">Отлично</button>
+            </form>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  {% endif %}
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
+    <div>
+      <h1 class="h3 mb-1">{% block erp_title %}ERP{% endblock %}</h1>
+      <p class="text-muted small mb-0">{% block erp_subtitle %}{% endblock %}</p>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+      <a class="btn btn-outline-secondary btn-sm" href="{% url 'erp:dashboard' %}">Дашборд</a>
+      <a class="btn btn-outline-secondary btn-sm" href="{% url 'erp:funnel' %}">Воронка</a>
+      <a class="btn btn-outline-secondary btn-sm" href="{% url 'erp:activity' %}">Активность СТО</a>
+      <a class="btn btn-outline-secondary btn-sm" href="{% url 'erp:billing' %}">Платежи/подписки</a>
+      <a class="btn btn-outline-secondary btn-sm" href="{% url 'erp:deals_report' %}">Сделки</a>
+      <a class="btn btn-outline-secondary btn-sm" href="{% url 'erp:withdrawals' %}">Выводы</a>
+      <a class="btn btn-outline-secondary btn-sm" href="{% url 'erp:classifieds_stats' %}">Объявления</a>
+      <a class="btn btn-outline-secondary btn-sm" href="{% url 'erp:users' %}">Пользователи</a>
+      <a class="btn btn-outline-secondary btn-sm" href="{% url 'erp:bookings' %}">Записи</a>
+      <a class="btn btn-outline-secondary btn-sm" href="{% url 'erp:stations' %}">СТО</a>
+      {% support_staff_unread_count as erp_support_unread %}
+      <a class="btn btn-outline-secondary btn-sm position-relative" href="{% url 'erp:support' %}">
+        Поддержка
+        {% if erp_support_unread %}
+          <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">{{ erp_support_unread }}</span>
+        {% endif %}
+      </a>
+      <a class="btn btn-outline-secondary btn-sm" href="{% url 'erp:reviews' %}">Отзывы/жалобы</a>
+      <a class="btn btn-outline-secondary btn-sm" href="{% url 'admin:index' %}">Django Admin</a>
+    </div>
+  </div>
+
+  {% block erp_content %}{% endblock %}
+{% endblock %}
+

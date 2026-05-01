@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% load static %}
+{% load humanize %}
+{% block title %}Профиль продавца — МаБибип{% endblock %}
+{% block content %}
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'home' %}">Главная</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'classifieds:ads_list' %}">Объявления</a></li>
+      <li class="breadcrumb-item active" aria-current="page">Профиль продавца</li>
+    </ol>
+  </nav>
+
+  <div class="row g-3">
+    <div class="col-lg-4">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex align-items-center gap-3">
+            {% if seller.avatar %}
+              <img src="{{ seller.avatar.url }}" alt="" width="56" height="56" class="rounded-circle object-fit-cover border" style="object-fit:cover;">
+            {% else %}
+            <div class="rounded-circle bg-body-secondary d-flex align-items-center justify-content-center"
+                 style="width: 56px; height: 56px;">
+              <span class="fw-bold">{{ seller.phone|slice:":1"|default:"П" }}</span>
+            </div>
+            {% endif %}
+            <div class="min-w-0">
+              <div class="fw-semibold">{{ seller_display_name }}</div>
+              <div class="small text-muted text-truncate">
+                {% if seller.business_role %}{{ seller.get_business_role_display }}{% else %}Частное лицо{% endif %}
+              </div>
+            </div>
+          </div>
+          <div class="mt-3 small text-muted">Всего объявлений: <strong>{{ ads_total }}</strong></div>
+          {% if seller_review_count %}
+            <div class="mt-2 small">
+              <span class="text-muted">Рейтинг (продажи):</span>
+              <strong>{% if seller_review_avg %}{{ seller_review_avg|floatformat:1 }}{% else %}—{% endif %}</strong>
+              <span class="text-muted">· отзывов: {{ seller_review_count }}</span>
+            </div>
+          {% endif %}
+          {% if can_review_seller_on_profile %}
+            <a class="btn btn-outline-secondary btn-sm w-100 mt-3"
+               href="{% url 'classifieds:seller_review_create' seller.public_id %}?next={{ request.path|urlencode }}">Оставить отзыв</a>
+          {% endif %}
+        </div>
+      </div>
+
+      {% if seller_reviews %}
+        <h2 class="h6 mt-4 mb-3">Отзывы о продавце</h2>
+        <div class="d-flex flex-column gap-2">
+          {% for r in seller_reviews %}
+            <div class="card border shadow-sm">
+              <div class="card-body py-3">
+                <div class="d-flex justify-content-between align-items-start gap-2 mb-1">
+                  <span class="fw-semibold">{{ r.rating }} ★</span>
+                  <span class="small text-muted">{{ r.created_at|date:"d.m.Y" }}</span>
+                </div>
+                {% if r.text %}
+                  <p class="small mb-0 text-body-secondary">{{ r.text|linebreaksbr }}</p>
+                {% endif %}
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    </div>
+
+    <div class="col-lg-8">
+      <h1 class="h4 mb-3">Объявления продавца</h1>
+      {% if ads %}
+        <div class="row {% if ads_mobile_two_column %}row-cols-2 row-cols-md-1 g-2 pm-ads-dense-mobile{% else %}row-cols-1 g-3{% endif %}">
+          {% for a in ads %}
+            <div class="col d-flex">
+              {% include "classifieds/_ad_card.html" with ad=a ad_call_map=ad_call_map favorite_ad_ids=favorite_ad_ids seller_review_done_owner_ids=seller_review_done_owner_ids %}
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="alert alert-light border text-muted">У продавца пока нет опубликованных объявлений.</div>
+      {% endif %}
+    </div>
+  </div>
+{% endblock %}
+
+{% block extra_js %}
+  <script type="module">
+    import { initAdCardSliders } from "{% static 'js/pages/ad-card-swipe.js' %}";
+    initAdCardSliders(document);
+  </script>
+  {% if user.is_authenticated %}
+    <script type="module">
+      import { initClassifiedsCallTrack } from "{% static 'js/pages/classifieds-call-track.js' %}";
+      initClassifiedsCallTrack(document);
+    </script>
+  {% endif %}
+{% endblock %}
+

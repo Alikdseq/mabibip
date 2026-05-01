@@ -1,0 +1,112 @@
+{% extends "sto_owner/base.html" %}
+{% block title %}Календарь слотов — МаБибип{% endblock %}
+{% block sto_owner_main %}
+  <nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb mb-0">
+      <li class="breadcrumb-item"><a href="{% url 'sto_owner:dashboard' %}">Кабинет СТО</a></li>
+      <li class="breadcrumb-item active" aria-current="page">Календарь слотов</li>
+    </ol>
+  </nav>
+
+  <div class="d-flex flex-column flex-md-row justify-content-between align-items-start gap-3 mb-4">
+    <h1 class="h4 mb-0">Календарь слотов</h1>
+    <div class="d-flex flex-wrap gap-2 align-items-center">
+      <a class="btn btn-outline-secondary btn-sm" href="{% url 'sto_owner:slot_add' %}">Добавить окно</a>
+      <a class="btn btn-outline-secondary btn-sm" href="{% url 'sto_owner:bays' %}">Посты</a>
+      <a class="btn btn-outline-primary btn-sm" href="{% url 'sto_owner:dashboard' %}">Заказы сегодня</a>
+    </div>
+  </div>
+
+  {% if no_stations %}
+    <p class="text-muted">Сначала добавьте станцию в системе (через администратора).</p>
+  {% else %}
+    <form method="get" class="row g-2 align-items-end mb-3">
+      <div class="col-md-4">
+        <label class="form-label small text-muted mb-1" for="cal-station">Станция</label>
+        <select id="cal-station" name="station" class="form-select" onchange="this.form.submit()">
+          {% for s in stations_sidebar %}
+            <option value="{{ s.slug }}" {% if s.slug == station.slug %}selected{% endif %}>{{ s.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label small text-muted mb-1" for="cal-week">Неделя с</label>
+        <input id="cal-week" type="date" name="week" class="form-control" value="{{ week_monday|date:'Y-m-d' }}"
+               onchange="this.form.submit()">
+      </div>
+      <div class="col-md-4">
+        <span class="small text-muted d-block mb-1">Навигация</span>
+        <div class="btn-group btn-group-sm">
+          <a class="btn btn-outline-secondary"
+             href="?station={{ station.slug }}&week={{ prev_week_monday|date:'Y-m-d' }}">← Пред.</a>
+          <a class="btn btn-outline-secondary"
+             href="?station={{ station.slug }}&week={{ next_week_monday|date:'Y-m-d' }}">След. →</a>
+        </div>
+      </div>
+    </form>
+
+    <p class="small text-muted mb-3">
+      Период: <strong>{{ week_monday|date:"d.m.Y" }}</strong> — <strong>{{ week_sunday|date:"d.m.Y" }}</strong>
+    </p>
+
+    <div class="row g-3">
+      {% for day in week_days %}
+        <div class="col-md-6 col-xl-4">
+          <div class="card border-0 shadow-sm h-100">
+            <div class="card-header py-2 {% if day.date == today %}bg-primary text-white{% else %}bg-light{% endif %}">
+              <strong>{{ day.date|date:"l" }}</strong>
+              <span class="small">· {{ day.date|date:"d.m.Y" }}</span>
+            </div>
+            <div class="card-body small">
+              {% if day.slots %}
+                {% for slot in day.slots %}
+                  <div class="border rounded p-2 mb-2 {% if slot.active_booking %}border-warning{% elif not slot.is_available %}border-secondary bg-light{% else %}border-success border-opacity-25{% endif %}">
+                    <div class="d-flex justify-content-between gap-2 flex-wrap">
+                      <span><strong>{{ slot.start_time|time:"H:i" }}–{{ slot.end_time|time:"H:i" }}</strong></span>
+                      <span class="text-muted">{{ slot.bay.name }}</span>
+                    </div>
+                    {% if slot.active_booking %}
+                      <div class="mt-1">
+                        <span class="badge text-bg-warning text-dark">Запись №{{ slot.active_booking.pk }}</span>
+                        <span class="text-muted">{{ slot.active_booking.get_status_display }}</span>
+                      </div>
+                      <p class="mb-0 mt-1 text-muted small">Закройте запись в таблице заказов, затем можно закрыть слот.</p>
+                    {% elif not slot.is_available %}
+                      <div class="mt-1">
+                        <span class="badge text-bg-secondary">Закрыто вручную</span>
+                        {% if slot.manual_block_note %}
+                          <span class="text-muted">{{ slot.manual_block_note }}</span>
+                        {% endif %}
+                      </div>
+                      <form method="post" action="{% url 'sto_owner:slot_toggle_block' slot.pk %}" class="mt-2">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="unblock">
+                        <input type="hidden" name="week" value="{{ week_monday|date:'Y-m-d' }}">
+                        <input type="hidden" name="station" value="{{ station.slug }}">
+                        <button type="submit" class="btn btn-sm btn-success">Открыть слот</button>
+                      </form>
+                    {% else %}
+                      <div class="mt-1"><span class="badge text-bg-success">Свободно</span></div>
+                      <form method="post" action="{% url 'sto_owner:slot_toggle_block' slot.pk %}" class="mt-2">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="block">
+                        <input type="hidden" name="week" value="{{ week_monday|date:'Y-m-d' }}">
+                        <input type="hidden" name="station" value="{{ station.slug }}">
+                        <label class="form-label small mb-1" for="note-{{ slot.pk }}">Комментарий (только для вас)</label>
+                        <input type="text" id="note-{{ slot.pk }}" name="note" class="form-control form-control-sm mb-2"
+                               maxlength="200" placeholder="Обед, запчасти…">
+                        <button type="submit" class="btn btn-sm btn-outline-danger">Закрыть слот</button>
+                      </form>
+                    {% endif %}
+                  </div>
+                {% endfor %}
+              {% else %}
+                <p class="text-muted mb-0">Нет окон на этот день.</p>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endblock %}

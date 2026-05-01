@@ -1,0 +1,50 @@
+{% extends "autoshop_owner/base.html" %}
+{% block title %}Товары — кабинет автомагазина{% endblock %}
+
+{% block autoshop_owner_main %}
+  <h1 class="h4 mb-3">Товары</h1>
+  <p class="small text-muted">
+    Публичная страница магазина:
+    <a href="{% url 'classifieds:shop_detail' shop.slug %}" target="_blank" rel="noopener">{{ shop.name }}</a>
+  </p>
+  <div class="mb-3">
+    <a class="btn btn-primary" href="{% url 'classifieds:my_ad_create' %}">Добавить объявление</a>
+  </div>
+  {% if ads %}
+    <div class="table-responsive">
+      <table class="table table-sm align-middle">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Заголовок</th>
+            <th>Цена</th>
+            <th>Статус</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for a in ads %}
+            <tr>
+              <td>{{ a.pk }}</td>
+              <td><a href="{% url 'classifieds:ad_detail' a.pk %}">{{ a.title }}</a></td>
+              <td>{{ a.price }} ₽</td>
+              <td>
+                {% if a.is_published %}
+                  <span class="badge text-bg-success">Опубликовано</span>
+                {% else %}
+                  <span class="badge text-bg-secondary">Скрыто</span>
+                {% endif %}
+              </td>
+              <td class="text-end">
+                <a class="btn btn-sm btn-outline-primary" href="{% url 'classifieds:my_ad_edit' a.pk %}">Редактировать</a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="text-muted">Пока нет объявлений.</p>
+  {% endif %}
+{% endblock %}
+

@@ -1,0 +1,67 @@
+{% extends "admin/base_site.html" %}
+
+{% block title %}Отчёты — Воронка{% endblock %}
+
+{% block content %}
+  <style>
+    .pm-wrap { max-width: 1080px; }
+    .pm-card { background: var(--body-bg); border: 1px solid var(--hairline-color); border-radius: 8px; padding: 14px 16px; margin-bottom: 16px; }
+    .pm-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 16px; }
+    .pm-span-12 { grid-column: span 12; }
+    .pm-table { width: 100%; border-collapse: collapse; }
+    .pm-table th, .pm-table td { padding: 10px 12px; border-bottom: 1px solid var(--hairline-color); }
+    .pm-table th { text-align: left; color: var(--body-quiet-color); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
+    .pm-right { text-align: right; }
+    .pm-actions { display:flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: flex-end; }
+    .pm-muted { color: var(--body-quiet-color); font-size: 12px; }
+    .pm-form { display:flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; }
+    .pm-form label { font-size: 12px; color: var(--body-quiet-color); display:block; margin-bottom: 4px; }
+    .pm-form input[type="date"] { padding: 6px 8px; }
+    @media (max-width: 1024px) { .pm-wrap { max-width: none; } }
+  </style>
+
+  <div class="pm-wrap">
+    <h1>Отчёты → Воронка</h1>
+    <p class="pm-muted">Считаем по когорте: пользователи, зарегистрированные в период. Дальше — действия этих пользователей в периоде.</p>
+
+    <div class="pm-card">
+      <form method="get" class="pm-form">
+        <div>
+          <label for="start">Начало</label>
+          <input id="start" name="start" type="date" value="{{ start|date:'Y-m-d' }}"/>
+        </div>
+        <div>
+          <label for="end">Конец</label>
+          <input id="end" name="end" type="date" value="{{ end|date:'Y-m-d' }}"/>
+        </div>
+        <div class="pm-actions" style="flex:1;">
+          <button type="submit" class="button default">Показать</button>
+          <a class="button" href="{{ xlsx_url }}">Скачать XLSX</a>
+          <a class="button" href="{% url 'admin:index' %}">На дашборд</a>
+        </div>
+      </form>
+    </div>
+
+    <div class="pm-card">
+      <table class="pm-table">
+        <thead>
+          <tr>
+            <th>Шаг</th>
+            <th class="pm-right">Пользователей</th>
+            <th class="pm-right">Конверсия от предыдущего шага</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in steps %}
+            <tr>
+              <td><strong>{{ s.label }}</strong></td>
+              <td class="pm-right">{{ s.count }}</td>
+              <td class="pm-right">{{ s.pct_prev }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endblock %}
+

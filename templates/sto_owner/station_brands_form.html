@@ -1,0 +1,36 @@
+{% extends "sto_owner/base.html" %}
+{% block title %}Марки авто — {{ station.name }} — МаБибип{% endblock %}
+{% block sto_owner_main %}
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'sto_owner:dashboard' %}">Кабинет</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'sto_owner:stations' %}">Марки авто</a></li>
+      <li class="breadcrumb-item active" aria-current="page">{{ station.name }}</li>
+    </ol>
+  </nav>
+
+  <h1 class="h4 mb-3">Марки авто для “{{ station.name }}”</h1>
+  <p class="small mb-3">
+    <a href="{% url 'sto_owner:station_profile' station.slug %}">Полный профиль и услуги</a>
+  </p>
+  <p class="text-muted small mb-3">
+    Выберите марки, с которыми вы работаете. После сохранения вы начнёте показываться в каталоге по фильтру «Марка».
+  </p>
+
+  <form method="post" class="card shadow-sm">
+    {% csrf_token %}
+    <div class="card-body">
+      <div class="mb-3">
+        <label class="form-label small fw-semibold" for="{{ form.car_brands.id_for_label }}">Марки</label>
+        {{ form.car_brands }}
+        {% if form.car_brands.errors %}
+          <div class="text-danger small mt-1">{{ form.car_brands.errors }}</div>
+        {% endif %}
+      </div>
+      <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-primary">Сохранить</button>
+        <a class="btn btn-outline-secondary" href="{% url 'sto_owner:stations' %}">Назад</a>
+      </div>
+    </div>
+  </form>
+{% endblock %}

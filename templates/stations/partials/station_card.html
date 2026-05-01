@@ -1,0 +1,111 @@
+{% load station_catalog %}
+{% comment %}Карточка СТО: h-100 в сетке; клик по карточке → страница; кнопки и «отзывы» поверх stretched-link{% endcomment %}
+<div class="card pm-station-card shadow h-100 w-100 position-relative">
+  <a href="{% url 'stations:detail' s.slug %}" class="stretched-link" aria-label="Открыть карточку {{ s.name }}">
+    <span class="visually-hidden">{{ s.name }}</span>
+  </a>
+  <div class="card-body p-3 p-md-4 d-flex flex-column">
+    <div class="d-flex flex-nowrap justify-content-between align-items-start gap-2 mb-2">
+      <div class="flex-grow-1 min-w-0 pe-2">
+        <h2 class="h5 fw-bold mb-1 text-dark">{{ s.name }}</h2>
+        {% if s.executor_kind == executor_private and s.parent_station %}
+          <div class="small text-muted">
+            <span class="badge text-bg-light text-dark border">От сервиса: {{ s.parent_station.name }}</span>
+          </div>
+        {% endif %}
+        <p class="small text-muted mb-0">
+          {{ s.address|truncatechars:120 }}
+          {% with dk=s.distance_m|distance_as_km %}
+            {% if catalog_has_distance and dk %}· {{ dk }} км от вас{% endif %}
+          {% endwith %}
+        </p>
+      </div>
+      <div class="flex-shrink-0 pm-station-photo-wrap{% if catalog_listing %} pm-station-photo-wrap--catalog{% endif %}">
+        {% if s.executor_kind == executor_private and s.avatar %}
+          <div class="rounded-3 overflow-hidden bg-light ratio ratio-1x1 shadow-sm">
+            <img src="{{ s.avatar_thumb.url|default:s.avatar.url }}" alt="" class="object-fit-cover w-100 h-100">
+          </div>
+        {% else %}
+          {% with ph_list=s.photos.all %}
+            {% if ph_list %}
+              {% with ph=ph_list.0 %}
+                <div class="rounded-3 overflow-hidden bg-light ratio ratio-1x1 shadow-sm">
+                  <img src="{{ ph.image_thumb.url|default:ph.image.url }}" alt="" class="object-fit-cover w-100 h-100">
+                </div>
+              {% endwith %}
+            {% else %}
+              <div class="rounded-3 bg-secondary bg-opacity-10 ratio ratio-1x1 d-flex align-items-center justify-content-center small text-muted shadow-sm">
+                нет фото
+              </div>
+            {% endif %}
+          {% endwith %}
+        {% endif %}
+      </div>
+    </div>
+    <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+      {% if s.is_verified %}
+        <span class="badge rounded-pill pm-badge-verified">Проверен</span>
+      {% endif %}
+    </div>
+    <p class="small d-flex align-items-center gap-2 mb-3 flex-wrap">
+      {% if s.has_slots_today and s.nearest_slot_date == catalog_today and s.nearest_slot_time %}
+        <span class="pm-availability-dot" aria-hidden="true"></span>
+        <span>Свободное окно сегодня {{ s.nearest_slot_time|time:"H:i" }}</span>
+      {% elif s.has_slots_today %}
+        <span class="pm-availability-dot" aria-hidden="true"></span>
+        <span>Есть свободные окна сегодня</span>
+      {% elif s.has_slots_tomorrow %}
+        <span class="pm-availability-dot" aria-hidden="true"></span>
+        <span>Запись на завтра</span>
+      {% else %}
+        <span class="text-muted">Нет свободных окон в ближайшие дни</span>
+      {% endif %}
+    </p>
+    {% with offers=s.service_offers.all %}
+      {% if offers %}
+        <div class="d-flex flex-wrap gap-2 mb-2">
+          {% for off in offers|slice:":3" %}
+            <span class="badge rounded-pill pm-service-tag">{{ off.category.name }}</span>
+          {% endfor %}
+        </div>
+        {% with fo=offers|first %}
+          {% if fo %}
+            <p class="fw-bold mb-2">от {{ fo.price_from_rub }}&nbsp;₽ ({{ fo.category.name }})</p>
+          {% endif %}
+        {% endwith %}
+      {% elif s.categories.all %}
+        <div class="d-flex flex-wrap gap-2 mb-2">
+          {% for c in s.categories.all|slice:":3" %}
+            <span class="badge rounded-pill pm-service-tag">{{ c.name }}</span>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+    {% with brands=s.car_brands.all %}
+      {% if brands %}
+        <div class="d-flex flex-wrap align-items-center gap-1 mb-0">
+          <i class="bi bi-car-front text-primary me-1" aria-hidden="true"></i>
+          {% for b in brands|slice:":4" %}
+            <span class="badge rounded-pill pm-brand-pill">{{ b.name }}</span>
+          {% endfor %}
+          {% if brands|length > 4 %}
+            <span class="small text-muted">ещё {{ brands|length|add:"-4" }}</span>
+          {% endif %}
+        </div>
+      {% endif %}
+    {% endwith %}
+    <div class="mt-auto pt-3 border-top d-flex flex-column gap-2 position-relative z-2">
+      <a href="{% url 'stations:detail' s.slug %}#reviews"
+         class="small text-muted text-decoration-none align-self-start">
+        {{ s.review_count|default:0 }} отзывов
+      </a>
+      <div class="d-flex flex-wrap gap-2 justify-content-end">
+        {% station_phone_e164 s as phone_e164 %}
+        {% if phone_e164 %}
+          <a href="tel:{{ phone_e164 }}" class="btn btn-primary btn-sm rounded-pill px-3">Позвонить</a>
+        {% endif %}
+        <a href="{% url 'stations:detail' s.slug %}" class="btn btn-outline-primary btn-sm rounded-pill px-2 px-sm-3">Подробнее</a>
+      </div>
+    </div>
+  </div>
+</div>

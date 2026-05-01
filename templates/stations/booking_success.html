@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Заявка отправлена — МаБибип{% endblock %}
+{% block content %}
+  <div class="col-lg-8">
+    <h1 class="h4">Спасибо!</h1>
+    <p>Заявка отправлена. СТО должно подтвердить запись в течение часа.</p>
+    <p class="text-muted small">Окно удерживается до подтверждения СТО, не более часа.</p>
+    <a class="btn btn-primary" href="{% url 'stations:detail' station.slug %}">К карточке «{{ station.name }}»</a>
+    <a class="btn btn-outline-secondary" href="{% url 'stations:list' %}">В каталог</a>
+  </div>
+{% endblock %}

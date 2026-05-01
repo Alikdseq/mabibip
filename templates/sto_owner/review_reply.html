@@ -1,0 +1,34 @@
+{% extends "sto_owner/base.html" %}
+{% block title %}Ответ на отзыв — {{ station.name }}{% endblock %}
+{% block sto_owner_main %}
+  <nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb mb-0">
+      <li class="breadcrumb-item"><a href="{% url 'sto_owner:dashboard' %}">Кабинет СТО</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'sto_owner:reviews' %}">Отзывы</a></li>
+      <li class="breadcrumb-item active" aria-current="page">Ответ</li>
+    </ol>
+  </nav>
+
+  <h1 class="h5 mb-3">{{ station.name }}</h1>
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+      <p class="small text-muted mb-1">Отзыв клиента (★{{ review.rating }})</p>
+      <p class="mb-0">{{ review.text|default:"(без текста)"|linebreaksbr }}</p>
+      {% include "reviews/_review_photo.html" with review=review only %}
+    </div>
+  </div>
+
+  <form method="post" class="col-lg-8">
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+      <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+    {% endif %}
+    <div class="mb-3">
+      <label class="form-label" for="id_text">{{ form.text.label }}</label>
+      {{ form.text }}
+      {% if form.text.errors %}<div class="invalid-feedback d-block">{{ form.text.errors }}</div>{% endif %}
+    </div>
+    <button type="submit" class="btn btn-primary">Сохранить ответ</button>
+    <a class="btn btn-link" href="{% url 'sto_owner:reviews' %}">Отмена</a>
+  </form>
+{% endblock %}

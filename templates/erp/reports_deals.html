@@ -1,0 +1,265 @@
+{% extends "erp/_layout.html" %}
+
+{% block erp_title %}ERP → Отчёты → Сделки{% endblock %}
+{% block erp_subtitle %}Фильтры + KPI + XLSX (до 500 строк на экран){% endblock %}
+
+{% block erp_content %}
+  <div class="card mb-4">
+    <div class="card-body">
+      <form method="get" class="row g-2 align-items-end">
+        <div class="col-md-2">
+          <label class="form-label small text-muted" for="start">Начало</label>
+          <input id="start" name="start" type="date" class="form-control" value="{{ start|date:'Y-m-d' }}"/>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small text-muted" for="end">Конец</label>
+          <input id="end" name="end" type="date" class="form-control" value="{{ end|date:'Y-m-d' }}"/>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small text-muted" for="status">Статус</label>
+          <select id="status" name="status" class="form-select">
+            <option value="">Все</option>
+            {% for v, label in status_choices %}
+              <option value="{{ v }}" {% if status == v %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small text-muted" for="delivery_kind">Доставка</label>
+          <select id="delivery_kind" name="delivery_kind" class="form-select">
+            <option value="">Все</option>
+            {% for v, label in delivery_kind_choices %}
+              <option value="{{ v }}" {% if delivery_kind == v %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small text-muted" for="city">Город</label>
+          <input id="city" name="city" class="form-control" placeholder="Москва" value="{{ city }}"/>
+        </div>
+        <div class="col-md-2 d-flex gap-2 justify-content-end">
+          <button type="submit" class="btn btn-primary">Показать</button>
+          <a class="btn btn-outline-primary"
+             href="{% url 'erp:deals_report_xlsx' %}?start={{ start|date:'Y-m-d' }}&end={{ end|date:'Y-m-d' }}&status={{ status }}&delivery_kind={{ delivery_kind }}&city={{ city }}&seller_id={{ seller_id }}&buyer_id={{ buyer_id }}&ad_id={{ ad_id }}&provider_payment_id={{ provider_payment_id }}">XLSX</a>
+        </div>
+
+        <div class="col-md-2">
+          <label class="form-label small text-muted" for="seller_id">Продавец (id)</label>
+          <input id="seller_id" name="seller_id" class="form-control" value="{{ seller_id }}"/>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small text-muted" for="buyer_id">Покупатель (id)</label>
+          <input id="buyer_id" name="buyer_id" class="form-control" value="{{ buyer_id }}"/>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small text-muted" for="ad_id">Объявление (id)</label>
+          <input id="ad_id" name="ad_id" class="form-control" value="{{ ad_id }}"/>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label small text-muted" for="provider_payment_id">Payment ID</label>
+          <input id="provider_payment_id" name="provider_payment_id" class="form-control" value="{{ provider_payment_id }}"/>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <div class="text-muted small">GMV paid</div>
+          <div class="h5 mb-0">{{ gmv_paid }} ₽</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <div class="text-muted small">Hold (ledger)</div>
+          <div class="h5 mb-0">{{ holds }} ₽</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <div class="text-muted small">Released (ledger)</div>
+          <div class="h5 mb-0">{{ releases }} ₽</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <div class="text-muted small">Refunds</div>
+          <div class="h5 mb-0">{{ refunds_count }} / {{ refunds_sum }} ₽</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <div class="text-muted small">Отменено до оплаты</div>
+          <div class="h5 mb-0">{{ canceled_before_pay }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <div class="text-muted small">Заявки на вывод</div>
+          <div class="h5 mb-0">{{ withdrawals_count }} / {{ withdrawals_sum }} ₽</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <div class="text-muted small">Выплачено</div>
+          <div class="h5 mb-0">{{ withdrawals_paid_sum }} ₽</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card mb-4">
+    <div class="card-header fw-semibold">Проблемные сделки</div>
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-4">
+          <div class="p-3 border rounded">
+            <div class="text-muted small">Ожидает оплату &gt; {{ stuck_payment_pending_minutes }} мин</div>
+            <div class="h5 mb-0">{{ stuck_payment_count }}</div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="p-3 border rounded">
+            <div class="text-muted small">Ожидает отправку &gt; {{ stuck_waiting_shipment_hours }} ч</div>
+            <div class="h5 mb-0">{{ stuck_waiting_count }}</div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="p-3 border rounded">
+            <div class="text-muted small">Просрочен auto_confirm_at</div>
+            <div class="h5 mb-0">{{ stuck_overdue_confirm_count }}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-3 mt-1">
+        <div class="col-lg-4">
+          <div class="fw-semibold mb-2 small">Долго ждёт оплату (до 20)</div>
+          <div class="table-responsive">
+            <table class="table table-sm mb-0">
+              <thead>
+                <tr><th>ID</th><th>Создано</th><th>Объявление</th></tr>
+              </thead>
+              <tbody>
+                {% for d in stuck_payment %}
+                  <tr>
+                    <td class="small text-nowrap">{{ d.pk }}</td>
+                    <td class="small text-nowrap">{{ d.created_at|date:"d.m.Y H:i" }}</td>
+                    <td class="small">{{ d.ad_id }} {{ d.ad.title|default:"" }}</td>
+                  </tr>
+                {% empty %}
+                  <tr><td colspan="3" class="text-muted small">Нет</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="col-lg-4">
+          <div class="fw-semibold mb-2 small">Долго ждёт отправку (до 20)</div>
+          <div class="table-responsive">
+            <table class="table table-sm mb-0">
+              <thead>
+                <tr><th>ID</th><th>Оплачено</th><th>Объявление</th></tr>
+              </thead>
+              <tbody>
+                {% for d in stuck_waiting %}
+                  <tr>
+                    <td class="small text-nowrap">{{ d.pk }}</td>
+                    <td class="small text-nowrap">{{ d.paid_at|date:"d.m.Y H:i" }}</td>
+                    <td class="small">{{ d.ad_id }} {{ d.ad.title|default:"" }}</td>
+                  </tr>
+                {% empty %}
+                  <tr><td colspan="3" class="text-muted small">Нет</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="col-lg-4">
+          <div class="fw-semibold mb-2 small">Просрочен auto_confirm_at (до 20)</div>
+          <div class="table-responsive">
+            <table class="table table-sm mb-0">
+              <thead>
+                <tr><th>ID</th><th>auto_confirm_at</th><th>Объявление</th></tr>
+              </thead>
+              <tbody>
+                {% for d in stuck_overdue_confirm %}
+                  <tr>
+                    <td class="small text-nowrap">{{ d.pk }}</td>
+                    <td class="small text-nowrap">{{ d.auto_confirm_at|date:"d.m.Y H:i" }}</td>
+                    <td class="small">{{ d.ad_id }} {{ d.ad.title|default:"" }}</td>
+                  </tr>
+                {% empty %}
+                  <tr><td colspan="3" class="text-muted small">Нет</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header fw-semibold">Сделки (до 500)</div>
+    <div class="card-body p-0 table-responsive">
+      <table class="table table-striped mb-0">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Создано</th>
+            <th>Статус</th>
+            <th>Доставка</th>
+            <th>Объявление</th>
+            <th>Город</th>
+            <th>Buyer</th>
+            <th>Seller</th>
+            <th class="text-end">Сумма</th>
+            <th>Оплата</th>
+            <th>Payment ID</th>
+            <th>Auto confirm</th>
+            <th>Отменено</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for d in deals %}
+            <tr>
+              <td class="small text-nowrap">{{ d.pk }}</td>
+              <td class="small text-nowrap">{{ d.created_at|date:"d.m.Y H:i" }}</td>
+              <td class="small"><code>{{ d.status }}</code></td>
+              <td class="small"><code>{{ d.delivery_kind }}</code></td>
+              <td class="small">{{ d.ad_id }} {{ d.ad.title|default:"" }}</td>
+              <td class="small">{{ d.ad.city_label|default:"" }}</td>
+              <td class="small text-nowrap">{{ d.buyer_id }}</td>
+              <td class="small text-nowrap">{{ d.seller_id }}</td>
+              <td class="small text-end">{{ d.amount }}</td>
+              <td class="small text-nowrap">{% if d.paid_at %}{{ d.paid_at|date:"d.m.Y H:i" }}{% else %}—{% endif %}</td>
+              <td class="small text-nowrap">{{ d.provider_payment_id|default:"" }}</td>
+              <td class="small text-nowrap">{% if d.auto_confirm_at %}{{ d.auto_confirm_at|date:"d.m.Y H:i" }}{% else %}—{% endif %}</td>
+              <td class="small text-nowrap">{% if d.canceled_at %}{{ d.canceled_at|date:"d.m.Y H:i" }}{% else %}—{% endif %}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="13" class="text-muted p-3">Нет сделок за период.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endblock %}
+

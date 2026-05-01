@@ -1,0 +1,422 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% load static %}
+{% block title %}{{ ad.title }} — объявления — МаБибип{% endblock %}
+{% block content %}
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'home' %}">Главная</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'classifieds:ads_list' %}?tab={{ ad.kind }}">Объявления</a></li>
+      <li class="breadcrumb-item active" aria-current="page">{{ ad.title|truncatechars:48 }}</li>
+    </ol>
+  </nav>
+
+  <div class="alert alert-light border small">
+    <strong>Совет по безопасности:</strong> проверяйте продавца и не переводите предоплату незнакомым людям.
+  </div>
+
+  {% with photos=ad.photos.all %}
+    <div class="row g-4">
+      <div class="col-lg-8">
+        {% if photos %}
+          <div class="pm-ad-gallery-avito card border-0 shadow-sm overflow-hidden mb-4">
+            <div class="pm-ad-gallery-stage position-relative" id="pm-ad-gallery-stage" tabindex="0" aria-label="Галерея фото">
+              <div class="pm-ad-gallery-main-wrap d-flex align-items-center justify-content-center">
+                <img id="pm-ad-main-photo" src="{{ photos.0.image.url }}" alt="{{ ad.title }}" class="pm-ad-gallery-main-img">
+              </div>
+              {% if photos|length > 1 %}
+                <button type="button" class="pm-ad-gallery-nav pm-ad-gallery-nav--prev" aria-label="Предыдущее фото">
+                  <i class="bi bi-chevron-left" aria-hidden="true"></i>
+                </button>
+                <button type="button" class="pm-ad-gallery-nav pm-ad-gallery-nav--next" aria-label="Следующее фото">
+                  <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                </button>
+              {% endif %}
+            </div>
+            {% if photos|length > 1 %}
+              <div class="pm-ad-gallery-thumbs px-2 py-2 border-top bg-white">
+                <div class="pm-ad-gallery-thumbs-track d-flex gap-2 flex-nowrap overflow-auto pb-1">
+                  {% for ph in photos %}
+                    <button type="button"
+                            class="pm-ad-thumb pm-ad-thumb-tile btn p-0 rounded-3 overflow-hidden {% if forloop.first %}pm-ad-thumb-active{% endif %}"
+                            data-src="{{ ph.image.url }}"
+                            aria-label="Фото {{ forloop.counter }}">
+                      <img src="{{ ph.image.url }}" alt="" width="80" height="60" loading="lazy" decoding="async" class="d-block" style="width: 100%; height: 100%; object-fit: cover;">
+                    </button>
+                  {% endfor %}
+                </div>
+              </div>
+            {% endif %}
+          </div>
+        {% endif %}
+
+        <div class="d-flex flex-column flex-md-row align-items-start justify-content-between gap-3 mb-3">
+          {% if ad.kind == 'car' %}
+            <h1 class="h3 mb-0 text-body pm-ad-detail-title">{{ ad.car_card_headline }}</h1>
+          {% else %}
+            <h1 class="h3 mb-0 text-body pm-ad-detail-title">{{ ad.title }}</h1>
+          {% endif %}
+          <div class="pm-ad-detail-price fw-bold text-nowrap">{{ ad.price|intcomma }}&nbsp;₽</div>
+        </div>
+
+        {% if user.is_authenticated and user.pk == ad.owner_id %}
+          <div class="d-flex flex-wrap gap-2 mb-3">
+            <a class="btn btn-sm btn-outline-primary" href="{% url 'classifieds:my_ad_edit' ad.pk %}">Редактировать</a>
+            {% if ad.is_published %}
+              <a class="btn btn-sm btn-outline-danger"
+                 href="{% url 'classifieds:my_ad_unpublish' ad.pk %}?next={{ request.get_full_path|urlencode }}">
+                Снять объявление
+              </a>
+            {% endif %}
+          </div>
+        {% endif %}
+
+        {% if ad.description %}
+          <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body">
+              <h2 class="h5 border-bottom pb-2 mb-3">Описание</h2>
+              <div class="text-body-secondary pm-ad-prose">{{ ad.description|linebreaks }}</div>
+            </div>
+          </div>
+        {% endif %}
+
+        <div class="card border-0 shadow-sm mb-4">
+          <div class="card-body">
+            <h2 class="h5 border-bottom pb-2 mb-3">Статистика</h2>
+            <div class="row g-3 small">
+              <div class="col-sm-6">
+                <div class="text-muted">Просмотров</div>
+                <div class="fw-semibold">{{ ad.view_count|intcomma }}</div>
+              </div>
+              <div class="col-sm-6">
+                <div class="text-muted">В избранном</div>
+                <div class="fw-semibold">{{ ad_favorite_count|intcomma }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card border-0 shadow-sm mb-4">
+          <div class="card-body">
+            <h2 class="h5 border-bottom pb-2 mb-3">Характеристики</h2>
+            <div class="row g-3 small">
+              {% if ad.kind == 'part' %}
+                <div class="col-sm-6">
+                  <div class="text-muted">Раздел</div>
+                  <div class="fw-semibold">{{ ad.part_category|default:"—" }}</div>
+                </div>
+                <div class="col-sm-6">
+                  <div class="text-muted">Марка (применимость)</div>
+                  <div class="fw-semibold">{% if ad.part_brand %}{{ ad.part_brand.name }}{% else %}—{% endif %}</div>
+                </div>
+                <div class="col-sm-6">
+                  <div class="text-muted">Состояние</div>
+                  <div class="fw-semibold">{% if ad.condition %}{{ ad.get_condition_display }}{% else %}—{% endif %}</div>
+                </div>
+              {% else %}
+                <div class="col-sm-6">
+                  <div class="text-muted">Марка и модель</div>
+                  <div class="fw-semibold">
+                    {% if ad.car_brand %}{{ ad.car_brand.name }}{% endif %}
+                    {% if ad.car_model %} {{ ad.car_model }}{% endif %}
+                    {% if not ad.car_brand and not ad.car_model %}—{% endif %}
+                  </div>
+                </div>
+                <div class="col-sm-6">
+                  <div class="text-muted">Поколение</div>
+                  <div class="fw-semibold">{{ ad.car_generation|default:"—" }}</div>
+                </div>
+                <div class="col-sm-6">
+                  <div class="text-muted">Год</div>
+                  <div class="fw-semibold">{{ ad.car_year|default:"—" }}</div>
+                </div>
+                <div class="col-sm-6">
+                  <div class="text-muted">Пробег</div>
+                  <div class="fw-semibold">{% if ad.car_mileage_km %}{{ ad.car_mileage_km|intcomma }} км{% else %}—{% endif %}</div>
+                </div>
+                <div class="col-sm-6">
+                  <div class="text-muted">Двигатель</div>
+                  <div class="fw-semibold">
+                    {% if ad.car_engine_l %}
+                      {{ ad.car_engine_l|floatformat:"-2" }} л
+                    {% else %}—{% endif %}
+                    {% if ad.car_power_hp %}· {{ ad.car_power_hp }} л.с.{% endif %}
+                  </div>
+                </div>
+                <div class="col-sm-6">
+                  <div class="text-muted">Топливо</div>
+                  <div class="fw-semibold">{% if ad.car_fuel %}{{ ad.get_car_fuel_display }}{% else %}—{% endif %}</div>
+                </div>
+                <div class="col-sm-6">
+                  <div class="text-muted">Коробка</div>
+                  <div class="fw-semibold">{% if ad.car_transmission %}{{ ad.get_car_transmission_display }}{% else %}—{% endif %}</div>
+                </div>
+                <div class="col-sm-6">
+                  <div class="text-muted">Привод</div>
+                  <div class="fw-semibold">{% if ad.car_drive %}{{ ad.get_car_drive_display }}{% else %}—{% endif %}</div>
+                </div>
+                <div class="col-sm-6">
+                  <div class="text-muted">Кузов</div>
+                  <div class="fw-semibold">{% if ad.car_body_type %}{{ ad.get_car_body_type_display }}{% else %}—{% endif %}</div>
+                </div>
+                <div class="col-sm-6">
+                  <div class="text-muted">Цвет</div>
+                  <div class="fw-semibold">{{ ad.car_color|default:"—" }}</div>
+                </div>
+                <div class="col-sm-6">
+                  <div class="text-muted">Руль</div>
+                  <div class="fw-semibold">{% if ad.car_steering %}{{ ad.get_car_steering_display }}{% else %}—{% endif %}</div>
+                </div>
+                <div class="col-sm-6">
+                  <div class="text-muted">Владельцев по ПТС</div>
+                  <div class="fw-semibold">{{ ad.car_owners_count|default:"—" }}</div>
+                </div>
+                <div class="col-sm-6">
+                  <div class="text-muted">Не битый</div>
+                  <div class="fw-semibold">
+                    {% if ad.car_not_crashed == True %}Да{% elif ad.car_not_crashed == False %}Нет{% else %}Не указано{% endif %}
+                  </div>
+                </div>
+                {% if ad.car_vin %}
+                  <div class="col-sm-6">
+                    <div class="text-muted">VIN</div>
+                    <div class="fw-semibold font-monospace small">
+                      {% with v=ad.car_vin %}
+                        {% if v|length > 8 %}{{ v|slice:":4" }}…{{ v|slice:"-4:" }}{% else %}••••{% endif %}
+                      {% endwith %}
+                    </div>
+                  </div>
+                {% endif %}
+              {% endif %}
+              <div class="col-sm-6">
+                <div class="text-muted">Город</div>
+                <div class="fw-semibold">{{ ad.city_label|default:"—" }}</div>
+              </div>
+              <div class="col-sm-6">
+                <div class="text-muted">Размещено</div>
+                <div class="fw-semibold">{{ ad.created_at|date:"d.m.Y" }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {% if similar_ads %}
+          <h2 class="h5 mb-3">Похожие объявления</h2>
+          <div class="d-flex flex-column gap-0">
+            {% for a in similar_ads %}
+              {% include "classifieds/_ad_card.html" with ad=a ad_call_map=similar_ad_call_map favorite_ad_ids=similar_favorite_ad_ids seller_review_done_owner_ids=similar_seller_review_done_owner_ids %}
+            {% endfor %}
+          </div>
+        {% endif %}
+      </div>
+
+      <div class="col-lg-4">
+        <div class="position-sticky pm-ad-sidebar" style="top: 1rem;">
+          <div class="card border-0 shadow-sm mb-3">
+            <div class="card-body">
+              <div class="fw-semibold mb-2">Связаться</div>
+
+              {% if user.is_authenticated %}
+                <div class="mb-3" id="pm-fav-ad-{{ ad.pk }}">
+                  {% include "classifieds/partials/favorite_ad_button.html" with ad=ad is_favorite=is_favorite_ad %}
+                </div>
+              {% else %}
+                <a class="btn btn-outline-secondary w-100 mb-3" href="{% url 'users:login' %}?next={% url 'classifieds:ad_detail' ad.pk %}">♡ В избранное</a>
+              {% endif %}
+
+              {% if not ad_call.authenticated %}
+                <p class="small text-muted mb-2">Телефон скрыт. Войдите в аккаунт — для клиентов МаБибип контакты открываются автоматически.</p>
+                <div class="d-grid gap-2">
+                  <a class="btn btn-primary" href="{% url 'users:login' %}?next={{ login_next_qs }}">Войти</a>
+                  <a class="btn btn-outline-secondary" href="{% url 'users:register' %}">Регистрация</a>
+                </div>
+                <div class="small text-muted mt-2">Сейчас видно только маску: {{ ad_call.seller_masked }}</div>
+
+              {% elif ad_call.mode == 'owner_preview' %}
+                <p class="small text-success mb-2">Вы автор объявления — это предпросмотр контактов.</p>
+                <div class="small text-muted mb-1">Ваш телефон в системе:</div>
+                <div class="fw-semibold mb-2">{{ ad_call.seller_display }}</div>
+                {% if ad_call.proxy_enabled %}
+                  <p class="small text-muted mb-0">Для покупателей включён <strong>подменный номер</strong> платформы и добавочный код — переадресацию на ваш телефон настраивает администратор (АТС / облачная телефония).</p>
+                {% else %}
+                  <p class="small text-muted mb-0">Сейчас покупателям показывается <strong>прямой звонок</strong> на ваш номер (режим без подмены).</p>
+                {% endif %}
+
+              {% elif ad_call.mode == 'proxy' %}
+                <p class="small text-muted mb-2">Звонок через номер МаБибип. После ответа системы наберите добавочный код — так мы скрываем прямой номер продавца.</p>
+                <div class="d-grid gap-2">
+                  <a class="btn btn-success js-pm-track-ad-call js-pm-safety-contact" href="{{ ad_call.tel_href }}" data-ad-id="{{ ad.pk }}">Позвонить</a>
+                </div>
+                <div class="mt-2 small">
+                  <div class="text-muted">Номер для звонка</div>
+                  <div class="fw-semibold">{{ ad_call.proxy_display }}</div>
+                  <div class="text-muted mt-1">Добавочный</div>
+                  <div class="fw-semibold pm-ad-ext">{{ ad_call.extension }}</div>
+                </div>
+                <p class="small text-muted mt-3 mb-0">Переадресацию на телефон продавца настраивает администратор платформы (АТС / облачная телефония).</p>
+
+              {% else %}
+                <div class="d-grid gap-2">
+                  {% if ad_call.mode == 'direct' %}
+                    <div data-pm-reveal-ad-id="{{ ad.pk }}">
+                      <button type="button"
+                              class="btn btn-success w-100 js-pm-reveal-phone"
+                              data-ad-id="{{ ad.pk }}">
+                        Показать номер
+                      </button>
+                      <a class="btn btn-success w-100 mt-2 disabled js-pm-tel-href" href="#" aria-disabled="true">Позвонить</a>
+                      <div class="mt-2 small text-muted js-pm-phone-masked">Сейчас видно только маску: {{ ad_call.seller_masked }}</div>
+                      <div class="mt-2 fw-semibold d-none js-pm-phone-display"></div>
+                      <div class="mt-1 small text-muted d-none js-pm-reveal-timer"></div>
+                    </div>
+                  {% elif ad_call.tel_href %}
+                    <a class="btn btn-success js-pm-track-ad-call" href="{{ ad_call.tel_href }}" data-ad-id="{{ ad.pk }}">Позвонить</a>
+                  {% endif %}
+                  {% if calls_enabled and user.is_authenticated and user.pk != ad.owner_id %}
+                    <button type="button"
+                            class="btn btn-outline-primary js-pm-call js-pm-safety-contact"
+                            data-receiver-user-id="{{ ad.owner_id }}"
+                            data-context-kind="ad"
+                            data-context-id="{{ ad.pk }}"
+                            data-ad-id="{{ ad.pk }}">
+                      Звонок в приложении
+                    </button>
+                  {% endif %}
+                  {% if user.is_authenticated and user.pk != ad.owner_id %}
+                    <a class="btn btn-primary js-pm-safety-contact" href="{% url 'classifieds:ad_start_chat' ad.pk %}">Написать</a>
+                  {% endif %}
+                </div>
+                {% if ad_call.mode != 'direct' %}
+                  {% if ad_call.seller_display %}
+                    <div class="mt-2 small text-muted">Телефон продавца</div>
+                    <div class="fw-semibold">{{ ad_call.seller_display }}</div>
+                  {% else %}
+                    <p class="small text-muted mb-0 mt-2">Продавец не указал телефон.</p>
+                  {% endif %}
+                {% endif %}
+
+                <div class="alert alert-light border mt-3 mb-0 small" role="note">
+                  Платформа «МаБибип» не проверяет объявления и не участвует в расчётах. Будьте внимательны, проверяйте продавца и товар самостоятельно. Все риски несут стороны сделки.
+                </div>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="card border-0 shadow-sm">
+            <div class="card-body">
+              <div class="fw-semibold mb-2">Продавец</div>
+              {% if ad.shop %}
+                <div class="mb-2">
+                  <a class="fw-semibold" href="{% url 'classifieds:shop_detail' ad.shop.slug %}">{{ ad.shop.name }}</a>
+                  {% if ad.shop.city_label %}<div class="small text-muted">{{ ad.shop.city_label }}</div>{% endif %}
+                </div>
+              {% else %}
+                <div class="small text-muted mb-2">Частное объявление</div>
+              {% endif %}
+              <a class="btn btn-outline-primary w-100" href="{% url 'classifieds:seller_profile' ad.owner.public_id %}">Все объявления продавца</a>
+              <p class="small text-muted mb-0 mt-2 text-center">Публичных объявлений: <strong>{{ seller_public_ads_count }}</strong></p>
+              {% if user.is_authenticated and user.pk != ad.owner_id %}
+                {% if can_review_seller %}
+                  <a class="btn btn-outline-secondary w-100 mt-2"
+                     href="{% url 'classifieds:seller_review_create' ad.owner.public_id %}?next={{ login_next_qs }}">Оставить отзыв о продавце</a>
+                {% else %}
+                  <p class="small text-muted mt-2 mb-0">Вы уже оставили отзыв этому продавцу.</p>
+                {% endif %}
+              {% endif %}
+
+              <div id="pm-ad-report-slot">
+                {% include "classifieds/partials/ad_report_button.html" with ad=ad has_reported=has_reported %}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  {% endwith %}
+
+  {% if ad.photos.all|length > 1 %}
+    <script>
+      (function () {
+        var main = document.getElementById('pm-ad-main-photo');
+        var stage = document.getElementById('pm-ad-gallery-stage');
+        if (!main) return;
+
+        function applyAspectRatioFromImage() {
+          if (!stage || !main) return;
+          var w = main.naturalWidth || 0;
+          var h = main.naturalHeight || 0;
+          if (!w || !h) return;
+          stage.style.setProperty('--pm-ad-gallery-ar', w + ' / ' + h);
+        }
+
+        if (main.complete) applyAspectRatioFromImage();
+        main.addEventListener('load', applyAspectRatioFromImage);
+
+        var thumbs = Array.prototype.slice.call(document.querySelectorAll('.pm-ad-thumb'));
+        if (!thumbs.length) return;
+
+        var idx = 0;
+        function setIdx(next) {
+          if (!thumbs.length) return;
+          var n = thumbs.length;
+          idx = ((next % n) + n) % n;
+          var btn = thumbs[idx];
+          var src = btn.getAttribute('data-src');
+          if (!src) return;
+          main.src = src;
+          if (main.complete) applyAspectRatioFromImage();
+          thumbs.forEach(function (b) { b.classList.remove('pm-ad-thumb-active'); });
+          btn.classList.add('pm-ad-thumb-active');
+          try { btn.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' }); } catch (_) {}
+        }
+
+        thumbs.forEach(function (btn, i) {
+          if (btn.classList.contains('pm-ad-thumb-active')) idx = i;
+          btn.addEventListener('click', function () { setIdx(i); });
+        });
+
+        var prevBtn = document.querySelector('.pm-ad-gallery-nav--prev');
+        var nextBtn = document.querySelector('.pm-ad-gallery-nav--next');
+        if (prevBtn) prevBtn.addEventListener('click', function () { setIdx(idx - 1); });
+        if (nextBtn) nextBtn.addEventListener('click', function () { setIdx(idx + 1); });
+
+        if (stage) {
+          stage.addEventListener('keydown', function (e) {
+            if (e.key === 'ArrowLeft') { e.preventDefault(); setIdx(idx - 1); }
+            if (e.key === 'ArrowRight') { e.preventDefault(); setIdx(idx + 1); }
+          });
+
+          var touchX = null;
+          var touchY = null;
+          stage.addEventListener('touchstart', function (e) {
+            if (!e.touches || e.touches.length !== 1) return;
+            touchX = e.touches[0].clientX;
+            touchY = e.touches[0].clientY;
+          }, { passive: true });
+          stage.addEventListener('touchend', function (e) {
+            if (touchX === null || touchY === null) return;
+            var t = (e.changedTouches && e.changedTouches[0]) ? e.changedTouches[0] : null;
+            if (!t) { touchX = null; touchY = null; return; }
+            var dx = t.clientX - touchX;
+            var dy = t.clientY - touchY;
+            touchX = null; touchY = null;
+            if (Math.abs(dx) < 50) return;
+            if (Math.abs(dx) < Math.abs(dy) * 1.2) return;
+            if (dx < 0) setIdx(idx + 1);
+            else setIdx(idx - 1);
+          }, { passive: true });
+        }
+      })();
+    </script>
+  {% endif %}
+{% endblock %}
+
+{% block extra_js %}
+  {{ block.super }}
+  {% if user.is_authenticated and user.pk != ad.owner_id and ad_call.mode != 'owner_preview' and ad_call.tel_href %}
+    <script type="module">
+      import { initClassifiedsCallTrack } from "{% static 'js/pages/classifieds-call-track.js' %}";
+      initClassifiedsCallTrack(document);
+    </script>
+  {% endif %}
+{% endblock %}

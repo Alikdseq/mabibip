@@ -1,0 +1,295 @@
+{% extends "admin/index.html" %}
+{% load dict_extras %}
+
+{# Django Admin index override: show business dashboard first, then default app list. #}
+
+{% block content %}
+  <style>
+    .pm-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 16px; }
+    .pm-card { background: var(--body-bg); border: 1px solid var(--hairline-color); border-radius: 8px; padding: 12px 14px; }
+    .pm-kpi__label { color: var(--body-quiet-color); font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
+    .pm-kpi__value { font-size: 26px; font-weight: 700; line-height: 1.1; margin-top: 4px; }
+    .pm-kpi__meta { margin-top: 6px; color: var(--body-quiet-color); font-size: 12px; }
+    .pm-span-4 { grid-column: span 4; }
+    .pm-span-6 { grid-column: span 6; }
+    .pm-span-8 { grid-column: span 8; }
+    .pm-span-12 { grid-column: span 12; }
+    .pm-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: flex-end; }
+    .pm-actions a, .pm-actions button { font-size: 12px; }
+    .pm-chart { height: 260px; }
+    .pm-table { width: 100%; border-collapse: collapse; }
+    .pm-table th, .pm-table td { padding: 8px 10px; border-bottom: 1px solid var(--hairline-color); vertical-align: top; }
+    .pm-table th { text-align: left; color: var(--body-quiet-color); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
+    .pm-badge { display: inline-block; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--hairline-color); font-size: 12px; }
+    @media (max-width: 1024px) {
+      .pm-span-4, .pm-span-6, .pm-span-8 { grid-column: span 12; }
+    }
+  </style>
+
+  <div class="pm-card" style="margin-bottom: 16px;">
+    <div style="display:flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap;">
+      <div>
+        <div class="pm-kpi__label">Данные на {{ today|date:"d.m.Y" }} (МСК) · Кэш до {{ cache_ttl }} сек.</div>
+        <div style="font-size: 18px; font-weight: 700; margin-top: 2px;">Дашборд</div>
+      </div>
+      <div class="pm-actions">
+        <a class="button" href="{% url 'admin:index' %}?nocache=1">Обновить без кэша</a>
+        <form method="post" action="{{ clear_cache_url }}" style="display:inline;">
+          {% csrf_token %}
+          <button type="submit" class="button">Сбросить кэш</button>
+        </form>
+        <a class="button" href="{% url 'admin:audit_auditlog_changelist' %}">Журнал аудита</a>
+        <a class="button" href="{% url 'admin:reports_funnel' %}">Отчёты</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="pm-grid" style="margin-bottom: 16px;">
+    <div class="pm-card pm-span-4">
+      <div class="pm-kpi__label">Клиенты (всего)</div>
+      <div class="pm-kpi__value">{{ total_clients }}</div>
+      <div class="pm-kpi__meta">
+        Всего пользователей: <strong>{{ total_users }}</strong> · владельцев СТО: <strong>{{ total_owners }}</strong><br/>
+        Новых: <strong>{{ new_users_today }}</strong> сегодня · <strong>{{ new_users_week }}</strong> за 7 дней ·
+        <a href="{{ admin_links.users_clients }}">список клиентов</a>
+      </div>
+    </div>
+
+    <div class="pm-card pm-span-4">
+      <div class="pm-kpi__label">СТО / мастера (активные)</div>
+      <div class="pm-kpi__value">{{ total_sto }} / {{ total_masters }}</div>
+      <div class="pm-kpi__meta">
+        Платящие Basic:
+        <a href="{{ admin_links.stations_paying_sto }}">{{ paying_sto }}</a> СТО ·
+        <a href="{{ admin_links.stations_paying_private }}">{{ paying_masters }}</a> маст.
+      </div>
+    </div>
+
+    <div class="pm-card pm-span-4">
+      <div class="pm-kpi__label">Активные подписки Basic</div>
+      <div class="pm-kpi__value">{{ active_subscriptions }}</div>
+      <div class="pm-kpi__meta">MRR (оценка): <strong>{{ mrr }} ₽</strong></div>
+    </div>
+
+    <div class="pm-card pm-span-4">
+      <div class="pm-kpi__label">Записи сегодня</div>
+      <div class="pm-kpi__value">{{ bookings_today_total }}</div>
+      <div class="pm-kpi__meta">
+        Всего записей: <strong>{{ bookings_total }}</strong> · за 7 дней: <strong>{{ bookings_week_total }}</strong><br/>
+        Выполнено: {{ bookings_today_done }} · Отменено: {{ bookings_today_canceled }} ·
+        <a href="{{ admin_links.bookings_today }}">список</a>
+      </div>
+    </div>
+
+    <div class="pm-card pm-span-4">
+      <div class="pm-kpi__label">Ожидают подтверждения</div>
+      <div class="pm-kpi__value">{{ pending_bookings }}</div>
+      <div class="pm-kpi__meta">
+        Конверсия регистрация → запись: <span class="pm-badge">{{ reg_to_booking_pct }}%</span><br/>
+        <a href="{{ admin_links.bookings_pending }}">открыть список pending</a>
+      </div>
+    </div>
+
+    <div class="pm-card pm-span-4">
+      <div class="pm-kpi__label">Отзывы сегодня</div>
+      <div class="pm-kpi__value">{{ reviews_today_count }}</div>
+      <div class="pm-kpi__meta">
+        Средняя: {% if reviews_today_avg is not None %}<strong>{{ reviews_today_avg|floatformat:1 }}</strong>{% else %}—{% endif %} ·
+        <a href="{{ admin_links.reviews_today }}">открыть список</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="pm-grid" style="margin-bottom: 16px;">
+    <div class="pm-card pm-span-8">
+      <div class="pm-kpi__label" style="margin-bottom: 8px;">Регистрации за 30 дней</div>
+      <div class="pm-chart"><canvas id="chartRegs" aria-label="Регистрации"></canvas></div>
+    </div>
+
+    <div class="pm-card pm-span-4">
+      <div class="pm-kpi__label" style="margin-bottom: 8px;">Конверсия в отзыв (30 дней)</div>
+      <div class="pm-chart"><canvas id="chartPie" aria-label="Конверсия в отзыв"></canvas></div>
+      <div class="pm-kpi__meta">
+        Завершённых: {{ completed_total_30d }} · С отзывом: {{ with_review_30d }}
+        <span class="pm-badge">{{ review_conversion_pct }}%</span>
+      </div>
+    </div>
+
+    <div class="pm-card pm-span-12">
+      <div class="pm-kpi__label" style="margin-bottom: 8px;">Записи: создано и завершено (30 дней)</div>
+      <div class="pm-chart"><canvas id="chartBookings" aria-label="Записи"></canvas></div>
+    </div>
+  </div>
+
+  <div class="pm-grid" style="margin-bottom: 16px;">
+    <div class="pm-card pm-span-6">
+      <div class="pm-kpi__label" style="margin-bottom: 8px;">Записи по статусам (всего)</div>
+      <div style="overflow:auto;">
+        <table class="pm-table">
+          <thead>
+            <tr>
+              <th>Статус</th>
+              <th style="text-align:right;">Кол-во</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for st, label in booking_status_choices %}
+              <tr>
+                <td>{{ label }}</td>
+                <td style="text-align:right;"><strong>{{ bookings_by_status|get_item:st }}</strong></td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="pm-kpi__meta" style="margin-top:10px;">
+        Итого: <strong>{{ bookings_total }}</strong>
+      </div>
+    </div>
+
+    <div class="pm-card pm-span-6">
+      <div class="pm-kpi__label" style="margin-bottom: 8px;">Динамика записей по статусам (30 дней)</div>
+      <div class="pm-chart"><canvas id="chartBookingStatuses" aria-label="Записи по статусам"></canvas></div>
+      <div class="pm-kpi__meta">Считает по дате создания записи (created_at).</div>
+    </div>
+  </div>
+
+  <div class="pm-card" style="margin-bottom: 16px;">
+    <div style="display:flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; align-items: center;">
+      <div>
+        <div class="pm-kpi__label" style="margin-bottom: 6px;">Последние события аудита</div>
+      </div>
+      <div class="pm-actions">
+        <a class="button" href="{% url 'admin:audit_auditlog_changelist' %}">Открыть весь журнал</a>
+      </div>
+    </div>
+    <div style="overflow:auto;">
+      <table class="pm-table">
+        <thead>
+          <tr>
+            <th>Когда</th>
+            <th>Кто</th>
+            <th>Событие</th>
+            <th>Объект</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for e in audit_recent %}
+            <tr>
+              <td style="white-space: nowrap;">{{ e.created_at|date:"d.m.Y H:i" }}</td>
+              <td>{{ e.actor.phone|default:e.actor_id }}</td>
+              <td><code>{{ e.event_type }}</code></td>
+              <td style="word-break: break-word;">{{ e.object_label }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="4" style="color: var(--body-quiet-color); padding: 12px;">Пока нет событий.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script>
+    (function () {
+      const labels = {{ chart_day_labels_json|safe }};
+      const regClients = {{ reg_clients_json|safe }};
+      const regOwners = {{ reg_owners_json|safe }};
+      const regStations = {{ reg_stations_json|safe }};
+      const bookCr = {{ book_created_json|safe }};
+      const bookDone = {{ book_completed_json|safe }};
+      const pieVals = {{ review_pie_json|safe }};
+      const bookStatusByDay = {{ book_status_by_day_json|safe }};
+
+      const commonOpts = { responsive: true, maintainAspectRatio: false };
+
+      const elRegs = document.getElementById('chartRegs');
+      if (elRegs) {
+        new Chart(elRegs, {
+          type: 'line',
+          data: {
+            labels,
+            datasets: [
+              { label: 'Клиенты', data: regClients, borderWidth: 2, tension: 0.25 },
+              { label: 'Владельцы СТО', data: regOwners, borderWidth: 2, tension: 0.25 },
+              { label: 'Новые СТО', data: regStations, borderWidth: 2, tension: 0.25 },
+            ],
+          },
+          options: {
+            ...commonOpts,
+            plugins: { legend: { position: 'bottom' } },
+            scales: { y: { beginAtZero: true, ticks: { precision: 0 } } },
+          },
+        });
+      }
+
+      const elBookings = document.getElementById('chartBookings');
+      if (elBookings) {
+        new Chart(elBookings, {
+          type: 'bar',
+          data: {
+            labels,
+            datasets: [
+              { label: 'Создано', data: bookCr },
+              { label: 'Завершено (по истории)', data: bookDone },
+            ],
+          },
+          options: {
+            ...commonOpts,
+            plugins: { legend: { position: 'bottom' } },
+            scales: { y: { beginAtZero: true, ticks: { precision: 0 } } },
+          },
+        });
+      }
+
+      const elPie = document.getElementById('chartPie');
+      if (elPie) {
+        new Chart(elPie, {
+          type: 'doughnut',
+          data: {
+            labels: ['С отзывом', 'Без отзыва'],
+            datasets: [{ data: pieVals, borderWidth: 1 }],
+          },
+          options: {
+            ...commonOpts,
+            plugins: { legend: { position: 'bottom' } },
+          },
+        });
+      }
+
+      const elStatus = document.getElementById('chartBookingStatuses');
+      if (elStatus && bookStatusByDay) {
+        const palette = [
+          '#2563eb', '#16a34a', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#64748b',
+        ];
+        const keys = Object.keys(bookStatusByDay);
+        const datasets = keys.map(function (k, idx) {
+          return {
+            label: k,
+            data: bookStatusByDay[k],
+            borderWidth: 2,
+            tension: 0.25,
+            borderColor: palette[idx % palette.length],
+            backgroundColor: palette[idx % palette.length],
+          };
+        });
+        new Chart(elStatus, {
+          type: 'line',
+          data: { labels, datasets },
+          options: {
+            ...commonOpts,
+            plugins: { legend: { position: 'bottom' } },
+            scales: { y: { beginAtZero: true, ticks: { precision: 0 } } },
+          },
+        });
+      }
+    })();
+  </script>
+
+  <div class="pm-card">
+    <div class="pm-kpi__label" style="margin-bottom: 8px;">Разделы админки</div>
+    {# Default Django Admin app list #}
+    {{ block.super }}
+  </div>
+{% endblock %}
+

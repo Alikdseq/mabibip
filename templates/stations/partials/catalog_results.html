@@ -1,0 +1,93 @@
+{% load station_catalog %}
+<div class="catalog-results-inner">
+  <div class="d-flex flex-column flex-md-row align-items-stretch align-items-md-center justify-content-between gap-2 mb-3">
+    <div class="small text-muted">
+      {% if page_obj.paginator.count %}
+        Найдено: {{ page_obj.paginator.count }}
+      {% endif %}
+      {% if catalog_brand_obj %}
+        <span class="ms-2 badge text-bg-light border">
+          Марка: <strong>{{ catalog_brand_obj.name }}</strong>
+          <button type="button"
+                  class="btn btn-sm btn-link p-0 ms-2 align-baseline text-decoration-none"
+                  onclick="document.querySelectorAll('form[id^=&quot;catalog-filters-&quot;] input[name=&quot;brand&quot;]').forEach((el)=>{el.value='';}); document.querySelectorAll('form[id^=&quot;catalog-filters-&quot;] input[name=&quot;entry&quot;]').forEach((el)=>{el.value='';}); if (window.htmx) { htmx.trigger('#catalog-filters-desk', 'submit'); } else { var f=document.getElementById('catalog-filters-desk'); if (f) f.submit(); }"
+                  aria-label="Сбросить марку">
+            ×
+          </button>
+        </span>
+      {% endif %}
+      {% for sc in catalog_selected_categories %}
+        <span class="ms-2 badge text-bg-light border">
+          Услуга: <strong>{{ sc.name }}</strong>
+          <button type="button"
+                  class="btn btn-sm btn-link p-0 ms-2 align-baseline text-decoration-none"
+                  onclick="document.querySelectorAll('form[id^=&quot;catalog-filters-&quot;] input[name=&quot;cat&quot;][value=&quot;{{ sc.id }}&quot;]').forEach((el)=>{el.checked=false;}); document.querySelectorAll('form[id^=&quot;catalog-filters-&quot;] input[name=&quot;service&quot;]').forEach((el)=>{el.value='';}); document.querySelectorAll('form[id^=&quot;catalog-filters-&quot;] input[name=&quot;entry&quot;]').forEach((el)=>{el.value='';}); if (window.htmx) { htmx.trigger('#catalog-filters-desk', 'submit'); } else { var f=document.getElementById('catalog-filters-desk'); if (f) f.submit(); }"
+                  aria-label="Сбросить услугу {{ sc.name }}">
+            ×
+          </button>
+        </span>
+      {% endfor %}
+    </div>
+    <div class="d-flex align-items-center gap-2">
+      <label class="small text-muted mb-0 text-nowrap" for="id-sort-desk">Сортировка</label>
+      <select name="sort" form="catalog-filters-desk" id="id-sort-desk"
+              class="form-select form-select-sm d-none d-lg-inline-block" style="min-width: 220px;"
+              onchange="htmx.trigger('#catalog-filters-desk', 'submit')">
+        <option value="relevance" {% if catalog_sort == "relevance" %}selected{% endif %}>По релевантности</option>
+        <option value="rating" {% if catalog_sort == "rating" %}selected{% endif %}>По рейтингу</option>
+        <option value="distance" {% if catalog_sort == "distance" %}selected{% endif %}>По близости</option>
+        <option value="next_slot" {% if catalog_sort == "next_slot" %}selected{% endif %}>Ближайшее свободное окно</option>
+      </select>
+      <select name="sort" form="catalog-filters-mobile" id="id-sort-mobile"
+              class="form-select form-select-sm d-lg-none" style="min-width: 200px;"
+              onchange="htmx.trigger('#catalog-filters-mobile', 'submit')">
+        <option value="relevance" {% if catalog_sort == "relevance" %}selected{% endif %}>По релевантности</option>
+        <option value="rating" {% if catalog_sort == "rating" %}selected{% endif %}>По рейтингу</option>
+        <option value="distance" {% if catalog_sort == "distance" %}selected{% endif %}>По близости</option>
+        <option value="next_slot" {% if catalog_sort == "next_slot" %}selected{% endif %}>Ближайшее окно</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="row g-3">
+  {% for s in stations %}
+    <div class="col-12 d-flex">
+      {% include "stations/partials/station_card.html" %}
+    </div>
+  {% empty %}
+    <div class="col-12">
+      <div class="alert alert-light border text-muted mb-0" role="status">
+        Ничего не найдено. Попробуйте изменить фильтры или поисковый запрос.
+      </div>
+    </div>
+  {% endfor %}
+  </div>
+
+  {% if is_paginated %}
+    <nav class="mt-4 d-flex flex-column align-items-center gap-2" aria-label="Страницы">
+      <ul class="pagination pagination-sm mb-0">
+        {% if page_obj.has_previous %}
+          <li class="page-item">
+            <a class="page-link"
+               href="{% url 'stations:list' %}?{% catalog_querystring request.GET page=page_obj.previous_page_number %}">Назад</a>
+          </li>
+        {% endif %}
+        <li class="page-item disabled">
+          <span class="page-link">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+        </li>
+        {% if page_obj.has_next %}
+          <li class="page-item">
+            <a class="page-link"
+               href="{% url 'stations:list' %}?{% catalog_querystring request.GET page=page_obj.next_page_number %}">Вперёд</a>
+          </li>
+        {% endif %}
+      </ul>
+      {% if page_obj.has_next %}
+        <a class="btn btn-outline-primary d-lg-none"
+           href="{% url 'stations:list' %}?{% catalog_querystring request.GET page=page_obj.next_page_number %}">
+          Показать ещё (стр. {{ page_obj.next_page_number }})
+        </a>
+      {% endif %}
+    </nav>
+  {% endif %}
+</div>

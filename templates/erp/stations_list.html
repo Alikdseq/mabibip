@@ -1,0 +1,64 @@
+{% extends "erp/_layout.html" %}
+
+{% block erp_title %}ERP → СТО{% endblock %}
+{% block erp_subtitle %}Поиск/фильтр + карточка СТО{% endblock %}
+
+{% block erp_content %}
+  <div class="card mb-4">
+    <div class="card-body">
+      <form method="get" class="row g-2 align-items-end">
+        <div class="col-md-6">
+          <label class="form-label small text-muted" for="q">Поиск</label>
+          <input id="q" name="q" class="form-control" placeholder="название / адрес / телефон владельца" value="{{ q }}"/>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small text-muted" for="active">Статус</label>
+          <select id="active" name="active" class="form-select">
+            <option value="" {% if not active %}selected{% endif %}>Все</option>
+            <option value="1" {% if active == '1' %}selected{% endif %}>Активна</option>
+            <option value="0" {% if active == '0' %}selected{% endif %}>Выключена</option>
+          </select>
+        </div>
+        <div class="col-md-3 d-flex justify-content-end">
+          <button class="btn btn-primary" type="submit">Показать</button>
+        </div>
+      </form>
+      <div class="d-flex justify-content-end mt-2">
+        <a class="btn btn-outline-primary btn-sm"
+           href="{% url 'erp:stations_xlsx' %}?q={{ q }}&active={{ active }}">Скачать XLSX</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body p-0 table-responsive">
+      <table class="table table-striped mb-0">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Название</th>
+            <th>Владелец</th>
+            <th>Тариф</th>
+            <th>Оплачено до</th>
+            <th>Активна</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in stations %}
+            <tr>
+              <td class="small">{{ s.id }}</td>
+              <td class="small"><strong><a href="{% url 'erp:station_detail' s.id %}">{{ s.name }}</a></strong></td>
+              <td class="small">{{ s.owner.phone|default:s.owner_id }}</td>
+              <td class="small"><code>{{ s.subscription_plan }}</code></td>
+              <td class="small">{{ s.subscription_paid_until|default:"—" }}</td>
+              <td class="small">{% if s.is_active %}Да{% else %}<span class="text-danger">Нет</span>{% endif %}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="6" class="text-muted p-3">Нет данных.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endblock %}
+

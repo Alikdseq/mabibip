@@ -1,0 +1,16 @@
+{% if slots %}
+  <p class="small text-muted mb-2">{{ day|date:"l, d E Y" }}</p>
+  <div class="d-flex flex-wrap gap-2">
+    {% for s in slots %}
+      <button type="button"
+              class="btn btn-sm btn-outline-primary"
+              hx-get="{% url 'stations:booking_form' station.slug s.id %}?modal_body={{ booking_modal_body_id }}"
+              hx-target="#{{ booking_modal_body_id }}"
+              hx-swap="innerHTML">
+        {{ s.start_time|time:"H:i" }}–{{ s.end_time|time:"H:i" }} · {{ s.bay.name }}
+      </button>
+    {% endfor %}
+  </div>
+{% else %}
+  <p class="text-muted small mb-0">На эту дату нет свободных окон.</p>
+{% endif %}

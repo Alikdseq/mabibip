@@ -1,0 +1,104 @@
+{% comment %}Боковое меню ЛК СТО: полный набор для одобренных заявок, упрощённое для pending/rejected.{% endcomment %}
+{% load booking_chat_tags %}
+{% header_chats_unread_total user as sto_all_chat_unread %}
+{% with url_name=request.resolver_match.url_name %}
+  {% if user.sto_moderation_status == "approved" %}
+    <nav class="card border-0 shadow-sm sto-owner-sidebar-nav" aria-label="Разделы кабинета СТО">
+      <div class="card-body p-0">
+        <div class="px-3 pt-3 pb-2 border-bottom bg-light rounded-top">
+          <span class="small fw-semibold text-body-secondary text-uppercase letter-spacing">Кабинет бизнеса</span>
+        </div>
+        <div class="list-group list-group-flush rounded-0 rounded-bottom">
+          <a class="list-group-item list-group-item-action border-0 py-2 px-3 d-flex align-items-center gap-2{% if url_name == 'dashboard' or url_name == 'booking_confirm' or url_name == 'booking_reject' or url_name == 'booking_start' or url_name == 'booking_complete' %} active fw-semibold{% endif %}"
+             href="{% url 'sto_owner:dashboard' %}" {% if url_name == 'dashboard' or url_name == 'booking_confirm' or url_name == 'booking_reject' or url_name == 'booking_start' or url_name == 'booking_complete' %}aria-current="page"{% endif %}>
+            <i class="bi bi-speedometer2 {% if url_name == 'dashboard' or url_name == 'booking_confirm' or url_name == 'booking_reject' or url_name == 'booking_start' or url_name == 'booking_complete' %}text-white{% else %}text-primary{% endif %}" aria-hidden="true"></i>
+            <span>Главная СТО</span>
+          </a>
+          <a class="list-group-item list-group-item-action border-0 py-2 px-3 d-flex align-items-center gap-2{% if url_name == 'stations' or url_name == 'station_brands' or url_name == 'station_profile' %} active fw-semibold{% endif %}"
+             href="{% url 'sto_owner:stations' %}" {% if url_name == 'stations' or url_name == 'station_brands' or url_name == 'station_profile' %}aria-current="page"{% endif %}>
+            <i class="bi bi-shop {% if url_name == 'stations' or url_name == 'station_brands' or url_name == 'station_profile' %}text-white{% else %}text-primary{% endif %}" aria-hidden="true"></i>
+            <span>Станции и профиль</span>
+          </a>
+          {% if user.business_role == "autoservice" %}
+            <a class="list-group-item list-group-item-action border-0 py-2 px-3 d-flex align-items-center gap-2{% if url_name == 'masters' or url_name == 'master_add' or url_name == 'master_delete' %} active fw-semibold{% endif %}"
+               href="{% url 'sto_owner:masters' %}" {% if url_name == 'masters' or url_name == 'master_add' %}aria-current="page"{% endif %}>
+              <i class="bi bi-person-badge {% if url_name == 'masters' or url_name == 'master_add' %}text-white{% else %}text-primary{% endif %}" aria-hidden="true"></i>
+              <span>Мастера</span>
+            </a>
+          {% endif %}
+          <a class="list-group-item list-group-item-action border-0 py-2 px-3 d-flex align-items-center gap-2{% if url_name == 'slot_calendar' or url_name == 'slot_toggle_block' %} active fw-semibold{% endif %}"
+             href="{% url 'sto_owner:slot_calendar' %}" {% if url_name == 'slot_calendar' or url_name == 'slot_toggle_block' %}aria-current="page"{% endif %}>
+            <i class="bi bi-calendar3 {% if url_name == 'slot_calendar' or url_name == 'slot_toggle_block' %}text-white{% else %}text-primary{% endif %}" aria-hidden="true"></i>
+            <span>Календарь слотов</span>
+          </a>
+          <a class="list-group-item list-group-item-action border-0 py-2 px-3 d-flex align-items-center gap-2{% if url_name == 'slot_add' %} active fw-semibold{% endif %}"
+             href="{% url 'sto_owner:slot_add' %}" {% if url_name == 'slot_add' %}aria-current="page"{% endif %}>
+            <i class="bi bi-plus-circle {% if url_name == 'slot_add' %}text-white{% else %}text-primary{% endif %}" aria-hidden="true"></i>
+            <span>Добавить окно записи</span>
+          </a>
+          <a class="list-group-item list-group-item-action border-0 py-2 px-3 d-flex align-items-center gap-2{% if url_name == 'bays' or url_name == 'bay_add' or url_name == 'bay_delete' %} active fw-semibold{% endif %}"
+             href="{% url 'sto_owner:bays' %}" {% if url_name == 'bays' or url_name == 'bay_add' or url_name == 'bay_delete' %}aria-current="page"{% endif %}>
+            <i class="bi bi-grid-1x2 {% if url_name == 'bays' or url_name == 'bay_add' or url_name == 'bay_delete' %}text-white{% else %}text-primary{% endif %}" aria-hidden="true"></i>
+            <span>Посты (боксы)</span>
+          </a>
+          <a class="list-group-item list-group-item-action border-0 py-2 px-3 d-flex align-items-center gap-2{% if url_name == 'chats' or url_name == 'direct_chat_detail' or url_name == 'booking_chat_detail' %} active fw-semibold{% endif %}"
+             href="{% url 'sto_owner:chats' %}" {% if url_name == 'chats' or url_name == 'direct_chat_detail' or url_name == 'booking_chat_detail' %}aria-current="page"{% endif %}>
+            <i class="bi bi-chat-dots {% if url_name == 'chats' %}text-white{% else %}text-primary{% endif %}" aria-hidden="true"></i>
+            <span class="flex-grow-1">Чаты</span>
+            <span id="sto-owner-chats-unread" class="badge rounded-pill bg-danger {% if not sto_all_chat_unread %}d-none{% endif %}" aria-live="polite">{{ sto_all_chat_unread }}</span>
+          </a>
+          <a class="list-group-item list-group-item-action border-0 py-2 px-3 d-flex align-items-center gap-2{% if url_name == 'reviews' or url_name == 'review_reply' %} active fw-semibold{% endif %}"
+             href="{% url 'sto_owner:reviews' %}" {% if url_name == 'reviews' or url_name == 'review_reply' %}aria-current="page"{% endif %}>
+            <i class="bi bi-chat-left-text {% if url_name == 'reviews' or url_name == 'review_reply' %}text-white{% else %}text-primary{% endif %}" aria-hidden="true"></i>
+            <span>Отзывы клиентов</span>
+          </a>
+          <a class="list-group-item list-group-item-action border-0 py-2 px-3 d-flex align-items-center gap-2{% if url_name == 'billing_required' %} active fw-semibold{% endif %}"
+             href="{% url 'sto_owner:billing_required' %}" {% if url_name == 'billing_required' %}aria-current="page"{% endif %}>
+            <i class="bi bi-credit-card {% if url_name == 'billing_required' %}text-white{% else %}text-primary{% endif %}" aria-hidden="true"></i>
+            <span>Подписка</span>
+          </a>
+          {% if user.autoshop_profile %}
+            <a class="list-group-item list-group-item-action border-0 py-2 px-3 d-flex align-items-center gap-2"
+               href="{% url 'classifieds:biz_products' %}">
+              <i class="bi bi-bag {% if url_name == 'biz_products' %}text-white{% else %}text-primary{% endif %}" aria-hidden="true"></i>
+              <span>Товары</span>
+            </a>
+          {% endif %}
+        </div>
+      </div>
+    </nav>
+
+  {% elif user.sto_moderation_status == "pending" %}
+    <nav class="card border-0 shadow-sm sto-owner-sidebar-nav" aria-label="Заявка СТО">
+      <div class="card-body p-0">
+        <div class="list-group list-group-flush rounded">
+          <span class="list-group-item active border-0 py-3">
+            <i class="bi bi-hourglass-split me-2" aria-hidden="true"></i>
+            Заявка на проверке
+          </span>
+          <a class="list-group-item list-group-item-action border-0 py-2 px-3" href="{% url 'home' %}">
+            <i class="bi bi-house-door me-2 text-primary" aria-hidden="true"></i>
+            На главную сайта
+          </a>
+        </div>
+      </div>
+    </nav>
+
+  {% elif user.sto_moderation_status == "rejected" %}
+    <nav class="card border-0 shadow-sm sto-owner-sidebar-nav" aria-label="Заявка СТО">
+      <div class="card-body p-0">
+        <div class="list-group list-group-flush rounded">
+          <span class="list-group-item list-group-item-danger border-0 py-3">
+            <i class="bi bi-x-circle me-2" aria-hidden="true"></i>
+            Заявка отклонена
+          </span>
+          <a class="list-group-item list-group-item-action border-0 py-2 px-3" href="{% url 'home' %}">
+            <i class="bi bi-house-door me-2 text-primary" aria-hidden="true"></i>
+            На главную сайта
+          </a>
+        </div>
+      </div>
+    </nav>
+
+  {% endif %}
+{% endwith %}

@@ -1,0 +1,45 @@
+{# Панель чата «клиент ↔ станция». Отправка через fetch — без перезагрузки страницы. #}
+{% load static %}
+<div class="station-direct-chat-panel border rounded p-3 bg-light" id="station-chat-panel-inner">
+  {% if not user.is_authenticated %}
+    <p class="small text-muted mb-2">Чтобы написать мастеру, войдите в аккаунт.</p>
+    <a class="btn btn-outline-primary btn-sm" href="{% url 'users:login' %}?next={{ request.path|urlencode }}">Вход</a>
+  {% else %}
+    {% if user.pk == station.owner_id %}
+      <p class="small text-muted mb-0">Ответы клиентам — в кабинете бизнеса, раздел «Чаты».</p>
+    {% else %}
+      <div class="station-direct-chat-messages mb-3 small border rounded bg-white p-2"
+           style="max-height: 260px; overflow-y: auto;"
+           id="direct-chat-log"
+           data-user-pk="{{ user.pk }}"
+           data-station-owner-pk="{{ station.owner_id }}"
+           aria-live="polite">
+        {% for m in direct_messages %}
+          <div class="mb-2 {% if m.sender_id == user.pk %}text-end{% endif %}">
+            <span class="badge {% if m.sender_id == station.owner_id %}text-bg-secondary{% else %}text-bg-primary{% endif %}">
+              {% if m.sender_id == station.owner_id %}Мастер{% else %}Вы{% endif %}
+            </span>
+            <span class="text-muted">{{ m.created_at|date:"d.m.Y H:i" }}</span>
+            <div class="mt-1">{{ m.text|linebreaksbr }}</div>
+          </div>
+        {% empty %}
+          <p class="text-muted mb-0">Пока нет сообщений — напишите первым.</p>
+        {% endfor %}
+      </div>
+      <div id="direct-chat-send-alert" class="alert alert-danger py-2 px-3 small d-none" role="alert"></div>
+      <form id="direct-chat-send-form" method="post" action="{% url 'stations:station_chat_send' station.slug %}" class="d-flex gap-2 flex-wrap align-items-start">
+        {% csrf_token %}
+        <label class="visually-hidden" for="direct-chat-textarea">Ваше сообщение</label>
+        <textarea id="direct-chat-textarea" name="text" class="form-control form-control-sm flex-grow-1" rows="2" maxlength="2000"
+                  placeholder="Ваше сообщение…" required autocomplete="off"></textarea>
+        <button type="submit" class="btn btn-primary btn-sm" id="direct-chat-submit">Отправить</button>
+      </form>
+      {% if chat_ws_path %}
+        <div id="direct-chat-root"
+             data-ws-path="{{ chat_ws_path }}"
+             data-mine-label="Вы"
+             data-other-label="Мастер"></div>
+      {% endif %}
+    {% endif %}
+  {% endif %}
+</div>

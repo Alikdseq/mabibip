@@ -1,0 +1,70 @@
+{% extends "erp/_layout.html" %}
+
+{% block erp_title %}Выводы{% endblock %}
+{% block erp_subtitle %}Заявки на вывод средств из кошельков пользователей{% endblock %}
+
+{% block erp_content %}
+  <div class="card border-0 shadow-sm">
+    <div class="card-body">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="fw-semibold">Заявки (последние 300)</div>
+        <div class="small text-muted">На рассмотрении: <strong>{{ pending_count }}</strong></div>
+      </div>
+
+      {% if withdrawals %}
+        <div class="table-responsive">
+          <table class="table table-sm align-middle mb-0">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Пользователь</th>
+                <th>Сумма</th>
+                <th>Реквизиты</th>
+                <th>Статус</th>
+                <th>Создано</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for w in withdrawals %}
+                <tr>
+                  <td>{{ w.pk }}</td>
+                  <td class="small">
+                    {% if w.wallet.user.email %}{{ w.wallet.user.email }}{% else %}id={{ w.wallet.user_id }}{% endif %}
+                  </td>
+                  <td class="text-nowrap">{{ w.amount|floatformat:2 }} ₽</td>
+                  <td class="small text-muted">{{ w.payout_details }}</td>
+                  <td><span class="badge text-bg-light border">{{ w.get_status_display }}</span></td>
+                  <td class="small text-muted text-nowrap">{{ w.created_at|date:"d.m.Y H:i" }}</td>
+                  <td class="text-end text-nowrap">
+                    {% if w.status == 'pending' %}
+                      <form method="post" action="{% url 'erp:withdrawal_approve' w.pk %}" class="d-inline">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-outline-success">Approve</button>
+                      </form>
+                      <form method="post" action="{% url 'erp:withdrawal_reject' w.pk %}" class="d-inline ms-1">
+                        {% csrf_token %}
+                        <input type="hidden" name="admin_comment" value="">
+                        <button type="submit" class="btn btn-sm btn-outline-danger">Reject</button>
+                      </form>
+                    {% elif w.status == 'approved' %}
+                      <form method="post" action="{% url 'erp:withdrawal_paid' w.pk %}" class="d-inline">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-outline-primary">Выплачено</button>
+                      </form>
+                    {% else %}
+                      <span class="text-muted small">—</span>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <p class="text-muted mb-0">Заявок пока нет.</p>
+      {% endif %}
+    </div>
+  </div>
+{% endblock %}
+

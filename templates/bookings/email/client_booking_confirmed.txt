@@ -1,0 +1,10 @@
+Здравствуйте!
+
+СТО «{{ station.name }}» подтвердило вашу запись №{{ booking.pk }}.
+
+Дата и время: {{ booking.slot.date }} {{ booking.slot.start_time|time:"H:i" }}.
+
+Мои записи: {{ cabinet_url }}
+
+С уважением,
+МаБибип

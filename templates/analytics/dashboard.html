@@ -1,0 +1,227 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Аналитика — МаБибип{% endblock %}
+{% block extra_head %}
+  <style>
+    .kpi-card { border-radius: .5rem; border: 1px solid var(--bs-border-color); transition: box-shadow .15s ease; }
+    .kpi-card:hover { box-shadow: 0 .25rem .75rem rgba(0,0,0,.08); }
+    .kpi-value { font-size: 1.85rem; font-weight: 700; line-height: 1.2; }
+    .kpi-meta { font-size: .8rem; color: var(--bs-secondary-color); }
+    .chart-box { min-height: 280px; }
+    #mapYandex { width: 100%; height: 360px; border-radius: .5rem; border: 1px solid var(--bs-border-color); }
+  </style>
+{% endblock %}
+{% block content %}
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
+    <div>
+      <h1 class="h3 mb-1">Аналитический дашборд</h1>
+      <p class="text-muted small mb-0">Данные на {{ today|date:"d.m.Y" }} (МСК). Обновление кэша: до {{ cache_ttl }} сек.</p>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+      <a class="btn btn-outline-secondary btn-sm" href="{{ admin_root }}">Django Admin</a>
+      <a class="btn btn-outline-secondary btn-sm" href="{% url 'erp:dashboard' %}?nocache=1">Обновить без кэша</a>
+      <a class="btn btn-outline-primary btn-sm" href="{% url 'erp:dashboard' %}?export=csv">Скачать CSV</a>
+      <form method="post" action="{{ clear_cache_url }}" class="d-inline">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-outline-warning btn-sm">Сбросить кэш</button>
+      </form>
+    </div>
+  </div>
+
+  <h2 class="h5 mb-3">Ключевые показатели</h2>
+  <div class="row g-3 mb-4">
+    <div class="col-md-6 col-xl-4">
+      <div class="kpi-card p-3 h-100 bg-body">
+        <div class="text-muted text-uppercase small fw-semibold">Клиенты (всего)</div>
+        <a href="{{ admin_links.users_clients }}" class="text-decoration-none text-body">
+          <div class="kpi-value">{{ total_clients }}</div>
+        </a>
+        <div class="kpi-meta">
+          +{{ new_clients_week }} за 7 дней →
+          <a href="{{ admin_links.users_clients_week }}">список</a>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6 col-xl-4">
+      <div class="kpi-card p-3 h-100 bg-body">
+        <div class="text-muted text-uppercase small fw-semibold">СТО / частные мастера</div>
+        <div class="kpi-value">{{ total_sto }} <span class="text-secondary fs-5">/</span> {{ total_masters }}</div>
+        <div class="kpi-meta">
+          Платящие Basic:
+          <a href="{{ admin_links.stations_paying_sto }}">{{ paying_sto }}</a> СТО ·
+          <a href="{{ admin_links.stations_paying_private }}">{{ paying_masters }}</a> маст.
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6 col-xl-4">
+      <a href="{{ admin_links.stations_basic_active }}" class="text-decoration-none text-body">
+        <div class="kpi-card p-3 h-100 bg-body">
+          <div class="text-muted text-uppercase small fw-semibold">Активные подписки Basic</div>
+          <div class="kpi-value">{{ active_subscriptions }}</div>
+          <div class="kpi-meta">MRR (оценка по последним успешным платежам): <strong>{{ mrr }} ₽</strong></div>
+        </div>
+      </a>
+    </div>
+    <div class="col-md-6 col-xl-4">
+      <a href="{{ admin_links.bookings_today }}" class="text-decoration-none text-body">
+        <div class="kpi-card p-3 h-100 bg-body">
+          <div class="text-muted text-uppercase small fw-semibold">Записи сегодня</div>
+          <div class="kpi-value">{{ bookings_today_total }}</div>
+          <div class="kpi-meta">Выполнено: {{ bookings_today_done }} · Отменено: {{ bookings_today_canceled }}</div>
+        </div>
+      </a>
+    </div>
+    <div class="col-md-6 col-xl-4">
+      <a href="{{ admin_links.bookings_pending }}" class="text-decoration-none text-body">
+        <div class="kpi-card p-3 h-100 bg-body">
+          <div class="text-muted text-uppercase small fw-semibold">Ожидают подтверждения</div>
+          <div class="kpi-value text-warning">{{ pending_bookings }}</div>
+          <div class="kpi-meta">Открыть в админке →</div>
+        </div>
+      </a>
+    </div>
+    <div class="col-md-6 col-xl-4">
+      <a href="{{ admin_links.reviews_today }}" class="text-decoration-none text-body">
+        <div class="kpi-card p-3 h-100 bg-body">
+          <div class="text-muted text-uppercase small fw-semibold">Новые отзывы сегодня</div>
+          <div class="kpi-value">{{ reviews_today_count }}</div>
+          <div class="kpi-meta">
+            Средняя оценка за день:
+            {% if reviews_today_avg is not None %}
+              <strong>{{ reviews_today_avg|floatformat:1 }}</strong> ★
+            {% else %}
+              —
+            {% endif %}
+          </div>
+        </div>
+      </a>
+    </div>
+  </div>
+
+  <h2 class="h5 mb-3">Быстрые действия</h2>
+  <div class="d-flex flex-wrap gap-2 mb-4">
+    <a class="btn btn-primary btn-sm" href="{{ admin_links.stations_unpaid_basic }}">Неоплаченные Basic (без даты)</a>
+    <a class="btn btn-outline-danger btn-sm" href="{{ admin_links.complaints_pending }}">Жалобы на отзывы</a>
+    <a class="btn btn-outline-primary btn-sm" href="{{ admin_links.users_sto_owners }}">Владельцы СТО (рассылка через админку)</a>
+  </div>
+
+  <div class="row g-4 mb-4">
+    <div class="col-lg-8">
+      <div class="card h-100">
+        <div class="card-header fw-semibold">Новые регистрации за 30 дней</div>
+        <div class="card-body chart-box">
+          <canvas id="chartRegs" aria-label="График регистраций"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-4">
+      <div class="card h-100">
+        <div class="card-header fw-semibold">Конверсия в отзыв (30 дней)</div>
+        <div class="card-body chart-box d-flex align-items-center justify-content-center">
+          <canvas id="chartPie" style="max-width: 260px; max-height: 260px;"></canvas>
+        </div>
+        <div class="card-footer small text-muted">
+          Завершённых записей (первый переход в «завершено»): {{ completed_total_30d }}.
+          С отзывом (OK / на проверке): {{ with_review_30d }} ({{ review_conversion_pct }}%).
+        </div>
+      </div>
+    </div>
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header fw-semibold">Записи: создано и завершено по дням (30 дней)</div>
+        <div class="card-body chart-box">
+          <canvas id="chartBookings" aria-label="Гистограмма записей"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-5">
+      <div class="card h-100">
+        <div class="card-header fw-semibold">Топ‑5 СТО / мастеров по числу записей (30 дней)</div>
+        <div class="card-body p-0 table-responsive">
+          <table class="table table-sm table-striped mb-0">
+            <thead>
+              <tr>
+                <th>Название</th>
+                <th class="text-end">Записей</th>
+                <th class="text-end">Рейтинг</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for s in top_stations %}
+                <tr>
+                  <td>
+                    <a href="{% url 'stations:detail' s.slug %}">{{ s.name }}</a>
+                    <span class="text-muted small">({{ s.get_executor_kind_display }})</span>
+                  </td>
+                  <td class="text-end">{{ s.booking_cnt }}</td>
+                  <td class="text-end">
+                    {% if s.station_avg_rating is not None %}{{ s.station_avg_rating|floatformat:1 }}{% else %}—{% endif %}
+                  </td>
+                </tr>
+              {% empty %}
+                <tr><td colspan="3" class="text-muted p-3">Нет данных.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-7">
+      <div class="card h-100">
+        <div class="card-header fw-semibold">География новых СТО (30 дней)</div>
+        <div class="card-body">
+          {% if yandex_maps_api_key %}
+            <div id="mapYandex"></div>
+            <p class="small text-muted mt-2 mb-0">Точки — станции с координатами, созданные за последние 30 дней (до 200).</p>
+          {% else %}
+            <p class="text-muted mb-0">Задайте переменную окружения <code>YANDEX_MAPS_API_KEY</code>, чтобы показать карту.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h2 class="h5 mb-3">Последние события аудита</h2>
+  <div class="card mb-4">
+    <div class="card-body p-0 table-responsive">
+      <table class="table table-sm mb-0">
+        <thead>
+          <tr>
+            <th>Когда</th>
+            <th>Кто</th>
+            <th>Событие</th>
+            <th>Объект</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for e in audit_recent %}
+            <tr>
+              <td class="text-nowrap small">{{ e.created_at|date:"d.m.Y H:i" }}</td>
+              <td class="small">{{ e.actor.phone|default:e.actor_id }}</td>
+              <td class="small"><code>{{ e.event_type }}</code></td>
+              <td class="small text-break">{{ e.object_label }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="4" class="text-muted p-3">Записей пока нет.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endblock %}
+
+{% block extra_js %}
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  {% if yandex_maps_api_key %}
+    <script src="https://api-maps.yandex.ru/2.1/?apikey={{ yandex_maps_api_key }}&lang=ru_RU"></script>
+  {% endif %}
+  {{ chart_day_labels_json|json_script:"analytics-labels" }}
+  {{ reg_clients_json|json_script:"analytics-reg-clients" }}
+  {{ reg_owners_json|json_script:"analytics-reg-owners" }}
+  {{ reg_stations_json|json_script:"analytics-reg-stations" }}
+  {{ book_created_json|json_script:"analytics-book-created" }}
+  {{ book_completed_json|json_script:"analytics-book-completed" }}
+  {{ review_pie_json|json_script:"analytics-review-pie" }}
+  {{ map_points_json|json_script:"analytics-map-points" }}
+  <script type="module" src="{% static 'js/pages/analytics-dashboard.js' %}"></script>
+{% endblock %}

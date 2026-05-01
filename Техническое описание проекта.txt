@@ -1,0 +1,124 @@
+ПРОМАСТЕР — ТЕХНИЧЕСКОЕ ОПИСАНИЕ ПРОЕКТА
+========================================
+
+1. НАЗНАЧЕНИЕ
+-------------
+Монолитное веб-приложение на Django: публичный каталог станций обслуживания (СТО) и частных мастеров с онлайн-бронированием по слотам, система отзывов, чаты (WebSocket), биллинг/тарифы, юридические согласия, ERP-подсистема для операторов, раздел classifieds (объявления авто/запчасти, магазины). Поддержка геоданных (PostGIS) для станций и опциональных функций карты.
+
+2. СТЕК ТЕХНОЛОГИЙ
+------------------
+• Backend: Python 3.12, Django 5.x, Django REST framework (точечные API).
+• БД: PostgreSQL + PostGIS (GeoDjango).
+• Кэш/брокер: Redis (сессии-зависимые сценарии, Celery, Channels).
+• Асинхронность: Django Channels + ASGI (uvicorn в docker-compose), отдельный процесс от sync WSGI (gunicorn).
+• Фоновые задачи: Celery worker + Celery beat.
+• Фронтенд в шаблонах: Bootstrap 5, HTMX, частично Alpine.js (главная и отдельные виджеты).
+• Статика: collectstatic; imagekit для обработки изображений (в т.ч. аватары/медиа).
+• Контейнеризация: Docker Compose (сервисы web, asgi, db, redis, celery-worker, celery-beat, опционально test, профиль monitoring).
+• Безопасность: django-axes (брутфорс), кастомные security headers middleware, CSP-настройки через env, CSRF, session hardening.
+• Наблюдаемость: опционально Sentry (sentry_sdk в base settings).
+
+3. СТРУКТУРА РЕПОЗИТОРИЯ (ПРИЛОЖЕНИЯ DJANGO)
+------------------------------------------
+• config — настройки (base/docker/tests), корневые urls, кастомный admin config, обработчики 404/500.
+• apps.core — SEO (canonical, sitemap-классы), robots.txt, visitor city middleware/context, map API (bbox → точки СТО/мастеров/автомагазинов), security headers, декораторы.
+• apps.users — кастомная модель User (логин по телефону E.164), роли бизнеса, статус модерации владельца СТО, регистрация/вход, ЛК клиента (cabinet_views, cabinet_urls).
+• apps.stations — модели ServiceStation, CarBrand, услуги/категории, фильтры каталога, лендинги марок/услуг/разделов, список и деталь станции, слоты, интеграция с бронированием, NearbyStationsMapView (шаблон + заглушка при MAP_FEATURE_ENABLED=False), owner_urls (ЛК владельца СТО).
+• apps.bookings — модели заявок Booking, TimeSlot, статусы, бизнес-правила слотов, holds в Redis (где применимо).
+• apps.reviews — отзывы по завершённым бронированиям, модерация, ответы владельца.
+• apps.chat — комнаты по бронированиям, прямые треды со станцией, треды по объявлениям (AdDirectThread), unified UI, WebSocket consumers, API urls при необходимости.
+• apps.classifieds — Ad (kind car/part), AdPhoto, AutoShopProfile, PartCategory, AdCallProxy (добавочный для подменного звонка), FavoriteAd, список/деталка/кабинет автора, SellerProfileView по User.public_id (UUID), toggle избранного (HTMX + fallback redirect), shop detail.
+• apps.billing — тарифы/оплата (URLs отдельным приложением).
+• apps.legal — документы, middleware согласий для владельцев СТО.
+• apps.audit — аудит действий в админке.
+• apps.erp — внутренняя ERP по префиксу secure-erp.
+
+4. КОНФИГУРАЦИЯ И ФЛАГИ (ENV)
+-----------------------------
+Важные переменные (неполный список, см. config/settings/base.py):
+• DEBUG, ALLOWED_HOSTS, SECRET_KEY, DATABASE_URL / PostGIS.
+• REDIS_URL, CELERY_BROKER_URL, CHANNEL_REDIS_URL.
+• SITE_BASE_URL, CSRF_TRUSTED_ORIGINS.
+• CATALOG_BYPASS_SUBSCRIPTION — ослабление требований подписки для показа Basic в каталоге.
+• CLASSIFIEDS_PROXY_CALL_ENABLED, CLASSIFIEDS_PROXY_PUBLIC_PHONE_E164 — сценарий подменного номера для объявлений.
+• MAP_FEATURE_ENABLED — гейт интерактивной карты (каталог view=map, nearby, API /api/map/places/, ссылки в шаблонах, sitemap).
+• RECAPTCHA_* , RECAPTCHA_SKIP — формы регистрации/логина.
+• CSP_* allowlists при включённом CSP.
+• AXES_* — защита от перебора пароля.
+• YANDEX_MAPS_API_KEY — для аналитики/дашбордов (не путать с Leaflet-картой каталога).
+
+Контекст-процессоры: recaptcha, visitor_city, seo_canonical, map_feature_enabled.
+
+5. МАРШРУТИЗАЦИЯ (УКРУПНЁННО)
+-----------------------------
+config/urls.py:
+• robots.txt — core_views.robots_txt.
+• sitemap.xml — django.contrib.sitemaps с кастомным набором классов (см. apps.core.sitemaps).
+• visitor-city/ — POST установки города посетителя (сессия).
+• / — HomePageView + landing_urls станций.
+• /sto/ — каталог, деталь, слоты, submit брони, success, частичные HTMX, nearby_map.
+• /cabinet/ — ЛК клиента: брони, профиль, авто, избранные мастера и объявлений, отзывы, чаты.
+• /sto/cabinet/ — ЛК владельца (namespace sto_owner): модерация, дашборд, мастера, боксы, слоты, брони, отзывы, чаты, биллинг-гейт.
+• /accounts/ — users.urls (регистрация, вход).
+• /billing/ — биллинг.
+• /legal/ — юридические документы.
+• /secure-erp/ — ERP.
+• /secure-admin/ — Django admin.
+• /ads/, /seller/<uuid>/, /shops/<slug>/, /classifieds/cabinet/ads/…, /sto/cabinet/products/ — classifieds.urls.
+• API: /api/stations/nearby/, /api/search/suggest/, /api/map/places/ (при выключенной карте — 503 из view), include apps.chat.api_urls.
+• chat/direct/<thread_id>/send/ — отправка сообщения в прямой тред (unified_chat_views).
+
+Кастомные обработчики ошибок: handler404 / handler500 → config.views.
+
+6. ДАННЫЕ И МОДЕЛИ (КЛЮЧЕВЫЕ СУЩНОСТИ)
+--------------------------------------
+• User: phone UNIQUE, email optional, is_sto_owner, business_role, sto_moderation_status, public_id (UUID, публичные URL продавца объявлений), флаги чатов.
+• ServiceStation: геолокация PointField (опционально), адрес, подписка, исполнитель sto/private (мастер), связь parent_station для мастеров, бренды, услуги, фото, реквизиты и контакты.
+• Booking + TimeSlot: уникальность активной заявки на слот (constraints в БД), статусы жизненного цикла, переносы.
+• Review: привязка к Booking, модерация, ответ владельца.
+• Chat: room по booking_id, DirectThread со станцией, AdDirectThread по объявлению; доставка через Channels.
+• Classifieds Ad: kind car/part, FK owner, optional shop, цена, город, богатые поля для авто; AdPhoto; FavoriteAd (user+ad unique); AdCallProxy one-to-one с ad для extension; AutoShopProfile для витрины магазина.
+
+7. ИНТЕГРАЦИИ И ВНЕШНИЕ СЕРВИСЫ
+-------------------------------
+• Геокодирование адресов автомагазинов (Nominatim) при включённом GEOCODING_ENABLED в настройках docker/окружения.
+• Подменный звонок объявлений: только инфраструктурно через публичный номер и DTMF; реальная маршрутизация на стороне АТС.
+• reCAPTCHA v3 на формах регистрации (конфигурируемо).
+
+8. ФРОНТЕНД-ПАТТЕРНЫ
+---------------------
+• HTMX: фильтры каталога, частичные формы брони, отдельные POST-эндпоинты.
+• Alpine: главная (секции марок/услуг), ранее поиск/гео на главной могли быть отключены по продуктовым требованиям.
+• Bootstrap modal: выбор модели авто в фильтре объявлений (static/js/pages/ads-list.js + json_script car_models_by_brand_id, парсинг корневого файла моделейавто.txt на сервере).
+• HTMX избранное объявлений: partial favorite_ad_button.html, заголовок HX-Request, csrf через meta + htmx:configRequest.
+
+9. SEO
+------
+• sitemap.xml с несколькими секциями: статика, услуги, разделы, марки, станции, объявления, магазины; пункт nearby_map включается только при MAP_FEATURE_ENABLED.
+• robots.txt со ссылкой на sitemap.
+• OpenGraph/meta через context и шаблоны.
+
+10. ТЕСТИРОВАНИЕ И КАЧЕСТВО
+---------------------------
+• pytest + pytest-django; отдельный settings config.settings.tests и сервис test в compose.
+• Точечные тесты API карты и nearby с @override_settings(MAP_FEATURE_ENABLED=True) при дефолтном выключенном флаге.
+
+11. РАЗВЁРТЫВАНИЕ
+-----------------
+• docker-compose.yml: gunicorn WSGI на :8000 (web), uvicorn ASGI на :8001 (asgi), entrypoint web выполняет migrate + collectstatic.
+• Тома: postgres_data, media_data, staticfiles_data; bind-mount репозитория на web для dev.
+• На Windows хосте без GDAL локальный manage.py может не стартовать; внутри образа GDAL установлен.
+• Вне DEBUG медиа может раздаваться через re_path + static_serve при SERVE_MEDIA=True (docker); в проде предпочтительно CDN/reverse-proxy.
+
+12. ИЗВЕСТНЫЕ ПРОДУКТОВЫЕ ОГРАНИЧЕНИЯ
+-------------------------------------
+• Карта: код сохранён, но по умолчанию выключена фичефлагом; URL могут отдавать заглушку или 503 API.
+• Подменный номер объявлений: выключен без явной конфигурации и телефонии.
+• Жёсткие требования к уникальности телефона User и слотов брони — ошибки дубликатов на уровне БД при некорректных сценариях тестов/миграций (исторически лечилось миграциями public_id с backfill UUID).
+
+13. СОПУТСТВУЮЩИЕ ФАЙЛЫ ДАННЫХ В КОРНЕ
+---------------------------------------
+• моделиавто.txt — справочник для UI выбора модели в фильтре объявлений (парсится на бэкенде).
+• списокуслуг.txt / другие txt — вспомогательные данные проекта (импорты словарей и т.д. — по факту management-команд).
+
+КОНЕЦ ДОКУМЕНТА

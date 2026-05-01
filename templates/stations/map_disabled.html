@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Карта — МаБибип{% endblock %}
+{% block content %}
+  <div class="rounded-3 border bg-light p-4 p-md-5">
+    <h1 class="h4 mb-2">Карта на сайте</h1>
+    <p class="text-muted mb-3 mb-md-4">
+      Режим карты временно отключён. Пользоваться каталогом можно в виде списка — все станции и фильтры доступны как раньше.
+    </p>
+    <a class="btn btn-primary" href="{% url 'stations:list' %}">Открыть каталог</a>
+  </div>
+{% endblock %}

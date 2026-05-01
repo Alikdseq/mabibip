@@ -1,0 +1,14 @@
+{# Одно опциональное фото к отзыву (публичная карточка). Требует: объект с полями photo и photo_thumb. #}
+{% if review.photo %}
+  <div class="review-photo-wrap mt-2">
+    <a href="{{ review.photo.url }}" target="_blank" rel="noopener noreferrer"
+       class="d-inline-block rounded border overflow-hidden bg-light">
+      <img src="{{ review.photo_thumb.url }}" alt=""
+           class="d-block"
+           width="320" height="240"
+           style="max-height:220px;width:auto;"
+           loading="lazy" decoding="async">
+    </a>
+    <span class="visually-hidden">Фото к отзыву — открыть оригинал</span>
+  </div>
+{% endif %}

@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{{ seo_og_title|default:"МаБибип — запись в СТО онлайн" }}{% endblock %}
+{% block content %}
+  {# ——— Герой: только текст на фоне (поиск и геолокация отключены на старте) ——— #}
+  <section class="rounded-3 pm-hero-section p-3 p-md-4 mb-4">
+    <h1 class="display-6 fw-bold mb-2">
+      {% if visitor_city_label %}
+        Ремонт авто в {{ visitor_city_label }}
+      {% else %}
+        Ремонт авто рядом с вами
+      {% endif %}
+    </h1>
+    <p class="text-muted mb-0">Найдите свободное окно прямо сейчас. Выберите мастера или сервис и оформите визит за пару минут.</p>
+  </section>
+
+  <div class="rounded-3 pm-hero-section p-3 p-md-4 mb-4">
+    <div class="d-grid gap-2 d-md-flex">
+      <a href="{% url 'classifieds:ads_list' %}" class="btn btn-primary">Смотреть объявления</a>
+      <a href="{% url 'classifieds:shops_list' %}" class="btn btn-outline-primary">Автомагазины / Разборки</a>
+    </div>
+  </div>
+
+  {# ——— Блок 2: марки (9 в первом ряду на телефоне; 10-я на md+; остальные — «Ещё») ——— #}
+  <section class="mb-5" x-data="{ more: false }">
+    <div class="mb-3">
+      <h2 class="h4 mb-1">Ваша марка машины</h2>
+      <div class="small text-muted">Блок марок авто</div>
+    </div>
+
+    <div class="row row-cols-3 row-cols-sm-4 row-cols-lg-5 g-2 g-md-3 pm-brands-grid">
+      {% for b in home_car_brands_primary %}
+        <div class="col d-flex pm-brand-col">
+          {% include "stations/includes/car_brand_choice_tile.html" with mode="link" stem=b.logo_stem|default:b.key label=b.label href=b.href only %}
+        </div>
+      {% endfor %}
+      {% if home_car_brands_10th %}
+        <div class="col d-flex pm-brand-col d-none d-md-flex">
+          {% with b=home_car_brands_10th %}
+            {% include "stations/includes/car_brand_choice_tile.html" with mode="link" stem=b.logo_stem|default:b.key label=b.label href=b.href only %}
+          {% endwith %}
+        </div>
+      {% endif %}
+    </div>
+
+    <div class="mt-3" x-show="more" x-cloak x-transition.duration.300ms>
+      <div class="row row-cols-3 row-cols-sm-4 row-cols-lg-5 g-2 g-md-3">
+        {% if home_car_brands_10th %}
+          <div class="col d-flex d-md-none pm-brand-col">
+            {% with b=home_car_brands_10th %}
+              {% include "stations/includes/car_brand_choice_tile.html" with mode="link" stem=b.logo_stem|default:b.key label=b.label href=b.href only %}
+            {% endwith %}
+          </div>
+        {% endif %}
+        {% for b in home_car_brands_more %}
+          <div class="col d-flex pm-brand-col">
+            {% include "stations/includes/car_brand_choice_tile.html" with mode="link" stem=b.logo_stem|default:b.key label=b.label href=b.href only %}
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="d-flex justify-content-end mt-3">
+      <button type="button"
+              class="btn btn-outline-primary btn-sm pm-brands-more-btn"
+              @click="more = !more"
+              :aria-expanded="more.toString()">
+        <span x-text="more ? 'Скрыть' : 'Ещё марки'"></span>
+      </button>
+    </div>
+  </section>
+
+  {# ——— Блок 3: разделы услуг (кнопки по группам) ——— #}
+  <section class="mb-5" x-data="homeServiceTiles({{ home_service_section_tiles|length }})">
+    <h2 class="h4 mb-1">Какой раздел услуг нужен</h2>
+    <div class="small text-muted mb-3">Сначала выберите раздел, потом — услугу и марку при подборе мастера</div>
+    <div class="row row-cols-2 row-cols-sm-4 g-2 g-md-3">
+      {% for tile in home_service_section_tiles %}
+        <div class="col" x-show="showAt({{ forloop.counter0 }})" x-cloak>
+          <a href="{{ tile.href }}" class="text-decoration-none">
+            <div class="card h-100 border shadow-sm hover-shadow transition-all py-3 text-center">
+              <i class="bi {{ tile.icon }} fs-3 text-primary mb-2" aria-hidden="true"></i>
+              <div class="small fw-medium text-body px-1">{{ tile.label }}</div>
+            </div>
+          </a>
+        </div>
+      {% endfor %}
+    </div>
+    <div class="d-flex justify-content-end mt-3">
+      <button type="button"
+              class="btn btn-outline-primary btn-sm pm-brands-more-btn"
+              x-show="hasMore"
+              x-cloak
+              @click="loadMore()">
+        Ещё
+      </button>
+    </div>
+    <p class="small text-muted mt-3 mb-0">
+      Нужны фильтры по району, рейтингу и марке —
+      <a href="{% url 'stations:list' %}">полный список мастеров и сервисов</a>.
+    </p>
+  </section>
+
+  {# ——— Блок 4: мастера и сервисы в каталоге ——— #}
+  <section class="mb-5">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start gap-2 mb-3">
+      <h2 class="h4 mb-0">Мастера</h2>
+      <a class="btn btn-sm btn-outline-primary" href="{% url 'stations:list' %}">Все мастера</a>
+    </div>
+    <p class="text-muted small mb-3">
+      Мастеров и сервисов в каталоге: <strong>{{ home_station_count }}</strong>
+      {% if home_categories_count %}
+        · направлений услуг с исполнителями: <strong>{{ home_categories_count }}</strong>
+      {% endif %}
+    </p>
+    <p class="small text-muted mb-3">Частные мастера в этом MVP объединены с карточками СТО; расширение ролей запланировано в дорожной карте продукта.</p>
+    <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-3">
+      {% for s in home_featured_stations %}
+        <div class="col d-flex">
+          {% include "stations/partials/station_card.html" %}
+        </div>
+      {% empty %}
+        <p class="text-muted col-12 mb-0">Пока нет мастеров в каталоге. Зайдите позже или обратитесь к администратору.</p>
+      {% endfor %}
+    </div>
+  </section>
+
+  {# ——— Блок 4: экспресс / узкие услуги ——— #}
+  <section class="mb-5">
+    <h2 class="h4 mb-3">Диагностика и экспресс-услуги</h2>
+    <p class="text-muted small mb-3">Направления, где уже есть исполнители среди мастеров (по популярности).</p>
+    <div class="d-flex flex-wrap gap-2">
+      {% for row in home_express_categories %}
+        <a class="btn btn-outline-secondary btn-sm rounded-pill" href="{{ row.catalog_url }}">
+          {{ row.name }} <span class="badge text-bg-secondary ms-1">{{ row.provider_count }}</span>
+        </a>
+      {% empty %}
+        <p class="text-muted small mb-0">Добавьте категории услуг и привяжите их к СТО в админке — блок заполнится автоматически.</p>
+      {% endfor %}
+    </div>
+  </section>
+
+  {# ——— Блок 5: примут сейчас (свободные окна) ——— #}
+  <section class="mb-5">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start gap-2 mb-3">
+      <h2 class="h4 mb-0">Примут сейчас</h2>
+      <span class="small text-muted">Сегодня и завтра · без активной брони</span>
+    </div>
+    <div class="d-flex gap-3 overflow-x-auto pb-2 homepage-slots-scroll" style="scroll-snap-type: x mandatory;">
+      {% for slot in home_free_slots %}
+        <div class="flex-shrink-0" style="width: 240px; scroll-snap-align: start;">
+          <div class="card border-primary border-opacity-25 shadow-sm h-100">
+            <div class="card-body py-3">
+              <div class="small text-muted mb-1">
+                {% if slot.date == home_today %}Сегодня{% elif slot.date == home_tomorrow %}Завтра{% else %}{{ slot.date|date:"d.m.Y" }}{% endif %}
+                · {{ slot.start_time|time:"H:i" }}—{{ slot.end_time|time:"H:i" }}
+              </div>
+              <div class="fw-medium">{{ slot.bay.station.name }}</div>
+              <div class="small text-muted mb-2">{{ slot.bay.name }}</div>
+              <a href="{% url 'stations:detail' slot.bay.station.slug %}" class="btn btn-sm btn-outline-primary stretched-link">Выбрать</a>
+            </div>
+          </div>
+        </div>
+      {% empty %}
+        <p class="text-muted small mb-0">Свободных окон в ближайшие двое суток пока нет — загляните к мастерам в списке или выберите другую дату на карточке сервиса.</p>
+      {% endfor %}
+    </div>
+  </section>
+
+  {# ——— Блок 6: акции и реклама (пока пусто) ——— #}
+  <section class="mb-4">
+    <h2 class="h4 mb-3">Акции и реклама</h2>
+    <div class="border rounded-3 p-4 bg-light">
+      <div class="d-flex flex-column flex-md-row justify-content-between align-items-start gap-2">
+        <div>
+          <div class="fw-semibold">Скоро здесь будут акции</div>
+          <div class="small text-muted">Скидки, спецпредложения и полезные подборки — как только добавим контент.</div>
+        </div>
+        <a class="btn btn-sm btn-outline-primary" href="{% url 'stations:list' %}">К мастерам</a>
+      </div>
+    </div>
+  </section>
+
+  <style>
+    [x-cloak] { display: none !important; }
+    .homepage-slots-scroll { -webkit-overflow-scrolling: touch; }
+  </style>
+{% endblock %}
+
+{% block extra_js %}
+  <script type="module" src="{% static 'js/pages/home.js' %}"></script>
+{% endblock %}

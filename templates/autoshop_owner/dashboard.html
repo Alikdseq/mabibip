@@ -1,0 +1,17 @@
+{% extends "autoshop_owner/base.html" %}
+{% block title %}Кабинет автомагазина — МаБибип{% endblock %}
+
+{% block autoshop_owner_main %}
+  <h1 class="h4 mb-2">{{ shop.name }}</h1>
+  <p class="small text-muted mb-3">
+    Публичная витрина:
+    <a href="{% url 'classifieds:shop_detail' shop.slug %}" target="_blank" rel="noopener">{{ shop.get_kind_display }}</a>
+    · <a href="{% url 'classifieds:shop_detail' shop.slug %}" target="_blank" rel="noopener">{{ shop.slug }}</a>
+  </p>
+  <div class="d-flex flex-wrap gap-2">
+    <a class="btn btn-primary" href="{% url 'shop_owner:products' %}">Товары</a>
+    <a class="btn btn-outline-primary" href="{% url 'classifieds:my_ad_create' %}">Добавить объявление</a>
+    <a class="btn btn-outline-secondary" href="{% url 'classifieds:shop_detail' shop.slug %}" target="_blank" rel="noopener">Открыть витрину</a>
+  </div>
+{% endblock %}
+

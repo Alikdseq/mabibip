@@ -1,0 +1,28 @@
+name: Deploy via SSH (docker compose)
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Git ref/tag to deploy (e.g. v1.0.0)"
+        required: true
+        type: string
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Deploy on remote host
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          script: |
+            set -euo pipefail
+            cd "${{ secrets.DEPLOY_PATH }}"
+            export APP_REF="${{ inputs.ref }}"
+            ./deploy/remote_deploy.sh
+

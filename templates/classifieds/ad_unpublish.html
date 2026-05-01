@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Снять объявление — МаБибип{% endblock %}
+{% block content %}
+  {% include "users/cabinet/_subnav.html" %}
+  <div class="col-lg-7">
+    <h1 class="h4 mb-2">Снять объявление</h1>
+    <p class="text-muted mb-3">
+      <a href="{% url 'classifieds:ad_detail' ad.pk %}">{{ ad.title }}</a>
+    </p>
+
+    {% if not ad.is_published %}
+      <div class="alert alert-secondary">Объявление уже снято с публикации.</div>
+      <a class="btn btn-outline-primary" href="{% url 'classifieds:my_ads' %}">← К моим объявлениям</a>
+    {% else %}
+      <form method="post" class="card border-0 shadow-sm">
+        <div class="card-body">
+          {% csrf_token %}
+          <input type="hidden" name="next" value="{{ next }}">
+
+          <div class="mb-3">
+            <label class="form-label" for="{{ form.reason.id_for_label }}">{{ form.reason.label }}</label>
+            {{ form.reason }}
+            {% for err in form.reason.errors %}<div class="invalid-feedback d-block">{{ err }}</div>{% endfor %}
+          </div>
+
+          <div class="mb-3" id="pm-unpublish-reason-text-wrap">
+            <label class="form-label" for="{{ form.reason_text.id_for_label }}">{{ form.reason_text.label }}</label>
+            {{ form.reason_text }}
+            <div class="form-text">Для причины «Другая причина» — обязательно.</div>
+            {% for err in form.reason_text.errors %}<div class="invalid-feedback d-block">{{ err }}</div>{% endfor %}
+          </div>
+
+          {% for err in form.non_field_errors %}<div class="alert alert-danger">{{ err }}</div>{% endfor %}
+
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-danger">Снять объявление</button>
+            <a class="btn btn-outline-secondary" href="{% url 'classifieds:my_ads' %}">Отмена</a>
+          </div>
+        </div>
+      </form>
+
+      <script>
+        (function () {
+          var reason = document.getElementById('{{ form.reason.id_for_label }}');
+          var wrap = document.getElementById('pm-unpublish-reason-text-wrap');
+          if (!reason || !wrap) return;
+          function sync() {
+            var isOther = (reason.value || '') === 'other';
+            wrap.style.display = isOther ? '' : 'none';
+          }
+          reason.addEventListener('change', sync);
+          sync();
+        })();
+      </script>
+    {% endif %}
+  </div>
+{% endblock %}
+

@@ -1,0 +1,74 @@
+{% extends "erp/_layout.html" %}
+
+{% block erp_title %}ERP → Отчёты → Объявления{% endblock %}
+{% block erp_subtitle %}
+  Суммарно по платформе, разбивка «Запчасти» / «Авто». «Сегодня» — локальные сутки сервера ({{ classifieds_stats_today|date:"d.m.Y" }}).
+  Диалоги — создание чата по объявлению; звонки — клик по кнопке «Позвонить» (tel:) авторизованным пользователем, не владельцем объявления.
+{% endblock %}
+
+{% block erp_content %}
+  <div class="card">
+    <div class="card-body p-0 table-responsive">
+      <table class="table table-striped mb-0">
+        <thead>
+          <tr>
+            <th>Показатель</th>
+            <th class="text-end">Запчасти</th>
+            <th class="text-end">Авто</th>
+            <th class="text-end">Всего</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Новые опубликованные (сегодня)</td>
+            <td class="text-end">{{ ads_published_today.part }}</td>
+            <td class="text-end">{{ ads_published_today.car }}</td>
+            <td class="text-end"><strong>{{ ads_published_today.total }}</strong></td>
+          </tr>
+          <tr>
+            <td>Активные опубликованные (всего)</td>
+            <td class="text-end">{{ ads_active_published.part }}</td>
+            <td class="text-end">{{ ads_active_published.car }}</td>
+            <td class="text-end"><strong>{{ ads_active_published.total }}</strong></td>
+          </tr>
+          <tr>
+            <td>В избранном (сегодня)</td>
+            <td class="text-end">{{ favorites_today.part }}</td>
+            <td class="text-end">{{ favorites_today.car }}</td>
+            <td class="text-end"><strong>{{ favorites_today.total }}</strong></td>
+          </tr>
+          <tr>
+            <td>В избранном (всего)</td>
+            <td class="text-end">{{ favorites_total.part }}</td>
+            <td class="text-end">{{ favorites_total.car }}</td>
+            <td class="text-end"><strong>{{ favorites_total.total }}</strong></td>
+          </tr>
+          <tr>
+            <td>Диалоги по объявлению (сегодня)</td>
+            <td class="text-end">{{ threads_today.part }}</td>
+            <td class="text-end">{{ threads_today.car }}</td>
+            <td class="text-end"><strong>{{ threads_today.total }}</strong></td>
+          </tr>
+          <tr>
+            <td>Диалоги по объявлению (всего)</td>
+            <td class="text-end">{{ threads_total.part }}</td>
+            <td class="text-end">{{ threads_total.car }}</td>
+            <td class="text-end"><strong>{{ threads_total.total }}</strong></td>
+          </tr>
+          <tr>
+            <td>Клики «Позвонить» (сегодня)</td>
+            <td class="text-end">{{ call_clicks_today.part }}</td>
+            <td class="text-end">{{ call_clicks_today.car }}</td>
+            <td class="text-end"><strong>{{ call_clicks_today.total }}</strong></td>
+          </tr>
+          <tr>
+            <td>Клики «Позвонить» (всего)</td>
+            <td class="text-end">{{ call_clicks_total.part }}</td>
+            <td class="text-end">{{ call_clicks_total.car }}</td>
+            <td class="text-end"><strong>{{ call_clicks_total.total }}</strong></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endblock %}

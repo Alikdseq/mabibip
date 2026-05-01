@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Страница не найдена — МаБибип{% endblock %}
+{% block content %}
+  <div class="text-center py-5 col-lg-8 mx-auto">
+    <h1 class="h3 mb-3">Страница не найдена</h1>
+    <p class="text-muted mb-4">
+      Такой страницы нет или ссылка устарела. Проверьте адрес или перейдите в каталог.
+    </p>
+    <a class="btn btn-primary me-2" href="{% url 'home' %}">Главная</a>
+    <a class="btn btn-outline-secondary" href="{% url 'stations:list' %}">Мастера</a>
+  </div>
+{% endblock %}

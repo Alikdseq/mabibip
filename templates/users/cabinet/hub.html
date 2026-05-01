@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+{% load support_tags %}
+{% block title %}Личный кабинет — МаБибип{% endblock %}
+{% block content %}
+  {% include "users/cabinet/_subnav.html" %}
+  {% support_user_unread_count user as hub_support_unread %}
+  <h1 class="h4 mb-2">Личный кабинет</h1>
+  <p class="text-muted small mb-4">
+    Запись на сервис, профиль и избранные СТО — выберите раздел ниже или в подменю над страницей.
+  </p>
+
+  <div class="row g-3">
+    <div class="col-md-6 col-xl-4">
+      <a href="{% url 'cabinet:bookings' %}" class="text-decoration-none">
+        <div class="card border-0 shadow-sm h-100 cabinet-hub-card">
+          <div class="card-body">
+            <div class="d-flex align-items-start gap-3">
+              <span class="rounded-circle bg-primary bg-opacity-10 text-primary d-inline-flex align-items-center justify-content-center flex-shrink-0"
+                    style="width:2.5rem;height:2.5rem;" aria-hidden="true">
+                <i class="bi bi-calendar-check fs-5"></i>
+              </span>
+              <div>
+                <div class="fw-semibold text-body">Мои записи</div>
+                <div class="small text-muted mb-0">Заявки на сервис и статусы записей</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </a>
+    </div>
+    <div class="col-md-6 col-xl-4">
+      <a href="{% url 'cabinet:profile' %}" class="text-decoration-none">
+        <div class="card border-0 shadow-sm h-100 cabinet-hub-card">
+          <div class="card-body">
+            <div class="d-flex align-items-start gap-3">
+              <span class="rounded-circle bg-primary bg-opacity-10 text-primary d-inline-flex align-items-center justify-content-center flex-shrink-0"
+                    style="width:2.5rem;height:2.5rem;" aria-hidden="true">
+                <i class="bi bi-person fs-5"></i>
+              </span>
+              <div>
+                <div class="fw-semibold text-body">Профиль</div>
+                <div class="small text-muted mb-0">Контакты и данные учётной записи</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </a>
+    </div>
+    <div class="col-md-6 col-xl-4">
+      <a href="{% url 'cabinet:cars' %}" class="text-decoration-none">
+        <div class="card border-0 shadow-sm h-100 cabinet-hub-card">
+          <div class="card-body">
+            <div class="d-flex align-items-start gap-3">
+              <span class="rounded-circle bg-primary bg-opacity-10 text-primary d-inline-flex align-items-center justify-content-center flex-shrink-0"
+                    style="width:2.5rem;height:2.5rem;" aria-hidden="true">
+                <i class="bi bi-car-front fs-5"></i>
+              </span>
+              <div>
+                <div class="fw-semibold text-body">Мои авто</div>
+                <div class="small text-muted mb-0">Сохранённые автомобили для записи</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </a>
+    </div>
+    <div class="col-md-6 col-xl-4">
+      <a href="{% url 'cabinet:favorites' %}" class="text-decoration-none">
+        <div class="card border-0 shadow-sm h-100 cabinet-hub-card">
+          <div class="card-body">
+            <div class="d-flex align-items-start gap-3">
+              <span class="rounded-circle bg-primary bg-opacity-10 text-primary d-inline-flex align-items-center justify-content-center flex-shrink-0"
+                    style="width:2.5rem;height:2.5rem;" aria-hidden="true">
+                <i class="bi bi-heart fs-5"></i>
+              </span>
+              <div>
+                <div class="fw-semibold text-body">Избранные Мастера</div>
+                <div class="small text-muted mb-0">Сохранённые мастера и сервисы из каталога</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </a>
+    </div>
+    <div class="col-md-6 col-xl-4">
+      <a href="{% url 'cabinet:favorite_ads' %}" class="text-decoration-none">
+        <div class="card border-0 shadow-sm h-100 cabinet-hub-card">
+          <div class="card-body">
+            <div class="d-flex align-items-start gap-3">
+              <span class="rounded-circle bg-primary bg-opacity-10 text-primary d-inline-flex align-items-center justify-content-center flex-shrink-0"
+                    style="width:2.5rem;height:2.5rem;" aria-hidden="true">
+                <i class="bi bi-bookmark-heart fs-5"></i>
+              </span>
+              <div>
+                <div class="fw-semibold text-body">Избранные объявления</div>
+                <div class="small text-muted mb-0">Сохранённые объявления авто и запчастей</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </a>
+    </div>
+    <div class="col-md-6 col-xl-4">
+      <a href="{% url 'cabinet:reviews' %}" class="text-decoration-none">
+        <div class="card border-0 shadow-sm h-100 cabinet-hub-card">
+          <div class="card-body">
+            <div class="d-flex align-items-start gap-3">
+              <span class="rounded-circle bg-primary bg-opacity-10 text-primary d-inline-flex align-items-center justify-content-center flex-shrink-0"
+                    style="width:2.5rem;height:2.5rem;" aria-hidden="true">
+                <i class="bi bi-chat-square-text fs-5"></i>
+              </span>
+              <div>
+                <div class="fw-semibold text-body">Мои отзывы</div>
+                <div class="small text-muted mb-0">Ответы сервисам и история отзывов</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </a>
+    </div>
+    <div class="col-md-6 col-xl-4">
+      <a href="{% url 'cabinet:support' %}" class="text-decoration-none">
+        <div class="card border-0 shadow-sm h-100 cabinet-hub-card position-relative">
+          {% if hub_support_unread %}
+            <span class="position-absolute top-0 end-0 translate-middle badge rounded-pill bg-danger mt-2 me-2">{{ hub_support_unread }}</span>
+          {% endif %}
+          <div class="card-body">
+            <div class="d-flex align-items-start gap-3">
+              <span class="rounded-circle bg-primary bg-opacity-10 text-primary d-inline-flex align-items-center justify-content-center flex-shrink-0"
+                    style="width:2.5rem;height:2.5rem;" aria-hidden="true">
+                <i class="bi bi-life-preserver fs-5"></i>
+              </span>
+              <div>
+                <div class="fw-semibold text-body">Поддержка</div>
+                <div class="small text-muted mb-0">Вопросы, проблемы и идеи по сервису</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </a>
+    </div>
+  </div>
+
+  <style>
+    a.text-decoration-none .cabinet-hub-card {
+      transition: box-shadow 0.15s ease, transform 0.15s ease;
+    }
+    a.text-decoration-none:hover .cabinet-hub-card {
+      box-shadow: 0 0.35rem 1rem rgba(0, 0, 0, 0.08) !important;
+      transform: translateY(-1px);
+    }
+    a.text-decoration-none:focus-visible .cabinet-hub-card {
+      outline: 2px solid var(--bs-primary);
+      outline-offset: 2px;
+    }
+  </style>
+{% endblock %}

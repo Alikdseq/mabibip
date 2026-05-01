@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Кошелёк — МаБибип{% endblock %}
+{% block content %}
+  {% include "users/cabinet/_subnav.html" %}
+  <div class="col-lg-8">
+    <div class="d-flex justify-content-between align-items-start gap-2 mb-3">
+      <div>
+        <h1 class="h4 mb-1">Кошелёк</h1>
+        <div class="small text-muted">Вывод средств доступен после подтверждения получения покупателем</div>
+      </div>
+      <a class="btn btn-primary" href="{% url 'billing:withdrawal_request_create' %}">Запросить вывод</a>
+    </div>
+
+    <div class="row g-3 mb-3">
+      <div class="col-md-6">
+        <div class="card border-0 shadow-sm">
+          <div class="card-body">
+            <div class="text-muted small">Доступно</div>
+            <div class="h4 mb-0">{{ balances.available|floatformat:2 }} ₽</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="card border-0 shadow-sm">
+          <div class="card-body">
+            <div class="text-muted small">На холде</div>
+            <div class="h4 mb-0">{{ balances.held|floatformat:2 }} ₽</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+      <div class="card-body">
+        <h2 class="h6 mb-3">История операций</h2>
+        {% if entries %}
+          <div class="table-responsive">
+            <table class="table table-sm align-middle mb-0">
+              <thead>
+                <tr>
+                  <th>Дата</th>
+                  <th>Операция</th>
+                  <th class="text-end">Сумма</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for e in entries %}
+                  <tr>
+                    <td class="text-nowrap small text-muted">{{ e.created_at|date:"d.m.Y H:i" }}</td>
+                    <td class="small">{{ e.get_kind_display }}</td>
+                    <td class="text-end text-nowrap">
+                      {% if e.direction == 'credit' %}+{% else %}-{% endif %}{{ e.amount|floatformat:2 }} ₽
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <p class="text-muted mb-0">Операций пока нет.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+{% endblock %}
+

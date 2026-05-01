@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Отзыв о продавце — МаБибип{% endblock %}
+{% block content %}
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'home' %}">Главная</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'classifieds:ads_list' %}">Объявления</a></li>
+      <li class="breadcrumb-item">
+        <a href="{% url 'classifieds:seller_profile' seller.public_id %}">Профиль продавца</a>
+      </li>
+      <li class="breadcrumb-item active" aria-current="page">Отзыв</li>
+    </ol>
+  </nav>
+
+  <div class="row justify-content-center">
+    <div class="col-lg-7">
+      <h1 class="h4 mb-3">Отзыв о продавце</h1>
+      <p class="text-muted small mb-4">
+        Оценка и комментарий видны другим пользователям на странице продавца. Один отзыв от вашего аккаунта на этого продавца.
+      </p>
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <form method="post" novalidate>
+            {% csrf_token %}
+            {% if review_next_url %}
+              <input type="hidden" name="next" value="{{ review_next_url }}">
+            {% endif %}
+
+            {% if form.non_field_errors %}
+              <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+            {% endif %}
+
+            <div class="mb-3">
+              <label class="form-label fw-semibold">{{ form.rating.label }}</label>
+              {{ form.rating }}
+              {% if form.rating.errors %}<div class="invalid-feedback d-block">{{ form.rating.errors }}</div>{% endif %}
+            </div>
+            <div class="mb-3">
+              <label class="form-label" for="{{ form.text.id_for_label }}">{{ form.text.label }}</label>
+              {{ form.text }}
+              {% if form.text.errors %}<div class="invalid-feedback d-block">{{ form.text.errors }}</div>{% endif %}
+            </div>
+
+            <div class="d-flex flex-wrap gap-2">
+              <button type="submit" class="btn btn-primary">Отправить</button>
+              <a class="btn btn-outline-secondary" href="{% url 'classifieds:seller_profile' seller.public_id %}">Отмена</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

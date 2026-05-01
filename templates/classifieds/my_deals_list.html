@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Мои сделки — МаБибип{% endblock %}
+{% block content %}
+  {% include "users/cabinet/_subnav.html" %}
+
+  <div class="d-flex justify-content-between align-items-start gap-2 mb-3">
+    <div>
+      <h1 class="h4 mb-1">Мои сделки</h1>
+      <div class="small text-muted">Покупки и продажи по объявлениям</div>
+    </div>
+  </div>
+
+  {% if deals %}
+    <div class="table-responsive">
+      <table class="table table-sm align-middle">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Объявление</th>
+            <th>Сумма</th>
+            <th>Статус</th>
+            <th>Роль</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for d in deals %}
+            <tr>
+              <td>{{ d.pk }}</td>
+              <td>
+                <a href="{% url 'classifieds:ad_detail' d.ad_id %}">{{ d.ad.title|default:"Объявление" }}</a>
+              </td>
+              <td>{{ d.amount|floatformat:0 }} ₽</td>
+              <td><span class="badge text-bg-light border">{{ d.get_status_display }}</span></td>
+              <td>
+                {% if d.buyer_id == user.id %}<span class="badge text-bg-primary">Покупатель</span>{% endif %}
+                {% if d.seller_id == user.id %}<span class="badge text-bg-secondary">Продавец</span>{% endif %}
+              </td>
+              <td class="text-end">
+                <a class="btn btn-sm btn-outline-primary" href="{% url 'classifieds:deal_detail' d.pk %}">Открыть</a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="text-muted">Пока нет сделок.</p>
+  {% endif %}
+{% endblock %}
+

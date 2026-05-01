@@ -1,0 +1,7 @@
+Напоминание: через около 2 часа визит в «{{ station.name }}».
+
+Запись №{{ booking.pk }}, {{ booking.slot.date }} в {{ booking.slot.start_time|time:"H:i" }}.
+
+Мои записи: {{ cabinet_url }}
+
+МаБибип

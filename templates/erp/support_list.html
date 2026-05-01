@@ -1,0 +1,86 @@
+{% extends "erp/_layout.html" %}
+
+{% block erp_title %}ERP → Запросы в поддержку{% endblock %}
+{% block erp_subtitle %}Очередь обращений{% endblock %}
+
+{% block erp_content %}
+  <p class="small text-muted mb-3">
+    <strong>Непрочитано для ERP:</strong> есть сообщение пользователя (не авто) новее, чем отметка просмотра тикета.
+    Отметка обновляется при открытии карточки тикета. Для пользователя зеркально: непрочитан ответ поддержки относительно его просмотра переписки.
+  </p>
+  <div class="card mb-4">
+    <div class="card-body">
+      <form method="get" class="row g-2 align-items-end">
+        <div class="col-md-3">
+          <label class="form-label small text-muted" for="status">Статус</label>
+          <select id="status" name="status" class="form-select">
+            <option value="">Все</option>
+            {% for v, label in status_choices %}
+              <option value="{{ v }}" {% if status == v %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small text-muted" for="start">Создано с</label>
+          <input id="start" name="start" type="date" class="form-control" value="{{ start }}"/>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small text-muted" for="end">по</label>
+          <input id="end" name="end" type="date" class="form-control" value="{{ end }}"/>
+        </div>
+        <div class="col-md-3">
+          <div class="form-check mt-4">
+            <input class="form-check-input" type="checkbox" name="unread" value="1" id="unread-only"
+                   {% if unread_only %}checked{% endif %}>
+            <label class="form-check-label small" for="unread-only">Только непрочитанные (новые сообщения пользователей)</label>
+          </div>
+        </div>
+        <div class="col-md-3 d-flex justify-content-end">
+          <button class="btn btn-primary" type="submit">Показать</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header fw-semibold">Тикеты (до 500)</div>
+    <div class="card-body p-0 table-responsive">
+      <table class="table table-striped mb-0">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Пользователь</th>
+            <th>Тема</th>
+            <th>Статус</th>
+            <th>Создан</th>
+            <th>Обновлён</th>
+            <th class="text-center">Новое</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for t in tickets %}
+            <tr class="{% if t.pk in staff_unread_ticket_ids %}table-warning{% endif %}">
+              <td class="small">
+                <a href="{% url 'erp:support_ticket_detail' t.id %}?status={{ status }}&start={{ start }}&end={{ end }}{% if unread_only %}&unread=1{% endif %}">#{{ t.id }}</a>
+              </td>
+              <td class="small">{{ t.user.phone|default:"—" }}</td>
+              <td class="small">{{ t.subject|default:"—"|truncatechars:40 }}</td>
+              <td class="small"><code>{{ t.get_status_display }}</code></td>
+              <td class="small text-nowrap">{{ t.created_at|date:"d.m.Y H:i" }}</td>
+              <td class="small text-nowrap">{{ t.updated_at|date:"d.m.Y H:i" }}</td>
+              <td class="text-center small">
+                {% if t.pk in staff_unread_ticket_ids %}
+                  <span class="badge text-bg-danger">Да</span>
+                {% else %}
+                  <span class="text-muted">—</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="7" class="text-muted p-3">Нет тикетов по фильтру.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endblock %}

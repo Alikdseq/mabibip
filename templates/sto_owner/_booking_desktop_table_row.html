@@ -1,0 +1,82 @@
+{# b: Booking; row_suffix: '' | 'all'; show_slot_date #}
+{% with sfx=row_suffix|default:'' %}
+<tr class="{% if b.status == 'pending' %}table-warning sto-pending-row{% elif b.status == 'in_progress' %}table-info{% endif %}">
+  <td>
+    {% if show_slot_date %}
+      <div class="small text-muted">{{ b.slot.date|date:"d.m.Y" }}</div>
+    {% endif %}
+    {{ b.slot.start_time|time:"H:i" }}–{{ b.slot.end_time|time:"H:i" }}
+  </td>
+  <td class="d-none d-md-table-cell">{{ b.slot.bay.name }}</td>
+  <td class="small">
+    <div class="font-monospace small">{{ b.contact_phone }}</div>
+    {% if b.client.email %}
+      <div class="text-muted small d-none d-md-block">{{ b.client.email }}</div>
+    {% endif %}
+    {% if show_slot_date and b.station %}
+      <div class="text-muted small d-none d-md-block">{{ b.station.name }}</div>
+    {% endif %}
+    {% if b.prior_completed_visits %}
+      <span class="badge text-bg-secondary mt-1">Повторный визит · уже было {{ b.prior_completed_visits }}</span>
+    {% else %}
+      <span class="badge text-bg-light border mt-1 text-muted">Первый визит</span>
+    {% endif %}
+  </td>
+  <td class="small d-none d-lg-table-cell">
+    {{ b.car_info }}<br><span class="text-muted">{{ b.description|truncatechars:70 }}</span>
+  </td>
+  <td class="small d-none d-md-table-cell">{{ b.get_status_display }}</td>
+  <td class="text-nowrap text-end">
+    {% if b.status == 'pending' %}
+      <span class="spinner-border spinner-border-sm text-warning align-middle me-1" role="status" aria-hidden="true"></span>
+      <form class="d-inline" method="post" action="{% url 'sto_owner:booking_confirm' b.pk %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-success btn-sm">Подтвердить</button>
+      </form>
+      <form class="mt-1" method="post" action="{% url 'sto_owner:booking_reject' b.pk %}">
+        {% csrf_token %}
+        <label class="visually-hidden" for="cancel-reason-{{ sfx }}{{ b.pk }}">Причина для клиента</label>
+        <textarea id="cancel-reason-{{ sfx }}{{ b.pk }}" name="cancel_reason" class="form-control form-control-sm mb-1" rows="2" maxlength="500" placeholder="Причина отмены для клиента (необязательно)"></textarea>
+        <button type="submit" class="btn btn-outline-danger btn-sm">Отклонить</button>
+      </form>
+      <details class="mt-2 p-2 border rounded bg-light js-rs-wrap text-start" data-booking-pk="{{ b.pk }}">
+        <summary class="small fw-semibold user-select-none">Предложить другое время</summary>
+        <form method="post" action="{% url 'sto_owner:booking_propose_reschedule' b.pk %}" class="mt-2 js-rs-form">
+          {% csrf_token %}
+          <label class="form-label small mb-0" for="rs-date-{{ sfx }}{{ b.pk }}">Дата</label>
+          <input type="date" id="rs-date-{{ sfx }}{{ b.pk }}" class="form-control form-control-sm js-rs-date" autocomplete="off" required>
+          <label class="form-label small mb-0 mt-1" for="rs-slot-{{ sfx }}{{ b.pk }}">Окно</label>
+          <select name="new_slot_id" id="rs-slot-{{ sfx }}{{ b.pk }}" class="form-select form-select-sm js-rs-select" required disabled>
+            <option value="">Сначала выберите дату</option>
+          </select>
+          <label class="form-label small mb-0 mt-1" for="rs-msg-{{ sfx }}{{ b.pk }}">Комментарий клиенту</label>
+          <textarea id="rs-msg-{{ sfx }}{{ b.pk }}" name="owner_message" class="form-control form-control-sm mb-1" rows="2" maxlength="500" placeholder="Необязательно"></textarea>
+          <button type="submit" class="btn btn-outline-primary btn-sm">Отправить клиенту</button>
+        </form>
+      </details>
+    {% elif b.status == 'confirmed' %}
+      <form class="d-inline" method="post" action="{% url 'sto_owner:booking_start' b.pk %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-primary btn-sm">Начать работу</button>
+      </form>
+      <form class="mt-1" method="post" action="{% url 'sto_owner:booking_reject' b.pk %}">
+        {% csrf_token %}
+        <label class="visually-hidden" for="cancel-reason-cf-{{ sfx }}{{ b.pk }}">Причина для клиента</label>
+        <textarea id="cancel-reason-cf-{{ sfx }}{{ b.pk }}" name="cancel_reason" class="form-control form-control-sm mb-1" rows="2" maxlength="500" placeholder="Причина отмены для клиента (необязательно)"></textarea>
+        <button type="submit" class="btn btn-outline-danger btn-sm">Отменить</button>
+      </form>
+    {% elif b.status == 'in_progress' %}
+      <form class="d-inline" method="post" action="{% url 'sto_owner:booking_complete' b.pk %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-success btn-sm">Завершить</button>
+      </form>
+      <form class="mt-1" method="post" action="{% url 'sto_owner:booking_reject' b.pk %}">
+        {% csrf_token %}
+        <label class="visually-hidden" for="cancel-reason-ip-{{ sfx }}{{ b.pk }}">Причина для клиента</label>
+        <textarea id="cancel-reason-ip-{{ sfx }}{{ b.pk }}" name="cancel_reason" class="form-control form-control-sm mb-1" rows="2" maxlength="500" placeholder="Причина отмены для клиента (необязательно)"></textarea>
+        <button type="submit" class="btn btn-outline-danger btn-sm">Отменить</button>
+      </form>
+    {% endif %}
+  </td>
+</tr>
+{% endwith %}

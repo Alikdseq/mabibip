@@ -1,0 +1,17 @@
+{% extends "sto_owner/base.html" %}
+{% block title %}Заявка отклонена — МаБибип{% endblock %}
+{% block sto_owner_main %}
+  <h1 class="h4 mb-3">Заявка не прошла модерацию</h1>
+  <p class="text-muted">
+    К сожалению, заявка на подключение к сервису отклонена. Если вы считаете это ошибкой —
+    напишите в поддержку, указав телефон аккаунта.
+  </p>
+  <p class="small text-body-secondary mb-0">
+    <a href="{% url 'home' %}">На главную</a>
+    ·
+    <form method="post" action="{% url 'users:logout' %}" class="d-inline">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-link p-0 align-baseline">Выйти</button>
+    </form>
+  </p>
+{% endblock %}

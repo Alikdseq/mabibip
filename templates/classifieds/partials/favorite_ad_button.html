@@ -1,0 +1,10 @@
+{# expects: ad, is_favorite #}
+<button type="button"
+        class="btn btn-sm {% if is_favorite %}btn-outline-danger{% else %}btn-outline-secondary{% endif %} pm-fav-ad-btn"
+        hx-post="{% url 'classifieds:favorite_ad_toggle' ad.pk %}"
+        hx-trigger="click"
+        hx-target="#pm-fav-ad-{{ ad.pk }}"
+        hx-swap="innerHTML">
+  {% if is_favorite %}♥ В избранном{% else %}♡ В избранное{% endif %}
+</button>
+

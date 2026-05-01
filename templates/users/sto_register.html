@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+{% block title %}Регистрация для СТО и мастеров — МаБибип{% endblock %}
+{% block content %}
+  <h1 class="h4 mb-3">Регистрация для бизнеса</h1>
+  {% load socialaccount %}
+
+  {% if sto_register_need_logout %}
+    <div class="alert alert-info col-lg-8">
+      Вы уже авторизованы как клиент. Чтобы подать заявку на подключение сервиса или мастерской,
+      выйдите из аккаунта и заполните форму под другим номером телефона (или обратитесь в поддержку).
+    </div>
+    <form method="post" action="{% url 'users:logout' %}" class="mb-3">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-outline-primary btn-sm">Выйти из аккаунта</button>
+      <a class="btn btn-link btn-sm" href="{% url 'cabinet:index' %}">Личный кабинет</a>
+      <a class="btn btn-link btn-sm" href="{% url 'home' %}">На главную</a>
+    </form>
+  {% elif form %}
+
+  {% get_providers as socialaccount_providers %}
+  {% if socialaccount_providers %}
+    <div class="col-lg-7 mb-3">
+      <div class="d-grid gap-2">
+        {% for p in socialaccount_providers %}
+          {% if p.id == 'google' %}
+            <a class="btn btn-outline-primary" href="{% provider_login_url 'google' process='login' next='/cabinet/' %}">Войти через Google</a>
+          {% elif p.id == 'apple' %}
+            <a class="btn btn-outline-dark" href="{% provider_login_url 'apple' process='login' next='/cabinet/' %}">Войти через Apple</a>
+          {% elif p.id == 'vk' %}
+            <a class="btn btn-outline-secondary" href="{% provider_login_url 'vk' process='login' next='/cabinet/' %}">Войти через VK</a>
+          {% endif %}
+        {% endfor %}
+      </div>
+      <div class="text-muted small mt-2">Или подайте заявку по телефону.</div>
+    </div>
+  {% endif %}
+
+  <p class="text-muted small">
+    Заполните форму — заявка проверяется администратором. До одобрения кабинет СТО недоступен,
+    станция не показывается в каталоге.
+  </p>
+  <form method="post" class="col-lg-7" id="sto-register-form" data-recaptcha-action="sto_register" novalidate>
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+      <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+    {% endif %}
+
+    <div class="mb-3">
+      <label class="form-label d-block">Тип исполнителя</label>
+      {{ form.executor_kind }}
+      {% for err in form.executor_kind.errors %}<div class="invalid-feedback d-block">{{ err }}</div>{% endfor %}
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label" for="{{ form.station_name.id_for_label }}">{{ form.station_name.label }}</label>
+      {{ form.station_name }}
+      {% for err in form.station_name.errors %}<div class="invalid-feedback d-block">{{ err }}</div>{% endfor %}
+    </div>
+    <div class="mb-3">
+      <label class="form-label" for="{{ form.city_label.id_for_label }}">{{ form.city_label.label }}</label>
+      {{ form.city_label }}
+      {% for err in form.city_label.errors %}<div class="invalid-feedback d-block">{{ err }}</div>{% endfor %}
+    </div>
+    <div class="mb-3">
+      <label class="form-label" for="{{ form.phone.id_for_label }}">{{ form.phone.label }}</label>
+      {{ form.phone }}
+      {% for err in form.phone.errors %}<div class="invalid-feedback d-block">{{ err }}</div>{% endfor %}
+    </div>
+    <div id="sto-phone-owner-block" class="form-check mb-3 {% if form.is_bound and not form.is_valid %}d-block{% else %}d-none{% endif %}" aria-live="polite">
+      {{ form.phone_owner_confirm }}
+      <label class="form-check-label" for="{{ form.phone_owner_confirm.id_for_label }}">{{ form.phone_owner_confirm.label }}</label>
+      {% for err in form.phone_owner_confirm.errors %}<div class="invalid-feedback d-block">{{ err }}</div>{% endfor %}
+    </div>
+    <div class="mb-3" style="display:none" aria-hidden="true">
+      {{ form.website_url }}
+    </div>
+    <div class="mb-3">
+      <label class="form-label" for="{{ form.email.id_for_label }}">{{ form.email.label }}</label>
+      {{ form.email }}
+      {% for err in form.email.errors %}<div class="invalid-feedback d-block">{{ err }}</div>{% endfor %}
+    </div>
+    <div class="mb-3">
+      <label class="form-label" for="{{ form.password1.id_for_label }}">{{ form.password1.label }}</label>
+      {{ form.password1 }}
+      {% for err in form.password1.errors %}<div class="invalid-feedback d-block">{{ err }}</div>{% endfor %}
+    </div>
+    <div class="mb-3">
+      <label class="form-label" for="{{ form.password2.id_for_label }}">{{ form.password2.label }}</label>
+      {{ form.password2 }}
+      {% for err in form.password2.errors %}<div class="invalid-feedback d-block">{{ err }}</div>{% endfor %}
+    </div>
+
+    <div class="form-check mb-2">
+      {{ form.accept_privacy }}
+      <label class="form-check-label" for="{{ form.accept_privacy.id_for_label }}">
+        Принимаю <a href="{% url 'legal:document' key='privacy' %}" target="_blank" rel="noopener">политику конфиденциальности</a>
+      </label>
+      {% for err in form.accept_privacy.errors %}<div class="invalid-feedback d-block">{{ err }}</div>{% endfor %}
+    </div>
+    <div class="form-check mb-2">
+      {{ form.accept_user_agreement }}
+      <label class="form-check-label" for="{{ form.accept_user_agreement.id_for_label }}">
+        Принимаю <a href="{% url 'legal:document' key='user_agreement' %}" target="_blank" rel="noopener">пользовательское соглашение</a>
+      </label>
+      {% for err in form.accept_user_agreement.errors %}<div class="invalid-feedback d-block">{{ err }}</div>{% endfor %}
+    </div>
+    <div class="form-check mb-2">
+      {{ form.accept_pd_consent }}
+      <label class="form-check-label" for="{{ form.accept_pd_consent.id_for_label }}">
+        Даю <a href="{% url 'legal:document' key='pd_consent' %}" target="_blank" rel="noopener">согласие на обработку персональных данных</a>
+      </label>
+      {% for err in form.accept_pd_consent.errors %}<div class="invalid-feedback d-block">{{ err }}</div>{% endfor %}
+    </div>
+    {{ form.recaptcha_token }}
+    <button type="submit" class="btn btn-primary text-nowrap" id="sto-register-submit-btn" disabled>Отправить заявку</button>
+    <a class="btn btn-link text-nowrap" href="{% url 'home' %}">Отмена</a>
+  </form>
+  <p class="small text-muted mt-3 mb-0">
+    Уже есть аккаунт? <a href="{% url 'users:login' %}">Вход</a>
+    · Регистрация клиента: <a href="{% url 'users:register' %}">водитель / частное лицо</a>
+  </p>
+  {% include "users/includes/recaptcha_submit.html" with form_id="sto-register-form" %}
+  <script src="https://unpkg.com/imask"></script>
+  <script>
+    (function () {
+      var phone = document.getElementById('{{ form.phone.id_for_label }}');
+      if (phone && window.IMask) {
+        IMask(phone, { mask: '+{7} (000) 000-00-00' });
+      }
+    })();
+  </script>
+  <script>
+    (function () {
+      var phone = document.getElementById('{{ form.phone.id_for_label }}');
+      var block = document.getElementById('sto-phone-owner-block');
+      var cb = document.getElementById('{{ form.phone_owner_confirm.id_for_label }}');
+      var btn = document.getElementById('sto-register-submit-btn');
+      if (!phone || !block || !cb || !btn) return;
+      var showTimer = null;
+      var armTimer = null;
+      function digitCount(val) {
+        return (val || '').replace(/\D/g, '').length;
+      }
+      function hideConfirm() {
+        if (showTimer) clearTimeout(showTimer);
+        showTimer = null;
+        block.classList.remove('d-block');
+        block.classList.add('d-none');
+        cb.checked = false;
+        armSubmit();
+      }
+      function armSubmit() {
+        btn.disabled = true;
+        if (armTimer) clearTimeout(armTimer);
+        armTimer = null;
+        if (!cb.checked) return;
+        armTimer = setTimeout(function () { btn.disabled = false; }, 2000);
+      }
+      function onPhoneInput() {
+        var n = digitCount(phone.value);
+        if (showTimer) clearTimeout(showTimer);
+        showTimer = null;
+        if (n < 11) {
+          hideConfirm();
+          return;
+        }
+        showTimer = setTimeout(function () {
+          block.classList.remove('d-none');
+          block.classList.add('d-block');
+          armSubmit();
+        }, 1500);
+      }
+      phone.addEventListener('input', onPhoneInput);
+      phone.addEventListener('blur', onPhoneInput);
+      cb.addEventListener('change', armSubmit);
+      onPhoneInput();
+    })();
+  </script>
+
+  {% endif %}
+{% endblock %}

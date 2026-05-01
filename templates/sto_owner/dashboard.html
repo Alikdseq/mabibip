@@ -1,0 +1,530 @@
+{% extends "sto_owner/base.html" %}
+{% block title %}Кабинет для бизнеса — МаБибип{% endblock %}
+{% block extra_head %}
+  <style>
+    @keyframes sto-pulse-row { 50% { opacity: 0.88; } }
+    .sto-pending-row { animation: sto-pulse-row 1.5s ease-in-out infinite; }
+    @media (max-width: 576px) {
+      .sto-dashboard-tight h1.h4 { font-size: 1.15rem; }
+      .sto-dashboard-tight .card-body { padding: 0.9rem; }
+      .sto-dashboard-tight .table td, .sto-dashboard-tight .table th { padding-top: 0.35rem; padding-bottom: 0.35rem; }
+    }
+  </style>
+{% endblock %}
+{% block sto_owner_main %}
+  <div class="sto-dashboard-tight">
+    {% if dup_slot_msg %}
+      <div class="alert alert-danger" role="alert">На этом посту уже есть окно с таким временем начала на выбранную дату.</div>
+    {% endif %}
+    <h1 class="h4 mb-2">Главная СТО</h1>
+    <p class="text-muted small mb-3">
+      Сначала — все актуальные заявки. Остальные разделы ниже.
+    </p>
+
+    {% if billing_blocked %}
+      <div class="alert alert-warning">
+        {% if catalog_subscription_relaxed %}
+          <p class="mb-2">
+            По вашим станциям вход в основные функции кабинета ограничен: возможно, профиль выключен (неактивен)
+            или действует блокировка биллинга.
+          </p>
+        {% else %}
+          <p class="mb-2">Доступ к каталогу для ваших станций приостановлен: проверьте оплату подписки (тариф Basic) или обратитесь к администратору.</p>
+          <a class="btn btn-outline-secondary btn-sm" href="{% url 'sto_owner:billing_required' %}">Подробнее</a>
+        {% endif %}
+        <p class="small text-muted mb-0 mt-3">
+          <a href="{{ bays_url }}">Посты (боксы)</a>
+          · <a href="{{ slot_calendar_url }}">Календарь слотов</a>
+        </p>
+      </div>
+    {% else %}
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+          <div class="d-flex align-items-start justify-content-between gap-2 flex-wrap">
+            <div>
+              <h2 class="h6 mb-1">Заявки</h2>
+              <div class="small text-muted">
+                За текущий месяц (без отменённых): <strong>{{ month_stats_count }}</strong>
+                · <a href="{{ slot_calendar_url }}">Календарь</a>
+                · <a href="{% url 'sto_owner:slot_add' %}">Добавить окно</a>
+              </div>
+            </div>
+            <div class="d-flex gap-2 flex-wrap">
+              <a class="btn btn-outline-secondary btn-sm" href="{{ stations_manage_url }}">Мои станции</a>
+              <a class="btn btn-outline-secondary btn-sm" href="{{ reviews_url }}">Отзывы</a>
+            </div>
+          </div>
+
+          <ul class="nav nav-pills gap-2 mt-3 small flex-wrap" role="tablist">
+            <li class="nav-item" role="presentation">
+              <button class="nav-link active" id="tab-today" data-bs-toggle="tab" data-bs-target="#pane-today" type="button" role="tab" aria-controls="pane-today" aria-selected="true">
+                Сегодня <span class="badge bg-light text-dark border ms-1">{{ bookings_today|length }}</span>
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="tab-tomorrow" data-bs-toggle="tab" data-bs-target="#pane-tomorrow" type="button" role="tab" aria-controls="pane-tomorrow" aria-selected="false">
+                Завтра <span class="badge bg-light text-dark border ms-1">{{ bookings_tomorrow|length }}</span>
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="tab-all" data-bs-toggle="tab" data-bs-target="#pane-all" type="button" role="tab" aria-controls="pane-all" aria-selected="false">
+                Все записи <span class="badge bg-light text-dark border ms-1">{{ bookings_all_total }}</span>
+              </button>
+            </li>
+          </ul>
+
+          <div class="tab-content mt-3">
+            <div class="tab-pane fade show active" id="pane-today" role="tabpanel" aria-labelledby="tab-today">
+              {% include "sto_owner/_booking_table.html" with bookings=bookings_today %}
+            </div>
+            <div class="tab-pane fade" id="pane-tomorrow" role="tabpanel" aria-labelledby="tab-tomorrow">
+              {% include "sto_owner/_booking_table.html" with bookings=bookings_tomorrow %}
+            </div>
+            <div class="tab-pane fade" id="pane-all" role="tabpanel" aria-labelledby="tab-all">
+              {% if bookings_all_total %}
+                <p class="small text-muted mb-2">Ожидают подтверждения и подтверждённые на будущее, от ближайшей даты. Сейчас на экране {{ bookings_all|length }} из {{ bookings_all_total }}; остальные — кнопка «Ещё».</p>
+              {% endif %}
+              {% include "sto_owner/_booking_table_all_pane.html" with bookings=bookings_all %}
+            </div>
+          </div>
+        </div>
+      </div>
+    {% endif %}
+
+  {% if subscription_rows %}
+    <section class="card border-0 shadow-sm mb-4 sto-dashboard-tight" aria-labelledby="sto-sub-heading">
+      <div class="card-body">
+        <h2 id="sto-sub-heading" class="h6 mb-3">Подписка и показ в каталоге</h2>
+        <div class="table-responsive">
+          <table class="table table-sm align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Станция</th>
+                <th>Тариф</th>
+                <th>Оплачено до</th>
+                <th>Каталог</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in subscription_rows %}
+                <tr class="{% if row.needs_attention %}table-warning{% endif %}">
+                  <td>{{ row.station_name }}</td>
+                  <td>{{ row.plan_title }}</td>
+                  <td>{{ row.paid_until_display }}</td>
+                  <td>
+                    {% if row.catalog_visible %}
+                      <span class="badge text-bg-success">Видна</span>
+                    {% else %}
+                      <span class="badge text-bg-secondary">Скрыта</span>
+                    {% endif %}
+                  </td>
+                  <td class="small text-muted">{{ row.status_note }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% if catalog_subscription_relaxed %}
+          <p class="small text-muted mb-0 mt-2">
+            Сейчас показ в каталоге не зависит от оплаты тарифа Basic (режим платформы).
+          </p>
+        {% else %}
+          <p class="small text-muted mb-0 mt-2">
+            Продление по реквизитам или через администратора —
+            <a href="{% url 'sto_owner:billing_required' %}">инструкция по оплате</a>.
+          </p>
+        {% endif %}
+      </div>
+    </section>
+  {% endif %}
+
+  {% if monthly_booking_stats %}
+    <section class="card border-0 shadow-sm mb-4 sto-dashboard-tight" aria-labelledby="sto-chart-heading">
+      <div class="card-body">
+        <h2 id="sto-chart-heading" class="h6 mb-3">Записи по месяцам (без отменённых)</h2>
+        <p class="small text-muted mb-3">По дате создания заявки, последние 12 месяцев.</p>
+        {% for row in monthly_booking_stats %}
+          <div class="d-flex align-items-center gap-2 mb-2">
+            <div class="small text-muted" style="min-width: 5.5rem;">{{ row.label }}</div>
+            <div class="progress flex-grow-1" style="height: 1.35rem;">
+              {% if row.count %}
+                <div class="progress-bar bg-success" style="width: {{ row.pct }}%;">{{ row.count }}</div>
+              {% else %}
+                <div class="progress-bar bg-light text-muted border" style="width: 100%;">0</div>
+              {% endif %}
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </section>
+  {% endif %}
+
+  {# Mobile popup for booking card actions #}
+  <div class="modal fade" id="bookingModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div class="min-w-0">
+            <div class="modal-title h5 mb-0 text-truncate" id="bookingModalTitle">Заявка</div>
+            <div class="small text-muted" id="bookingModalSub">—</div>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+        </div>
+        <div class="modal-body">
+          <div class="d-flex flex-column gap-2">
+            <div class="small text-muted">Клиент</div>
+            <div class="fw-semibold" id="bmPhone">—</div>
+            <div class="d-flex gap-2 flex-wrap">
+              <a id="bmCallBtn" class="btn btn-outline-primary btn-sm" href="#" role="button">Позвонить</a>
+              <button id="bmCopyBtn" type="button" class="btn btn-outline-secondary btn-sm">Скопировать номер</button>
+              <span id="bmCopyToast" class="small text-muted d-none">Скопировано</span>
+            </div>
+            <div class="text-muted small d-none" id="bmEmailWrap"><span id="bmEmail"></span></div>
+
+            <hr class="my-2">
+
+            <div class="row g-2">
+              <div class="col-6">
+                <div class="small text-muted">Время</div>
+                <div class="fw-medium" id="bmTime">—</div>
+              </div>
+              <div class="col-6">
+                <div class="small text-muted">Пост</div>
+                <div class="fw-medium" id="bmBay">—</div>
+              </div>
+            </div>
+
+            <div class="small text-muted mt-2">Авто / проблема</div>
+            <div class="fw-medium" id="bmCar">—</div>
+            <div class="text-muted small" id="bmDesc">—</div>
+
+            <div class="small text-muted mt-2">Статус</div>
+            <div><span class="badge rounded-pill" id="bmStatus">—</span></div>
+
+            <div class="small text-muted mt-2 d-none" id="bmPriorWrap">
+              Повторный визит: <span class="fw-semibold" id="bmPrior">0</span>
+            </div>
+          </div>
+
+          <hr class="my-3">
+
+          <div id="bmActions">
+            <form method="post" id="bmConfirmForm" class="d-grid mb-2 d-none">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-success">Подтвердить</button>
+            </form>
+
+            <form method="post" id="bmStartForm" class="d-grid mb-2 d-none">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-primary">Начать работу</button>
+            </form>
+
+            <form method="post" id="bmCompleteForm" class="d-grid mb-2 d-none">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-success">Завершить</button>
+            </form>
+
+            <form method="post" id="bmRejectForm" class="d-grid gap-2">
+              {% csrf_token %}
+              <label class="small text-muted" for="bmCancelReason">Причина для клиента (необязательно)</label>
+              <textarea id="bmCancelReason" name="cancel_reason" class="form-control form-control-sm" rows="3" maxlength="500" placeholder="Например: нет свободного мастера, перенесите на другое время…"></textarea>
+              <button type="submit" class="btn btn-outline-danger">Отклонить / Отменить</button>
+            </form>
+
+            <div id="bmRescheduleWrap" class="d-none border rounded p-2 bg-light mt-3">
+              <div class="fw-semibold small mb-2">Предложить другое время</div>
+              <p class="small text-muted mb-2">Клиент получит уведомление и сможет подтвердить или отказаться.</p>
+              <form method="post" id="bmRescheduleForm" class="d-grid gap-2">
+                {% csrf_token %}
+                <label class="small text-muted mb-0" for="bmRsDate">Дата</label>
+                <input type="date" id="bmRsDate" class="form-control form-control-sm" autocomplete="off">
+                <label class="small text-muted mb-0" for="bmRsSelect">Свободное окно</label>
+                <select name="new_slot_id" id="bmRsSelect" class="form-select form-select-sm" required disabled>
+                  <option value="">Сначала выберите дату</option>
+                </select>
+                <label class="small text-muted mb-0" for="bmRsMsg">Комментарий клиенту (необязательно)</label>
+                <textarea id="bmRsMsg" name="owner_message" class="form-control form-control-sm" rows="2" maxlength="500" placeholder="Например: это время занято, предлагаем другое…"></textarea>
+                <button type="submit" class="btn btn-outline-primary btn-sm">Отправить клиенту</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  </div>
+{% endblock %}
+
+{% block extra_js %}
+  {{ block.super }}
+  <script>
+    (function () {
+      try {
+        var p = new URLSearchParams(window.location.search || '');
+        var bid = p.get('open_booking');
+        if (!bid) return;
+        var btn = document.querySelector('.js-booking-open[data-booking-id=\"' + bid + '\"]');
+        if (btn) btn.click();
+      } catch (e) {}
+    })();
+  </script>
+  <script>
+    (function () {
+      function byId(id) { return document.getElementById(id); }
+
+      var title = byId('bookingModalTitle');
+      var sub = byId('bookingModalSub');
+      var phone = byId('bmPhone');
+      var callBtn = byId('bmCallBtn');
+      var copyBtn = byId('bmCopyBtn');
+      var copyToast = byId('bmCopyToast');
+      var emailWrap = byId('bmEmailWrap');
+      var email = byId('bmEmail');
+      var time = byId('bmTime');
+      var bay = byId('bmBay');
+      var car = byId('bmCar');
+      var desc = byId('bmDesc');
+      var statusBadge = byId('bmStatus');
+      var priorWrap = byId('bmPriorWrap');
+      var prior = byId('bmPrior');
+
+      var fConfirm = byId('bmConfirmForm');
+      var fStart = byId('bmStartForm');
+      var fComplete = byId('bmCompleteForm');
+      var fReject = byId('bmRejectForm');
+      var reason = byId('bmCancelReason');
+
+      var rsWrap = byId('bmRescheduleWrap');
+      var rsForm = byId('bmRescheduleForm');
+      var rsDate = byId('bmRsDate');
+      var rsSelect = byId('bmRsSelect');
+      var rsMsg = byId('bmRsMsg');
+      var currentRescheduleBookingId = '';
+
+      function localIso(d) {
+        var y = d.getFullYear();
+        var m = String(d.getMonth() + 1).padStart(2, '0');
+        var day = String(d.getDate()).padStart(2, '0');
+        return y + '-' + m + '-' + day;
+      }
+      function addDays(d, n) {
+        var x = new Date(d.getTime());
+        x.setDate(x.getDate() + n);
+        return x;
+      }
+
+      function setStatus(s) {
+        var cls = 'text-bg-secondary';
+        var label = s;
+        if (s === 'pending') { cls = 'text-bg-warning'; label = 'Новая'; }
+        else if (s === 'confirmed') { cls = 'text-bg-primary'; label = 'Подтверждена'; }
+        else if (s === 'in_progress') { cls = 'text-bg-info'; label = 'В работе'; }
+        else if (s === 'completed') { cls = 'text-bg-success'; label = 'Завершено'; }
+        else if (s === 'canceled') { cls = 'text-bg-secondary'; label = 'Отменено'; }
+        statusBadge.className = 'badge rounded-pill ' + cls;
+        statusBadge.textContent = label;
+      }
+
+      function show(el, on) {
+        if (!el) return;
+        el.classList.toggle('d-none', !on);
+      }
+
+      document.addEventListener('click', function (ev) {
+        var btn = ev.target.closest('.js-booking-open');
+        if (!btn) return;
+
+        var bid = btn.getAttribute('data-booking-id') || '';
+        var st = btn.getAttribute('data-status') || '';
+        var t = btn.getAttribute('data-time') || '';
+        var b = btn.getAttribute('data-bay') || '';
+        var ph = btn.getAttribute('data-phone') || '';
+        var em = btn.getAttribute('data-email') || '';
+        var ci = btn.getAttribute('data-car') || '';
+        var de = btn.getAttribute('data-desc') || '';
+        var pr = parseInt(btn.getAttribute('data-prior') || '0', 10) || 0;
+
+        var urlConfirm = btn.getAttribute('data-confirm-url') || '';
+        var urlReject = btn.getAttribute('data-reject-url') || '';
+        var urlStart = btn.getAttribute('data-start-url') || '';
+        var urlComplete = btn.getAttribute('data-complete-url') || '';
+
+        if (title) title.textContent = 'Заявка #' + bid;
+        if (sub) sub.textContent = t + ' · ' + b;
+        if (phone) phone.textContent = ph || '—';
+        if (callBtn) {
+          if (ph) {
+            callBtn.href = 'tel:' + ph;
+            callBtn.classList.remove('disabled');
+            callBtn.setAttribute('aria-disabled', 'false');
+          } else {
+            callBtn.href = '#';
+            callBtn.classList.add('disabled');
+            callBtn.setAttribute('aria-disabled', 'true');
+          }
+        }
+        if (time) time.textContent = t || '—';
+        if (bay) bay.textContent = b || '—';
+        if (car) car.textContent = ci || '—';
+        if (desc) desc.textContent = de || '—';
+        setStatus(st);
+
+        if (email && emailWrap) {
+          if (em) { email.textContent = em; emailWrap.classList.remove('d-none'); }
+          else { email.textContent = ''; emailWrap.classList.add('d-none'); }
+        }
+
+        if (prior && priorWrap) {
+          prior.textContent = String(pr);
+          show(priorWrap, pr > 0);
+        }
+
+        if (reason) reason.value = '';
+        if (copyToast) copyToast.classList.add('d-none');
+
+        // actions visibility
+        show(fConfirm, st === 'pending');
+        show(fStart, st === 'confirmed');
+        show(fComplete, st === 'in_progress');
+
+        if (fConfirm) fConfirm.action = urlConfirm;
+        if (fStart) fStart.action = urlStart;
+        if (fComplete) fComplete.action = urlComplete;
+        if (fReject) fReject.action = urlReject;
+
+        currentRescheduleBookingId = bid;
+        if (rsWrap && rsForm && rsDate && rsSelect) {
+          var t0 = new Date();
+          rsDate.min = localIso(t0);
+          rsDate.max = localIso(addDays(t0, 6));
+          rsDate.value = '';
+          rsSelect.innerHTML = '<option value="">Сначала выберите дату</option>';
+          rsSelect.disabled = true;
+          if (rsMsg) rsMsg.value = '';
+          rsForm.action = '/sto/cabinet/bookings/' + encodeURIComponent(bid) + '/propose-reschedule/';
+          show(rsWrap, st === 'pending');
+        } else if (rsWrap) {
+          show(rsWrap, false);
+        }
+      });
+
+      if (rsDate && rsSelect) {
+        rsDate.addEventListener('change', function () {
+          var bid = currentRescheduleBookingId;
+          if (!bid || !rsDate.value) return;
+          rsSelect.innerHTML = '<option value="">Загрузка…</option>';
+          rsSelect.disabled = true;
+          var url = '/sto/cabinet/bookings/' + encodeURIComponent(bid) + '/reschedule-slots/?date=' + encodeURIComponent(rsDate.value);
+          fetch(url, { credentials: 'same-origin' })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+              rsSelect.innerHTML = '';
+              var slots = data.slots || [];
+              if (!slots.length) {
+                rsSelect.innerHTML = '<option value="">Нет свободных окон</option>';
+                rsSelect.disabled = true;
+                return;
+              }
+              var o0 = document.createElement('option');
+              o0.value = '';
+              o0.textContent = 'Выберите окно';
+              rsSelect.appendChild(o0);
+              slots.forEach(function (s) {
+                var o = document.createElement('option');
+                o.value = String(s.id);
+                o.textContent = s.label;
+                rsSelect.appendChild(o);
+              });
+              rsSelect.disabled = false;
+            })
+            .catch(function () {
+              rsSelect.innerHTML = '<option value="">Ошибка загрузки</option>';
+              rsSelect.disabled = true;
+            });
+        });
+      }
+
+      if (copyBtn) {
+        copyBtn.addEventListener('click', function () {
+          var ph = (phone && phone.textContent || '').trim();
+          if (!ph || ph === '—') return;
+          function done() {
+            if (!copyToast) return;
+            copyToast.classList.remove('d-none');
+            window.setTimeout(function () { copyToast.classList.add('d-none'); }, 1500);
+          }
+          try {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+              navigator.clipboard.writeText(ph).then(done).catch(function () {});
+            } else {
+              var ta = document.createElement('textarea');
+              ta.value = ph;
+              ta.setAttribute('readonly', '');
+              ta.style.position = 'absolute';
+              ta.style.left = '-9999px';
+              document.body.appendChild(ta);
+              ta.select();
+              document.execCommand('copy');
+              document.body.removeChild(ta);
+              done();
+            }
+          } catch (e) {}
+        });
+      }
+
+      function initRescheduleDateBounds(root) {
+        var scope = root || document;
+        var t0 = new Date();
+        scope.querySelectorAll('.js-rs-wrap .js-rs-date').forEach(function (dateEl) {
+          dateEl.min = localIso(t0);
+          dateEl.max = localIso(addDays(t0, 6));
+        });
+      }
+
+      document.addEventListener('change', function (ev) {
+        var dateEl = ev.target;
+        if (!dateEl || !dateEl.classList || !dateEl.classList.contains('js-rs-date')) return;
+        var wrap = dateEl.closest('.js-rs-wrap');
+        if (!wrap) return;
+        var pk = wrap.getAttribute('data-booking-pk');
+        var sel = wrap.querySelector('.js-rs-select');
+        if (!pk || !sel) return;
+        sel.innerHTML = '<option value="">Загрузка…</option>';
+        sel.disabled = true;
+        var url = '/sto/cabinet/bookings/' + encodeURIComponent(pk) + '/reschedule-slots/?date=' + encodeURIComponent(dateEl.value);
+        fetch(url, { credentials: 'same-origin' })
+          .then(function (r) { return r.json(); })
+          .then(function (data) {
+            sel.innerHTML = '';
+            var slots = data.slots || [];
+            if (!slots.length) {
+              sel.innerHTML = '<option value="">Нет свободных окон</option>';
+              sel.disabled = true;
+              return;
+            }
+            var o0 = document.createElement('option');
+            o0.value = '';
+            o0.textContent = 'Выберите окно';
+            sel.appendChild(o0);
+            slots.forEach(function (s) {
+              var o = document.createElement('option');
+              o.value = String(s.id);
+              o.textContent = s.label;
+              sel.appendChild(o);
+            });
+            sel.disabled = false;
+          })
+          .catch(function () {
+            sel.innerHTML = '<option value="">Ошибка загрузки</option>';
+            sel.disabled = true;
+          });
+      });
+
+      initRescheduleDateBounds(document);
+      document.body.addEventListener('htmx:afterSwap', function () {
+        initRescheduleDateBounds(document);
+      });
+    })();
+  </script>
+{% endblock %}

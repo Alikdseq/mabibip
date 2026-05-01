@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Оферта для СТО — МаБибип{% endblock %}
+{% block content %}
+  <h1 class="h4 mb-3">Условия для владельцев СТО</h1>
+  <p class="text-muted">Перед работой в кабинете необходимо принять актуальную редакцию лицензионного договора-оферты.</p>
+  {% if sto_version %}
+    <p><a href="{% url 'legal:document' key=sto_version.key %}" target="_blank" rel="noopener">Открыть полный текст</a></p>
+  {% endif %}
+  <form method="post" class="col-lg-6">
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+      <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+    {% endif %}
+    <div class="form-check mb-3">
+      {{ form.accept_sto_offer }}
+      <label class="form-check-label" for="{{ form.accept_sto_offer.id_for_label }}">{{ form.accept_sto_offer.label }}</label>
+      {% for err in form.accept_sto_offer.errors %}<div class="invalid-feedback d-block">{{ err }}</div>{% endfor %}
+    </div>
+    <button type="submit" class="btn btn-primary">Продолжить в кабинет</button>
+  </form>
+{% endblock %}

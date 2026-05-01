@@ -1,0 +1,54 @@
+{% extends "sto_owner/base.html" %}
+{% block title %}Новое окно записи — МаБибип{% endblock %}
+{% block sto_owner_main %}
+  <nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb mb-0">
+      <li class="breadcrumb-item"><a href="{% url 'sto_owner:dashboard' %}">Кабинет</a></li>
+      <li class="breadcrumb-item active" aria-current="page">Добавить окно</li>
+    </ol>
+  </nav>
+
+  <h1 class="h4 mb-4">Добавить окно записи</h1>
+
+  {% if owner_has_bays %}
+    <section class="card border-success border-opacity-50 shadow-sm mb-4" aria-labelledby="quick-today-heading">
+      <div class="card-body">
+        <h2 id="quick-today-heading" class="h6 mb-2">
+          <i class="bi bi-lightning-charge-fill text-success me-1" aria-hidden="true"></i>
+          Окно только на сегодня
+        </h2>
+        <p class="small text-muted mb-3">
+          Быстро открыть приём на текущую дату (время начала должно быть позже «сейчас» по часовому поясу сайта).
+          Другую дату или несколько интервалов — ниже в форме.
+        </p>
+        <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#stoQuickSlotModal">
+          Открыть форму «на сегодня»
+        </button>
+      </div>
+    </section>
+    {% include "sto_owner/_dashboard_quick_slot_modal.html" %}
+  {% else %}
+    <div class="alert alert-light border mb-4">
+      <p class="small mb-0">Сначала создайте хотя бы один <a href="{% url 'sto_owner:bays' %}">пост (бокс)</a>, чтобы привязать к нему окно записи.</p>
+    </div>
+  {% endif %}
+
+  <section class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+      <h2 class="h6 mb-3">Любая дата и время</h2>
+      <form method="post" class="col-lg-8">
+        {% csrf_token %}
+        {% for field in form %}
+          <div class="mb-3">
+            <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% if field.help_text %}<p class="form-text small mb-0">{{ field.help_text }}</p>{% endif %}
+            {% for err in field.errors %}<div class="invalid-feedback d-block">{{ err }}</div>{% endfor %}
+          </div>
+        {% endfor %}
+        <button type="submit" class="btn btn-primary">Сохранить</button>
+        <a class="btn btn-link" href="{% url 'sto_owner:dashboard' %}">Отмена</a>
+      </form>
+    </div>
+  </section>
+{% endblock %}

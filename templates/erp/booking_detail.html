@@ -1,0 +1,157 @@
+{% extends "erp/_layout.html" %}
+
+{% block erp_title %}ERP → Запись #{{ b.id }}{% endblock %}
+{% block erp_subtitle %}Детали + история статусов + чат + отзыв{% endblock %}
+
+{% block erp_content %}
+  <div class="card mb-4">
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-4">
+          <div class="text-muted small">Клиент</div>
+          <div class="fw-semibold">{{ b.client.phone|default:b.client_id }}</div>
+          <div class="small"><a href="{% url 'erp:user_detail' b.client_id %}">Открыть пользователя</a></div>
+        </div>
+        <div class="col-md-4">
+          <div class="text-muted small">СТО</div>
+          <div class="fw-semibold">{{ b.station.name }}</div>
+          <div class="small text-muted">Владелец: {{ b.station.owner.phone|default:b.station.owner_id }}</div>
+        </div>
+        <div class="col-md-4">
+          <div class="text-muted small">Статус</div>
+          <div class="fw-semibold"><code>{{ b.status }}</code></div>
+          <div class="small text-muted">Создано: {{ b.created_at|date:"d.m.Y H:i" }}</div>
+        </div>
+        <div class="col-md-6">
+          <div class="text-muted small">Слот</div>
+          <div>
+            {% if b.slot_id %}
+              {{ b.slot.date }} {{ b.slot.start_time }}–{{ b.slot.end_time }}
+            {% else %}
+              —
+            {% endif %}
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="text-muted small">Контактный телефон</div>
+          <div>{{ b.contact_phone }}</div>
+        </div>
+        <div class="col-12">
+          <div class="text-muted small">Описание</div>
+          <div style="white-space: pre-wrap;">{{ b.description }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card mb-4">
+    <div class="card-header fw-semibold">Действия (ERP)</div>
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-lg-6">
+          <form method="post" action="{% url 'erp:booking_set_status' b.id %}" class="d-flex gap-2 align-items-end flex-wrap">
+            {% csrf_token %}
+            <div style="min-width: 220px;">
+              <label class="form-label small text-muted">Сменить статус</label>
+              <select name="status" class="form-select form-select-sm">
+                {% for v, label in status_choices %}
+                  <option value="{{ v }}" {% if b.status == v %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <button class="btn btn-outline-primary btn-sm" type="submit">Применить</button>
+            <div class="text-muted small">Ограничено допустимыми переходами.</div>
+          </form>
+        </div>
+        <div class="col-lg-6">
+          <form method="post" action="{% url 'erp:booking_emergency_cancel' b.id %}" class="d-flex gap-2 align-items-end flex-wrap">
+            {% csrf_token %}
+            <div style="min-width: 320px; flex: 1;">
+              <label class="form-label small text-muted">Экстренная отмена (причина обязательна)</label>
+              <input name="reason" class="form-control form-control-sm" placeholder="Причина для клиента (до 500 символов)" required />
+            </div>
+            <button class="btn btn-outline-danger btn-sm" type="submit">Отменить</button>
+          </form>
+        </div>
+      </div>
+      {% if b.owner_cancel_reason %}
+        <div class="mt-3 small text-muted">Причина отмены: <strong>{{ b.owner_cancel_reason }}</strong></div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="card mb-4">
+    <div class="card-header fw-semibold">История статусов (simple_history)</div>
+    <div class="card-body p-0 table-responsive">
+      <table class="table table-striped mb-0">
+        <thead>
+          <tr>
+            <th>Когда</th>
+            <th>Статус</th>
+            <th>Кто</th>
+            <th>Тип</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for h in history %}
+            <tr>
+              <td class="small text-nowrap">{{ h.history_date|date:"d.m.Y H:i" }}</td>
+              <td class="small"><code>{{ h.status }}</code></td>
+              <td class="small">{{ h.history_user.phone|default:h.history_user_id|default:"—" }}</td>
+              <td class="small">{{ h.history_type }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="4" class="text-muted p-3">История пуста.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-lg-7">
+      <div class="card h-100">
+        <div class="card-header fw-semibold">Чат по записи (последние 50)</div>
+        <div class="card-body">
+          {% if room %}
+            <div class="small text-muted mb-2">Room #{{ room.id }} · {% if room.is_closed %}закрыт{% else %}открыт{% endif %}</div>
+            <div class="border rounded p-2" style="max-height: 420px; overflow: auto;">
+              {% for m in messages %}
+                <div class="mb-2">
+                  <div class="small text-muted">
+                    {{ m.created_at|date:"d.m.Y H:i" }} · {{ m.sender.phone|default:m.sender_id }}
+                  </div>
+                  <div style="white-space: pre-wrap;">{{ m.text }}</div>
+                  {% if m.attachment %}
+                    <div class="small"><a href="{{ m.attachment.url }}" target="_blank" rel="noopener">Вложение</a></div>
+                  {% endif %}
+                </div>
+              {% empty %}
+                <div class="text-muted">Сообщений нет.</div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="text-muted">Чат не создан.</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-5">
+      <div class="card h-100">
+        <div class="card-header fw-semibold">Отзыв по записи</div>
+        <div class="card-body">
+          {% if review %}
+            <div class="mb-2"><strong>★{{ review.rating }}</strong> · <code>{{ review.moderation_status }}</code></div>
+            <div style="white-space: pre-wrap;">{{ review.text|default:"—" }}</div>
+            <div class="mt-3">
+              <a class="btn btn-outline-primary btn-sm" href="{% url 'erp:review_detail' review.id %}">Открыть отзыв</a>
+            </div>
+          {% else %}
+            <div class="text-muted">Отзыва нет.</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+

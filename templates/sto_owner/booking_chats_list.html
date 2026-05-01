@@ -1,0 +1,44 @@
+{% extends "sto_owner/base.html" %}
+{% block title %}Чаты по записям — Кабинет СТО{% endblock %}
+{% block sto_owner_main %}
+  <div class="d-flex align-items-center justify-content-between gap-2 mb-3">
+    <h1 class="h4 mb-0">Чаты по записям</h1>
+    <span class="small text-muted">Переписка по каждой записи клиента</span>
+  </div>
+
+  <div class="card border-0 shadow-sm">
+    <div class="list-group list-group-flush">
+      {% for it in items %}
+        {% with r=it.room b=it.room.booking %}
+          <a href="{% url 'sto_owner:booking_chat_detail' r.pk %}" class="list-group-item list-group-item-action d-flex align-items-start gap-3 py-3">
+            <div class="rounded-circle bg-primary bg-opacity-10 text-primary d-inline-flex align-items-center justify-content-center flex-shrink-0"
+                 style="width:2.5rem;height:2.5rem;" aria-hidden="true">
+              <i class="bi bi-chat-square-dots"></i>
+            </div>
+            <div class="min-w-0 flex-grow-1">
+              <div class="d-flex align-items-center justify-content-between gap-2">
+                <div class="fw-semibold text-body text-truncate">
+                  {{ b.client.phone }} <span class="text-muted fw-normal">· Запись #{{ b.pk }}</span>
+                </div>
+                <div class="small text-muted flex-shrink-0">
+                  {% if r.last_message_at %}{{ r.last_message_at|date:"d.m H:i" }}{% endif %}
+                </div>
+              </div>
+              <div class="small text-muted text-truncate">
+                {% if r.last_message_text %}{{ r.last_message_text }}{% else %}Нет сообщений{% endif %}
+              </div>
+            </div>
+            <div class="flex-shrink-0">
+              <span class="badge rounded-pill bg-danger {% if not it.unread %}d-none{% endif %}">{{ it.unread }}</span>
+            </div>
+          </a>
+        {% endwith %}
+      {% empty %}
+        <div class="p-4 text-center text-muted">
+          Пока нет диалогов по записям.
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+{% endblock %}
+

@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}СТО рядом на карте — МаБибип{% endblock %}
+{% block extra_head %}
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+{% endblock %}
+{% block content %}
+  {% url "stations:nearby_map" as nearby_list_url %}
+  <div class="mb-3">
+    <h1 class="h3 mb-1">Сервисы рядом с вами</h1>
+    <p class="text-muted small mb-0">
+      {% if user_lat is not None and user_lng is not None %}
+        Радиус <strong>{{ radius_km }}</strong> км · найдено объектов: <strong>{{ station_count }}</strong>
+        · <a href="{{ catalog_nearby_url }}">Тот же радиус в каталоге (списком)</a>
+      {% else %}
+        Укажите местоположение — покажем СТО из каталога с координатами на карте.
+      {% endif %}
+    </p>
+  </div>
+
+  <div class="card border-0 shadow-sm mb-3">
+    <div class="card-body">
+      <div class="row g-2 g-md-3 align-items-end" id="pm-map-filters">
+        <div class="col-12 col-md-4">
+          <label class="form-label small mb-1">Марка авто</label>
+          <select class="form-select" id="pm-map-brand">
+            <option value="">Любая</option>
+            {% for b in car_brand_choices %}
+              <option value="{{ b.slug }}">{{ b.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-12 col-md-4">
+          <label class="form-label small mb-1">Раздел услуг</label>
+          <select class="form-select" id="pm-map-section">
+            <option value="">Любой</option>
+            {% for s in service_section_choices %}
+              <option value="{{ s.slug }}">{{ s.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-12 col-md-4">
+          <div class="small text-muted mb-1">Показывать на карте</div>
+          <div class="d-flex flex-wrap gap-2">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" value="sto" id="pm-map-type-sto" checked>
+              <label class="form-check-label" for="pm-map-type-sto">СТО</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" value="master" id="pm-map-type-master" checked>
+              <label class="form-check-label" for="pm-map-type-master">Мастера</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" value="autoshop" id="pm-map-type-shop" checked>
+              <label class="form-check-label" for="pm-map-type-shop">Магазины/разборки</label>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="small text-muted mt-2">
+        Подсказка: перемещайте карту — объекты подгружаются по области (bbox).
+      </div>
+    </div>
+  </div>
+
+  {% if user_lat is None %}
+    <div class="alert alert-info d-flex flex-column flex-sm-row align-items-start gap-2">
+      <div class="flex-grow-1">
+        Координаты в адресе не переданы. Нажмите кнопку и разрешите доступ в браузере (работает по HTTPS или на localhost).
+      </div>
+      <button type="button" class="btn btn-primary text-nowrap" id="btn-geo-locate">
+        Определить местоположение
+      </button>
+    </div>
+  {% endif %}
+
+  <div id="nearby-map" class="rounded-3 border shadow-sm mb-4" style="height: min(55vh, 480px); min-height: 280px; z-index: 1;"></div>
+
+  {% if map_points %}
+    <h2 class="h6 text-uppercase text-muted mb-2">Список</h2>
+    <ul class="list-group list-group-flush border rounded-3">
+      {% for p in map_points %}
+        <li class="list-group-item d-flex justify-content-between align-items-start gap-2">
+          <div>
+            <a class="fw-medium" href="{{ p.url }}">{{ p.name }}</a>
+            <div class="small text-muted">{{ p.address }}</div>
+          </div>
+          <span class="badge text-bg-light border">{{ p.distance_km }} км</span>
+        </li>
+      {% endfor %}
+    </ul>
+  {% elif user_lat is not None %}
+    <p class="text-muted">В этом радиусе нет СТО с отмеченной точкой на карте в каталоге. Попробуйте увеличить радиус или откройте <a href="{% url 'stations:list' %}">полный каталог</a>.</p>
+  {% endif %}
+{% endblock %}
+
+{% block extra_js %}
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  {{ map_points_json|json_script:"nearby-map-points" }}
+  {{ user_lat_json|json_script:"nearby-user-lat" }}
+  {{ user_lng_json|json_script:"nearby-user-lng" }}
+  {{ nearby_list_url|json_script:"nearby-list-url" }}
+  {{ map_places_api_url|json_script:"map-places-api-url" }}
+  <script type="module" src="{% static 'js/pages/nearby-map.js' %}"></script>
+{% endblock %}

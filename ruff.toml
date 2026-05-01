@@ -1,0 +1,11 @@
+target-version = "py312"
+line-length = 100
+src = ["apps", "config"]
+
+[lint]
+select = ["E", "F", "I", "UP", "W"]
+
+[lint.per-file-ignores]
+"config/settings/*.py" = ["F405", "F403"]
+"config/urls.py" = ["I001"]
+"**/migrations/*.py" = ["E501", "I001"]

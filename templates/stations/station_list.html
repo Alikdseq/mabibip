@@ -1,0 +1,229 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{{ catalog_seo_title }}{% endblock %}
+{% block extra_head %}
+  {% if MAP_FEATURE_ENABLED and catalog_view == 'map' %}
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+  {% endif %}
+{% endblock %}
+{% block content %}
+  <div
+    class="mb-3"
+    x-data="catalogQuickFilters({
+      entry: '{{ request.GET.entry|default:'' }}',
+      quick: '{{ request.GET.quick|default:'' }}',
+      hasBrand: {{ catalog_brand|yesno:'true,false' }},
+      hasService: {{ catalog_cat_ids|length|yesno:'true,false' }},
+      hasSection: {{ catalog_section|yesno:'true,false' }},
+      serviceTileCount: {{ catalog_service_tiles|length }},
+    })"
+  >
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start gap-2">
+      <div>
+        <h1 class="h3 mb-1">Каталог исполнителей</h1>
+        <div class="small text-muted">
+          {% if catalog_effective_city %}В городе {{ catalog_effective_city }} · {% endif %}СТО и мастера · фильтры по марке и услугам
+        </div>
+      </div>
+      <div class="d-flex flex-wrap gap-2">
+        {% if MAP_FEATURE_ENABLED %}
+        <div class="btn-group" role="group" aria-label="Режим просмотра">
+          <a class="btn btn-sm {% if catalog_view == 'list' %}btn-primary{% else %}btn-outline-primary{% endif %}"
+             href="?{% if catalog_qs_no_view %}{{ catalog_qs_no_view }}&{% endif %}view=list">Список</a>
+          <a class="btn btn-sm {% if catalog_view == 'map' %}btn-primary{% else %}btn-outline-primary{% endif %}"
+             href="?{% if catalog_qs_no_view %}{{ catalog_qs_no_view }}&{% endif %}view=map">Карта</a>
+        </div>
+        {% endif %}
+        <button type="button" class="btn btn-sm btn-outline-primary" x-show="controlsVisible" x-cloak @click="toggleBrands()">
+          Выбрать марку
+        </button>
+        <button type="button" class="btn btn-sm btn-outline-primary" x-show="controlsVisible" x-cloak @click="toggleServices()">
+          Выбрать услугу
+        </button>
+      </div>
+    </div>
+
+    {# Марки: 9 в первом ряду на телефоне; 10-я с md; остальные — «Ещё» #}
+    <section class="mb-5 mt-3" x-show="showBrands" x-cloak x-transition.duration.300ms>
+      <div class="mb-3">
+        <h2 class="h4 mb-1">Ваша марка машины</h2>
+        <div class="small text-muted">Блок марок авто</div>
+      </div>
+      <div class="row row-cols-3 row-cols-sm-4 row-cols-lg-5 g-2 g-md-3 pm-brands-grid">
+        {% for b in car_brands_primary %}
+          <div class="col d-flex pm-brand-col">
+            {% include "stations/includes/car_brand_choice_tile.html" with mode="button" stem=b.logo_png_stem label=b.name slug=b.slug catalog_brand=catalog_brand only %}
+          </div>
+        {% endfor %}
+        {% if car_brands_10th %}
+          <div class="col d-flex pm-brand-col d-none d-md-flex">
+            {% with b=car_brands_10th %}
+              {% include "stations/includes/car_brand_choice_tile.html" with mode="button" stem=b.logo_png_stem label=b.name slug=b.slug catalog_brand=catalog_brand only %}
+            {% endwith %}
+          </div>
+        {% endif %}
+      </div>
+      <div class="mt-3" x-show="brandsMore" x-cloak x-transition.duration.300ms>
+        <div class="row row-cols-3 row-cols-sm-4 row-cols-lg-5 g-2 g-md-3">
+          {% if car_brands_10th %}
+            <div class="col d-flex d-md-none pm-brand-col">
+              {% with b=car_brands_10th %}
+                {% include "stations/includes/car_brand_choice_tile.html" with mode="button" stem=b.logo_png_stem label=b.name slug=b.slug catalog_brand=catalog_brand only %}
+              {% endwith %}
+            </div>
+          {% endif %}
+          {% for b in car_brands_more %}
+            <div class="col d-flex pm-brand-col">
+              {% include "stations/includes/car_brand_choice_tile.html" with mode="button" stem=b.logo_png_stem label=b.name slug=b.slug catalog_brand=catalog_brand only %}
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="d-flex justify-content-end mt-3">
+        <button type="button"
+                class="btn btn-outline-primary btn-sm pm-brands-more-btn"
+                @click="toggleMoreBrands()">
+          <span x-text="brandsMore ? 'Скрыть' : 'Ещё марки'"></span>
+        </button>
+      </div>
+    </section>
+
+    {# Разделы услуг (+8 по «Ещё») #}
+    <section class="mb-5 mt-3" x-show="showServices" x-cloak x-transition.duration.300ms>
+      <h2 class="h4 mb-1">Какой раздел услуг нужен</h2>
+      <div class="small text-muted mb-3">Сначала раздел, потом — услуга и марка в фильтрах</div>
+      <div class="row row-cols-2 row-cols-sm-4 g-2 g-md-3">
+        {% for tile in catalog_section_tiles %}
+          <div class="col" x-show="svcShowAt({{ forloop.counter0 }})" x-cloak>
+            <button type="button"
+                    class="w-100 p-0 border-0 bg-transparent text-decoration-none d-block"
+                    @click="applyService({ kind: 'section', sectionSlug: '{{ tile.slug }}' })">
+              <div class="card h-100 border shadow-sm hover-shadow transition-all py-3 text-center">
+                <i class="bi {{ tile.icon }} fs-3 text-primary mb-2" aria-hidden="true"></i>
+                <div class="small fw-medium text-body px-1">{{ tile.label }}</div>
+              </div>
+            </button>
+          </div>
+        {% endfor %}
+      </div>
+      <div class="d-flex justify-content-end mt-3">
+        <button type="button"
+                class="btn btn-outline-primary btn-sm pm-brands-more-btn"
+                x-show="svcHasMore"
+                x-cloak
+                @click="svcLoadMore()">
+          Ещё
+        </button>
+      </div>
+    </section>
+  </div>
+
+  <div class="row g-3">
+    {# ——— Десктоп: колонка фильтров 25% ——— #}
+    <aside class="col-lg-3 d-none d-lg-block">
+      <div class="border rounded-3 p-3 bg-light sticky-lg-top" style="top: 1rem;">
+        <h2 class="h6 text-uppercase text-muted mb-3">Фильтры</h2>
+        <form id="catalog-filters-desk"
+              hx-get="{% url 'stations:list' %}"
+              hx-target="#catalog-results"
+              hx-push-url="true"
+              method="get">
+          {% include "stations/includes/catalog_filters_fields.html" with suffix="desk" %}
+          <button type="submit" class="btn btn-primary w-100">Применить</button>
+        </form>
+        <a href="{% url 'stations:list' %}" class="btn btn-outline-secondary btn-sm w-100 mt-2">Сбросить фильтры</a>
+      </div>
+    </aside>
+
+    {# ——— Результаты 75% ——— #}
+    <div class="col-lg-9">
+      <div class="d-lg-none mb-3">
+        <button type="button" class="btn btn-outline-primary w-100" data-bs-toggle="modal" data-bs-target="#filtersModal">
+          Фильтры
+        </button>
+      </div>
+
+      {% if MAP_FEATURE_ENABLED and catalog_view == 'map' %}
+        <div class="card border-0 shadow-sm mb-3">
+          <div class="card-body">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+              <div class="fw-semibold">Карта исполнителей</div>
+              <div class="small text-muted">Перемещайте карту — точки подгружаются автоматически.</div>
+            </div>
+            <div class="d-flex flex-wrap gap-2 mb-2">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" value="sto" id="pm-cat-map-type-sto" checked>
+                <label class="form-check-label" for="pm-cat-map-type-sto">СТО</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" value="master" id="pm-cat-map-type-master" checked>
+                <label class="form-check-label" for="pm-cat-map-type-master">Мастера</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" value="autoshop" id="pm-cat-map-type-shop">
+                <label class="form-check-label" for="pm-cat-map-type-shop">Магазины/разборки</label>
+              </div>
+            </div>
+            <div id="catalog-map" class="rounded-3 border" style="height: min(60vh, 560px); min-height: 320px;"></div>
+          </div>
+        </div>
+
+        {{ map_places_api_url|json_script:"map-places-api-url" }}
+        {{ catalog_user_lat|json_script:"catalog-user-lat" }}
+        {{ catalog_user_lng|json_script:"catalog-user-lng" }}
+        {{ catalog_map_filters|json_script:"catalog-map-filters" }}
+      {% else %}
+        <div id="catalog-results" class="hx-indicator-parent">
+          {% include "stations/partials/catalog_results.html" %}
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  {# ——— Мобильное окно фильтров ——— #}
+  <div class="modal fade" id="filtersModal" tabindex="-1" aria-labelledby="filtersModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title h5" id="filtersModalLabel">Фильтры</h2>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+        </div>
+        <div class="modal-body">
+          <form id="catalog-filters-mobile"
+                hx-get="{% url 'stations:list' %}"
+                hx-target="#catalog-results"
+                hx-push-url="true"
+                hx-on::after-request="if (event.detail.successful) { var el = document.getElementById('filtersModal'); var m = bootstrap.Modal.getInstance(el); if (m) m.hide(); }"
+                method="get">
+            {% include "stations/includes/catalog_filters_fields.html" with suffix="mobile" %}
+            <button type="submit" class="btn btn-primary w-100">Применить</button>
+          </form>
+          <a href="{% url 'stations:list' %}" class="btn btn-outline-secondary btn-sm w-100 mt-2">Сбросить фильтры</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# ——— Быстрая запись из списка ——— #}
+  <div class="modal fade" id="catalogBookModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title h5">Выбор времени</h2>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+        </div>
+        <div class="modal-body" id="catalogBookModalBody">
+          <p class="text-muted small mb-0">Загрузка…</p>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block extra_js %}
+  <script type="module" src="{% static 'js/pages/stations-list.js' %}"></script>
+  {% if MAP_FEATURE_ENABLED and catalog_view == 'map' %}
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script type="module" src="{% static 'js/pages/stations-catalog-map.js' %}"></script>
+  {% endif %}
+{% endblock %}

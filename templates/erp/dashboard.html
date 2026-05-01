@@ -1,0 +1,133 @@
+{% extends "erp/_layout.html" %}
+
+{% block erp_title %}ERP → Дашборд{% endblock %}
+{% block erp_subtitle %}Ключевые метрики и контроль платформы{% endblock %}
+
+{% block erp_content %}
+  <style>
+    .kpi-card { border-radius: .5rem; border: 1px solid var(--bs-border-color); transition: box-shadow .15s ease; }
+    .kpi-card:hover { box-shadow: 0 .25rem .75rem rgba(0,0,0,.08); }
+    .kpi-value { font-size: 1.85rem; font-weight: 700; line-height: 1.2; }
+    .kpi-meta { font-size: .8rem; color: var(--bs-secondary-color); }
+    .chart-box { min-height: 280px; }
+  </style>
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-6 col-xl-4">
+      <div class="kpi-card p-3 h-100 bg-body">
+        <div class="text-muted text-uppercase small fw-semibold">Пользователи (всего)</div>
+        <div class="kpi-value">{{ total_users }}</div>
+        <div class="kpi-meta">Клиенты: {{ total_clients }} · Владельцы СТО: {{ total_owners }}</div>
+      </div>
+    </div>
+    <div class="col-md-6 col-xl-4">
+      <div class="kpi-card p-3 h-100 bg-body">
+        <div class="text-muted text-uppercase small fw-semibold">Новые пользователи</div>
+        <div class="kpi-value">{{ new_users_today }}</div>
+        <div class="kpi-meta">За 7 дней: {{ new_users_week }}</div>
+      </div>
+    </div>
+    <div class="col-md-6 col-xl-4">
+      <div class="kpi-card p-3 h-100 bg-body">
+        <div class="text-muted text-uppercase small fw-semibold">Записи</div>
+        <div class="kpi-value">{{ bookings_today_total }}</div>
+        <div class="kpi-meta">Сегодня · Всего: {{ bookings_total }} · За 7 дней: {{ bookings_week_total }}</div>
+      </div>
+    </div>
+    <div class="col-md-6 col-xl-4">
+      <div class="kpi-card p-3 h-100 bg-body">
+        <div class="text-muted text-uppercase small fw-semibold">Выручка (подписки)</div>
+        <div class="kpi-value">{{ revenue_30d|floatformat:0 }} ₽</div>
+        <div class="kpi-meta">За последние 30 дней · MRR (оценка): {{ mrr }} ₽</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4 mb-4">
+    <div class="col-lg-8">
+      <div class="card h-100">
+        <div class="card-header fw-semibold">Регистрации за 30 дней</div>
+        <div class="card-body chart-box">
+          <canvas id="chartRegs" aria-label="График регистраций"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-4">
+      <div class="card h-100">
+        <div class="card-header fw-semibold">Конверсия регистрация → запись</div>
+        <div class="card-body d-flex align-items-center justify-content-center">
+          <div class="display-6 fw-bold">{{ reg_to_booking_pct }}%</div>
+        </div>
+        <div class="card-footer small text-muted">
+          Доля пользователей, у которых есть хотя бы 1 запись.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4 mb-4">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header fw-semibold">Оплаты по дням (30 дней)</div>
+        <div class="card-body chart-box">
+          <canvas id="chartPayments" aria-label="Оплаты по дням"></canvas>
+        </div>
+        <div class="card-footer small text-muted">Сумма успешных оплат (`PaymentIntentStatus.SUCCEEDED`) по дате создания платежа.</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script>
+    (function () {
+      const labels = {{ chart_day_labels_json|safe }};
+      const regClients = {{ reg_clients_json|safe }};
+      const regOwners = {{ reg_owners_json|safe }};
+      const regStations = {{ reg_stations_json|safe }};
+      const payLabels = {{ payments_labels_json|safe }};
+      const payAmounts = {{ payments_amounts_json|safe }};
+      const payFailedCnt = {{ payments_failed_cnt_json|safe }};
+      const commonOpts = { responsive: true, maintainAspectRatio: false };
+
+      new Chart(document.getElementById('chartRegs'), {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [
+            { label: 'Клиенты', data: regClients, borderWidth: 2, tension: 0.25 },
+            { label: 'Владельцы СТО', data: regOwners, borderWidth: 2, tension: 0.25 },
+            { label: 'Новые СТО', data: regStations, borderWidth: 2, tension: 0.25 },
+          ],
+        },
+        options: {
+          ...commonOpts,
+          plugins: { legend: { position: 'bottom' } },
+          scales: { y: { beginAtZero: true, ticks: { precision: 0 } } },
+        },
+      });
+
+      const elPay = document.getElementById('chartPayments');
+      if (elPay) {
+        new Chart(elPay, {
+          type: 'bar',
+          data: {
+            labels: payLabels,
+            datasets: [
+              { label: 'Успешно, ₽', data: payAmounts },
+              { label: 'Ошибки/отмены, шт', data: payFailedCnt, yAxisID: 'y2' },
+            ],
+          },
+          options: {
+            ...commonOpts,
+            plugins: { legend: { position: 'bottom' } },
+            scales: {
+              y: { beginAtZero: true, title: { display: true, text: '₽ (успешно)' } },
+              y2: { beginAtZero: true, position: 'right', grid: { drawOnChartArea: false }, title: { display: true, text: 'шт (ошибки/отмены)' } },
+            },
+          },
+        });
+      }
+    })();
+  </script>
+{% endblock %}
+

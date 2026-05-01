@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}{{ shop.name }} — автомагазин{% endblock %}
+{% block content %}
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'home' %}">Главная</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'classifieds:ads_list' %}">Объявления</a></li>
+      <li class="breadcrumb-item active" aria-current="page">{{ shop.name }}</li>
+    </ol>
+  </nav>
+
+  <h1 class="h3 mb-2">{{ shop.name }}</h1>
+  <div class="text-muted small mb-3">{{ shop.city_label }}</div>
+  <div class="mb-3">
+    <span class="badge text-bg-light border">{{ shop.get_kind_display }}</span>
+  </div>
+  {% if shop.description %}
+    <p class="lead">{{ shop.description|linebreaksbr }}</p>
+  {% endif %}
+  {% if shop.contact_phone %}
+    <div class="mb-4">
+      <a class="btn btn-outline-primary" href="tel:{{ shop.contact_phone }}">Позвонить</a>
+    </div>
+  {% endif %}
+  {% if user.is_authenticated %}
+    <form method="post" action="{% url 'cabinet:favorite_shop_toggle' shop.slug %}" class="mb-4">
+      {% csrf_token %}
+      <button type="submit" class="btn {% if is_favorite_shop %}btn-outline-danger{% else %}btn-outline-secondary{% endif %}">
+        {% if is_favorite_shop %}Убрать из избранного{% else %}В избранное{% endif %}
+      </button>
+    </form>
+  {% endif %}
+
+  {% if branches %}
+    <h2 class="h5 mb-3">Магазины</h2>
+    <div class="list-group mb-4">
+      {% for b in branches %}
+        <div class="list-group-item">
+          <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+            <div class="min-w-0">
+              <div class="fw-semibold">{{ b.name|default:shop.name }}</div>
+              <div class="small text-muted">
+                {{ b.city_label }}{% if b.address %}{% if b.city_label %}, {% endif %}{{ b.address }}{% endif %}
+              </div>
+              {% if b.work_hours %}
+                <div class="small text-muted">{{ b.work_hours }}</div>
+              {% endif %}
+            </div>
+            <div class="flex-shrink-0">
+              {% if b.contact_phone %}
+                <a class="btn btn-sm btn-outline-primary" href="tel:{{ b.contact_phone }}">Позвонить</a>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <h2 class="h5 mb-3">Объявления</h2>
+  {% if ads %}
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3">
+      {% for a in ads %}
+        <div class="col">
+          <a class="text-decoration-none" href="{% url 'classifieds:ad_detail' a.pk %}">
+            <div class="card h-100 border shadow-sm">
+              {% with ph=a.photos.all.0 %}
+                {% if ph %}
+                  <img src="{{ ph.image.url }}" class="card-img-top" alt="{{ a.title }}">
+                {% endif %}
+              {% endwith %}
+              <div class="card-body">
+                <div class="fw-semibold text-body">{{ a.title }}</div>
+                <div class="text-primary fw-semibold mt-1">{{ a.price }} ₽</div>
+              </div>
+            </div>
+          </a>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="text-muted">Пока нет объявлений.</p>
+  {% endif %}
+{% endblock %}
+

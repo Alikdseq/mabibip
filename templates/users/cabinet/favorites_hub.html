@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Избранное — МаБибип{% endblock %}
+{% block content %}
+  {% include "users/cabinet/_subnav.html" %}
+
+  <div class="d-flex flex-wrap gap-2 mb-3" role="tablist" aria-label="Избранное">
+    <a class="btn btn-sm {% if tab == 'stations' %}btn-primary{% else %}btn-outline-primary{% endif %}"
+       href="{% url 'cabinet:favorites' %}?tab=stations">Мастера</a>
+    <a class="btn btn-sm {% if tab == 'ads' %}btn-primary{% else %}btn-outline-primary{% endif %}"
+       href="{% url 'cabinet:favorites' %}?tab=ads">Объявления</a>
+    <a class="btn btn-sm {% if tab == 'shop' %}btn-primary{% else %}btn-outline-primary{% endif %}"
+       href="{% url 'cabinet:favorites' %}?tab=shop">Автомагазины</a>
+    <a class="btn btn-sm {% if tab == 'dismantle' %}btn-primary{% else %}btn-outline-primary{% endif %}"
+       href="{% url 'cabinet:favorites' %}?tab=dismantle">Разборки</a>
+    <a class="btn btn-sm {% if tab == 'dealer' %}btn-primary{% else %}btn-outline-primary{% endif %}"
+       href="{% url 'cabinet:favorites' %}?tab=dealer">Автосалоны</a>
+  </div>
+
+  {% if tab == 'stations' %}
+    <h1 class="h4 mb-3">Избранные мастера</h1>
+    {% if favorite_stations %}
+      <ul class="list-group">
+        {% for f in favorite_stations %}
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            <a href="{% url 'stations:detail' f.station.slug %}">{{ f.station.name }}</a>
+            <span class="small text-muted">{{ f.station.address|truncatechars:50 }}</span>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="text-muted mb-0">Пока пусто. Добавляйте мастеров и сервисы кнопкой «В избранное» в каталоге.</p>
+    {% endif %}
+  {% elif tab == 'ads' %}
+    <h1 class="h4 mb-3">Избранные объявления</h1>
+    {% if favorite_ads %}
+      <div class="d-flex flex-column gap-0">
+        {% for f in favorite_ads %}
+          {% include "classifieds/_ad_card.html" with ad=f.ad ad_call_map=ad_call_map favorite_ad_ids=favorite_ad_ids seller_review_done_owner_ids=seller_review_done_owner_ids %}
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="alert alert-light border text-muted">Пока нет избранных объявлений.</div>
+      <a class="btn btn-outline-primary" href="{% url 'classifieds:ads_list' %}">Перейти к объявлениям</a>
+    {% endif %}
+  {% else %}
+    <h1 class="h4 mb-3">Избранные продавцы</h1>
+    {% if favorite_shops %}
+      <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-3">
+        {% for f in favorite_shops %}
+          <div class="col d-flex">
+            {% include "classifieds/partials/shop_card.html" with shop=f.shop only %}
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="alert alert-light border text-muted">Пока пусто.</div>
+      <a class="btn btn-outline-primary" href="{% url 'classifieds:shops_list' %}?kind={{ tab }}">Перейти в каталог</a>
+    {% endif %}
+  {% endif %}
+{% endblock %}
+
