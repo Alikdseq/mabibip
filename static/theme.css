@@ -83,10 +83,7 @@ select.pm-city-listbox {
   background-color: #fff;
 }
 
-select.pm-city-listbox option {
-  color: #212529;
-  background-color: #fff;
-}
+/* Не стилизуем option — в Яндекс.Браузере текст строк может пропасть */
 
 @media (max-width: 575.98px) {
   select.pm-city-listbox {

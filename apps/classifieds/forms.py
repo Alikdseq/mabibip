@@ -133,18 +133,28 @@ class AdForm(forms.ModelForm):
         self.fields["car_brand"].queryset = CarBrand.objects.order_by("-is_popular", "sort_order", "name")
         labels = list_allowed_city_labels()
         if labels:
-            # Видимый listbox: выпадающий <select class="form-select"> в Chromium/Яндекс даёт пустое меню.
-            # «size» + form-control — строки городов всегда на экране (прокрутка внутри списка).
+            # Явный ChoiceField — надёжный рендер <option>; listbox без form-select (см. theme.css).
             rows = min(len(labels) + 1, 14)
             rows = max(rows, 8)
-            self.fields["city_label"].widget = forms.Select(
-                attrs={
-                    "class": "form-control pm-city-listbox",
-                    "size": str(rows),
-                    "aria-label": "Город объявления",
-                }
+            city_choices = [("", "— выберите город —")] + [(x, x) for x in labels]
+            saved = ""
+            inst = getattr(self, "instance", None)
+            if inst is not None and getattr(inst, "pk", None):
+                saved = (getattr(inst, "city_label", None) or "").strip()
+            self.fields["city_label"] = forms.ChoiceField(
+                label="Город",
+                choices=city_choices,
+                required=True,
+                widget=forms.Select(
+                    attrs={
+                        "class": "form-control pm-city-listbox",
+                        "size": str(rows),
+                        "aria-label": "Город объявления",
+                    }
+                ),
             )
-            self.fields["city_label"].choices = [("", "— выберите город —")] + [(x, x) for x in labels]
+            if saved and saved in labels:
+                self.fields["city_label"].initial = saved
         for _fname, choices in (
             ("car_transmission", CarTransmission),
             ("car_fuel", CarFuel),

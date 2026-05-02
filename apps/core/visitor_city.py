@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-from functools import lru_cache
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -15,6 +14,54 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 SESSION_KEY = "visitor_city_label"
+
+# Если файл ru_cities.txt недоступен и в БД нет District.city_label — чтобы формы не были пустыми.
+RU_CITY_LABELS_FALLBACK: tuple[str, ...] = (
+    "Москва",
+    "Санкт-Петербург",
+    "Новосибирск",
+    "Екатеринбург",
+    "Казань",
+    "Нижний Новгород",
+    "Челябинск",
+    "Самара",
+    "Омск",
+    "Ростов-на-Дону",
+    "Уфа",
+    "Красноярск",
+    "Воронеж",
+    "Пермь",
+    "Волгоград",
+    "Краснодар",
+    "Саратов",
+    "Тюмень",
+    "Тольятти",
+    "Ижевск",
+    "Барнаул",
+    "Ульяновск",
+    "Иркутск",
+    "Хабаровск",
+    "Ярославль",
+    "Владивосток",
+    "Махачкала",
+    "Томск",
+    "Оренбург",
+    "Кемерово",
+    "Новокузнецк",
+    "Рязань",
+    "Астрахань",
+    "Пенза",
+    "Липецк",
+    "Тула",
+    "Киров",
+    "Чебоксары",
+    "Калининград",
+    "Брянск",
+    "Иваново",
+    "Магнитогорск",
+    "Сочи",
+    "Ставрополь",
+)
 
 
 def list_allowed_city_labels() -> list[str]:
@@ -35,6 +82,12 @@ def list_allowed_city_labels() -> list[str]:
             key=str.casefold,
         )
 
+    if not labels:
+        logger.warning(
+            "Список городов пуст (нет ru_cities.txt, нет District.city_label) — используется встроенный fallback."
+        )
+        labels = list(RU_CITY_LABELS_FALLBACK)
+
     # Фокус-город (если задан) не ограничивает список, а лишь «поднимается» вверх.
     focus = (getattr(settings, "APP_FOCUS_CITY_LABEL", None) or "").strip()
     if focus:
@@ -43,19 +96,23 @@ def list_allowed_city_labels() -> list[str]:
     return labels
 
 
-@lru_cache(maxsize=1)
 def _load_ru_city_labels() -> list[str]:
     """
     Справочник городов РФ для выпадающих списков.
     Лежит в репозитории: apps/core/data/ru_cities.txt (1 город = 1 строка).
+    Путь рядом с пакетом — надёжнее, чем только BASE_DIR (редкий неверный cwd в воркере).
+    Без lru_cache: пустой результат при первом чтении не должен «залипать» до рестарта.
     """
-    base = Path(getattr(settings, "BASE_DIR", "."))
+    base = Path(getattr(settings, "BASE_DIR", ".")).resolve()
+    pkg_dir = Path(__file__).resolve().parent
     candidates = [
+        pkg_dir / "data" / "ru_cities.txt",
         base / "apps" / "core" / "data" / "ru_cities.txt",
         base.parent / "apps" / "core" / "data" / "ru_cities.txt",
     ]
     p = next((c for c in candidates if c.is_file()), None)
     if not p:
+        logger.warning("Файл ru_cities.txt не найден по путям: %s", candidates)
         return []
     try:
         raw = p.read_text(encoding="utf-8")
