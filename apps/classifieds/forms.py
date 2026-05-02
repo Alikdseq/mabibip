@@ -133,8 +133,17 @@ class AdForm(forms.ModelForm):
         self.fields["car_brand"].queryset = CarBrand.objects.order_by("-is_popular", "sort_order", "name")
         labels = list_allowed_city_labels()
         if labels:
-            # Обычный select без size — иначе .form-select в Bootstrap даёт «пустой» listbox в части браузеров
-            self.fields["city_label"].widget = forms.Select(attrs={"class": "form-select"})
+            # Видимый listbox: выпадающий <select class="form-select"> в Chromium/Яндекс даёт пустое меню.
+            # «size» + form-control — строки городов всегда на экране (прокрутка внутри списка).
+            rows = min(len(labels) + 1, 14)
+            rows = max(rows, 8)
+            self.fields["city_label"].widget = forms.Select(
+                attrs={
+                    "class": "form-control pm-city-listbox",
+                    "size": str(rows),
+                    "aria-label": "Город объявления",
+                }
+            )
             self.fields["city_label"].choices = [("", "— выберите город —")] + [(x, x) for x in labels]
         for _fname, choices in (
             ("car_transmission", CarTransmission),

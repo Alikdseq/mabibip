@@ -35,9 +35,10 @@
         {{ form.price }}
         {% if form.price.errors %}<div class="invalid-feedback d-block">{{ form.price.errors|join:", " }}</div>{% endif %}
       </div>
-      <div class="col-md-4">
-        <label class="form-label">Город</label>
+      <div class="col-md-4 overflow-visible">
+        <label class="form-label" for="{{ form.city_label.id_for_label }}">Город</label>
         {{ form.city_label }}
+        <div class="form-text small">Прокрутите список и выберите город.</div>
         {% if form.city_label.errors %}<div class="invalid-feedback d-block">{{ form.city_label.errors|join:", " }}</div>{% endif %}
       </div>
       <div class="col-md-4">

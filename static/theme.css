@@ -71,6 +71,30 @@ body {
   }
 }
 
+/* Объявления: город — нативный listbox без Bootstrap form-select (пустое выпадающее меню в Chromium / Яндекс.Браузер). */
+select.pm-city-listbox {
+  width: 100%;
+  max-width: 100%;
+  min-height: 12rem;
+  overflow-y: auto;
+  background-image: none;
+  padding-right: 0.75rem;
+  color: #212529;
+  background-color: #fff;
+}
+
+select.pm-city-listbox option {
+  color: #212529;
+  background-color: #fff;
+}
+
+@media (max-width: 575.98px) {
+  select.pm-city-listbox {
+    min-height: 14rem;
+    font-size: 16px;
+  }
+}
+
 /* iOS/mobile perf: reduce expensive effects (blur/shadows) */
 @media (max-width: 575.98px) {
   .pm-ad-gallery-nav {
