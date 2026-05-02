@@ -180,6 +180,8 @@ def guess_city_label_from_request(request: HttpRequest) -> str | None:
 def ensure_visitor_city_in_session(request: HttpRequest) -> None:
     """Выставляет город в сессии при первом заходе и чинит устаревшие значения."""
     allowed = list_allowed_city_labels()
+    # Один расчёт списка на запрос: контекст-процессор переиспользует (без повторного чтения файла/БД).
+    request._visitor_city_allowed_labels = allowed
     if not allowed:
         return
     raw = (request.session.get(SESSION_KEY) or "").strip()
@@ -195,7 +197,9 @@ def ensure_visitor_city_in_session(request: HttpRequest) -> None:
 def visitor_city_context(request: HttpRequest) -> dict:
     from django.urls import reverse
 
-    labels = list_allowed_city_labels()
+    labels = getattr(request, "_visitor_city_allowed_labels", None)
+    if labels is None:
+        labels = list_allowed_city_labels()
     sess = getattr(request, "session", None)
     get_sess = (sess.get if hasattr(sess, "get") else (lambda _k, _d=None: _d))  # type: ignore[attr-defined]
     label = (get_sess(SESSION_KEY, "") or "").strip() if labels else ""

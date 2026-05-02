@@ -7,6 +7,7 @@ from functools import lru_cache
 from pathlib import Path
 from urllib.parse import quote
 
+from django.core.cache import cache
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -56,6 +57,42 @@ from .models import (
     seller_review_done_owner_ids_for_user,
 )
 from .tasks import compute_ad_photo_hash
+
+# Боковые блоки «популярное» на списке объявлений — тяжёлые агрегации; кеш коротким TTL.
+_CLASSIFIEDS_SIDEBAR_POPULAR_TTL = 300
+
+
+def _cached_popular_car_brands_sidebar():
+    cache_key = "classifieds:sidebar:v1:popular_car_brands"
+    cached = cache.get(cache_key)
+    if cached is not None:
+        return cached
+    qs = (
+        CarBrand.objects.filter(car_ads__is_published=True, car_ads__kind=AdKind.CAR)
+        .annotate(ad_count=Count("car_ads", distinct=True))
+        .filter(ad_count__gt=0)
+        .order_by("-ad_count", "name")[:16]
+    )
+    value = list(qs)
+    cache.set(cache_key, value, _CLASSIFIEDS_SIDEBAR_POPULAR_TTL)
+    return value
+
+
+def _cached_popular_part_categories_sidebar():
+    cache_key = "classifieds:sidebar:v1:popular_part_categories"
+    cached = cache.get(cache_key)
+    if cached is not None:
+        return cached
+    qs = (
+        PartCategory.objects.filter(ads__is_published=True, ads__kind=AdKind.PART)
+        .annotate(ad_count=Count("ads", distinct=True))
+        .filter(ad_count__gt=0)
+        .order_by("-ad_count", "sort_order", "name")[:16]
+    )
+    value = list(qs)
+    cache.set(cache_key, value, _CLASSIFIEDS_SIDEBAR_POPULAR_TTL)
+    return value
+
 
 MAX_PHOTOS_PER_AD = 15
 
@@ -365,21 +402,8 @@ class AdsListView(ListView):
             ctx["filtered_total"] = 0
         ctx["ads_mobile_two_column"] = ctx["filtered_total"] >= 50
 
-        popular_cars = (
-            CarBrand.objects.filter(car_ads__is_published=True, car_ads__kind=AdKind.CAR)
-            .annotate(ad_count=Count("car_ads", distinct=True))
-            .filter(ad_count__gt=0)
-            .order_by("-ad_count", "name")[:16]
-        )
-        ctx["popular_car_brands"] = list(popular_cars)
-
-        popular_parts = (
-            PartCategory.objects.filter(ads__is_published=True, ads__kind=AdKind.PART)
-            .annotate(ad_count=Count("ads", distinct=True))
-            .filter(ad_count__gt=0)
-            .order_by("-ad_count", "sort_order", "name")[:16]
-        )
-        ctx["popular_part_categories"] = list(popular_parts)
+        ctx["popular_car_brands"] = _cached_popular_car_brands_sidebar()
+        ctx["popular_part_categories"] = _cached_popular_part_categories_sidebar()
 
         ctx["car_transmission_choices"] = CarTransmission.choices
         ctx["car_fuel_choices"] = CarFuel.choices

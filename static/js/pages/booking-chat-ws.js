@@ -101,6 +101,8 @@ function markRead(roomId) {
   /** Не дублировать своё сообщение: оптимистично показываем сразу, эхо с сервера пропускаем. */
   let pendingOwnEcho = null;
   let messagePollTimer = null;
+  let pollBusy = false;
+  let pollFetchAbort = null;
 
   function clearMessagePoll() {
     if (messagePollTimer) {
@@ -120,11 +122,19 @@ function markRead(roomId) {
 
   async function pollNewMessagesHttp() {
     if (!roomId) return;
+    if (document.visibilityState !== 'visible') return;
+    if (pollBusy) return;
+    pollBusy = true;
+    try {
+      pollFetchAbort?.abort();
+    } catch {}
+    pollFetchAbort = new AbortController();
     try {
       const after = maxSeenMessageId();
       const r = await fetch(`/api/chats/${roomId}/messages/?after_id=${after}`, {
         credentials: 'same-origin',
         headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+        signal: pollFetchAbort.signal,
       });
       if (!r.ok) return;
       const data = await r.json();
@@ -151,7 +161,11 @@ function markRead(roomId) {
         });
         if (!mine && roomId) markRead(roomId);
       }
-    } catch {}
+    } catch (e) {
+      if (e?.name === 'AbortError') return;
+    } finally {
+      pollBusy = false;
+    }
   }
 
   function startMessagePoll() {
@@ -277,7 +291,7 @@ function markRead(roomId) {
   });
 
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') pollNewMessagesHttp();
+    if (document.visibilityState === 'visible') void pollNewMessagesHttp();
   });
 
   form.addEventListener('submit', async (ev) => {

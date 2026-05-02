@@ -140,6 +140,7 @@ function applyRevealedUI(adId, payload) {
     }
     if (timerEl) timerEl.classList.remove('d-none');
   });
+  scheduleRevealCountdownLoop();
 }
 
 function applyMaskedUI(adId) {
@@ -161,6 +162,7 @@ function applyMaskedUI(adId) {
     }
     if (timerEl) timerEl.classList.add('d-none');
   });
+  scheduleRevealCountdownLoop();
 }
 
 async function fetchReveal(adId) {
@@ -180,6 +182,45 @@ async function fetchReveal(adId) {
   return data;
 }
 
+let revealCountdownTimer = null;
+
+function anyVisibleRevealTimer() {
+  return document.querySelector('[data-pm-reveal-ad-id] .js-pm-reveal-timer:not(.d-none)') !== null;
+}
+
+function scheduleRevealCountdownLoop() {
+  if (!anyVisibleRevealTimer()) {
+    if (revealCountdownTimer != null) {
+      window.clearInterval(revealCountdownTimer);
+      revealCountdownTimer = null;
+    }
+    return;
+  }
+  if (revealCountdownTimer != null) return;
+  revealCountdownTimer = window.setInterval(tickRevealCountdowns, 1000);
+}
+
+function tickRevealCountdowns() {
+  if (document.visibilityState !== 'visible') return;
+  const blocks = document.querySelectorAll('[data-pm-reveal-ad-id]');
+  blocks.forEach((block) => {
+    const adId = block.getAttribute('data-pm-reveal-ad-id');
+    if (!adId) return;
+    const timerEl = block.querySelector('.js-pm-reveal-timer');
+    if (!timerEl || timerEl.classList.contains('d-none')) return;
+    const st = lsGetJson(revealKey(adId));
+    if (!st || !st.untilMs) return;
+    const left = st.untilMs - Date.now();
+    if (left <= 0) {
+      lsRemove(revealKey(adId));
+      applyMaskedUI(adId);
+      return;
+    }
+    timerEl.textContent = `Скрытие через ${fmtTimeLeft(left)}`;
+  });
+  scheduleRevealCountdownLoop();
+}
+
 function initFromLocalStorage() {
   const blocks = document.querySelectorAll('[data-pm-reveal-ad-id]');
   blocks.forEach((block) => {
@@ -194,28 +235,12 @@ function initFromLocalStorage() {
     }
     applyRevealedUI(adId, st);
   });
+  scheduleRevealCountdownLoop();
 }
 
-function startTimerLoop() {
-  setInterval(() => {
-    const blocks = document.querySelectorAll('[data-pm-reveal-ad-id]');
-    blocks.forEach((block) => {
-      const adId = block.getAttribute('data-pm-reveal-ad-id');
-      if (!adId) return;
-      const timerEl = block.querySelector('.js-pm-reveal-timer');
-      if (!timerEl || timerEl.classList.contains('d-none')) return;
-      const st = lsGetJson(revealKey(adId));
-      if (!st || !st.untilMs) return;
-      const left = st.untilMs - Date.now();
-      if (left <= 0) {
-        lsRemove(revealKey(adId));
-        applyMaskedUI(adId);
-        return;
-      }
-      timerEl.textContent = `Скрытие через ${fmtTimeLeft(left)}`;
-    });
-  }, 1000);
-}
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') tickRevealCountdowns();
+});
 
 function isSafetySeen() {
   return lsGetJson('safety_warning_seen') === 1 || localStorage.getItem('safety_warning_seen') === '1';
@@ -343,6 +368,5 @@ function preventCopyOnPhones() {
 
 initFromLocalStorage();
 bindClicks();
-startTimerLoop();
 preventCopyOnPhones();
 

@@ -131,6 +131,7 @@ TEMPLATES = [
                 "apps.users.context_processors.email_verification_notice",
                 "apps.calls.context_processors.calls_flags",
                 "apps.core.visitor_city.visitor_city_context",
+                "apps.core.context_processors.nav_badges",
                 "apps.core.context_processors.seo_canonical",
                 "apps.core.context_processors.map_feature_enabled",
                 "apps.core.context_processors.erp_city_expansion_banner",

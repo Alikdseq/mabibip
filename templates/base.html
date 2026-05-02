@@ -1,7 +1,4 @@
 {% load static %}
-{% load booking_chat_tags %}
-{% load sto_booking_tags %}
-{% load support_tags %}
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -118,7 +115,6 @@
       </ul>
       <ul class="navbar-nav ms-auto">
         {% if user.is_authenticated %}
-          {% header_chats_unread_total user as header_chat_unread %}
           <li class="nav-item d-flex align-items-center me-3">
             {% if user.avatar %}
               <img src="{{ user.avatar.url }}" alt="" width="28" height="28"
@@ -130,8 +126,8 @@
             <a class="nav-link d-flex align-items-center gap-2" href="{% if user.is_sto_owner and user.sto_moderation_status == 'approved' %}{% url 'sto_owner:chats' %}{% else %}{% url 'cabinet:chats' %}{% endif %}">
               <span class="fw-semibold">Чаты</span>
               <span id="header-chat-unread"
-                    class="badge rounded-pill bg-danger {% if not header_chat_unread %}d-none{% endif %}"
-                    aria-live="polite">{{ header_chat_unread }}</span>
+                    class="badge rounded-pill bg-danger {% if not nav_chats_unread_total %}d-none{% endif %}"
+                    aria-live="polite">{{ nav_chats_unread_total }}</span>
             </a>
           </li>
           {% if user.is_sto_owner %}
@@ -213,9 +209,8 @@
         <div>
           <i class="bi bi-chat-dots fs-5" aria-hidden="true"></i>
           {% if user.is_authenticated %}
-            {% header_chats_unread_total user as mobile_chat_unread %}
-            <span class="position-absolute top-0 start-50 translate-middle badge rounded-pill bg-danger {% if not mobile_chat_unread %}d-none{% endif %}">
-              {{ mobile_chat_unread }}
+            <span class="position-absolute top-0 start-50 translate-middle badge rounded-pill bg-danger {% if not nav_chats_unread_total %}d-none{% endif %}">
+              {{ nav_chats_unread_total }}
             </span>
           {% endif %}
         </div>
@@ -224,12 +219,11 @@
       {% if user.is_authenticated and user.is_sto_owner %}
         <a href="{% if user.business_role == 'autoshop' %}{% url 'shop_owner:dashboard' %}{% elif user.sto_moderation_status == 'approved' %}{% url 'sto_owner:dashboard' %}{% elif user.sto_moderation_status == 'pending' %}{% url 'sto_owner:pending_moderation' %}{% else %}{% url 'sto_owner:moderation_rejected' %}{% endif %}"
            class="flex-fill text-decoration-none text-light small position-relative">
-          {% sto_pending_booking_count user as pending_bookings %}
           <div>
             <i class="bi bi-briefcase fs-5" aria-hidden="true"></i>
             <span id="mobile-business-badge"
-                  class="position-absolute top-0 start-50 translate-middle badge rounded-pill bg-danger {% if user.business_role == 'autoshop' or not pending_bookings %}d-none{% endif %}">
-              {{ pending_bookings }}
+                  class="position-absolute top-0 start-50 translate-middle badge rounded-pill bg-danger {% if user.business_role == 'autoshop' or not nav_sto_pending_bookings %}d-none{% endif %}">
+              {{ nav_sto_pending_bookings }}
             </span>
           </div>
           <div>Бизнес</div>
@@ -245,10 +239,9 @@
         <div>
           <i class="bi bi-person fs-5" aria-hidden="true"></i>
           {% if user.is_authenticated %}
-            {% support_user_unread_count user as mobile_support_unread %}
-            {% if mobile_support_unread %}
+            {% if nav_support_unread %}
               <span class="position-absolute top-0 start-50 translate-middle badge rounded-pill bg-danger"
-                    title="Новый ответ в поддержке">{{ mobile_support_unread }}</span>
+                    title="Новый ответ в поддержке">{{ nav_support_unread }}</span>
             {% endif %}
           {% endif %}
         </div>
@@ -288,7 +281,7 @@
     });
   });
 </script>
-<script src="https://unpkg.com/htmx.org@2.0.4"></script>
+<script src="https://unpkg.com/htmx.org@2.0.4" defer></script>
 <script type="module" src="{% static 'js/app/csrf-htmx.js' %}"></script>
 {% if user.is_authenticated %}
   <script type="module" src="{% static 'js/app/header-inbox.js' %}"></script>

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone as dt_tz
 
-from django.db.models import DateTimeField, OuterRef, Subquery, Value
+from django.db.models import Count, DateTimeField, F, OuterRef, Q, Subquery, Value
 from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
@@ -89,18 +89,17 @@ class ChatRoomListAPIView(APIView):
             last_message_at=Subquery(last_msg_sq.values("created_at")[:1]),
             last_message_sender_id=Subquery(last_msg_sq.values("sender_id")[:1]),
             last_read_at=Coalesce(Subquery(last_read_sq), Value(_epoch(), output_field=DateTimeField())),
+        ).annotate(
+            unread_aggregate=Count(
+                "messages",
+                filter=Q(messages__created_at__gt=F("last_read_at")) & ~Q(messages__sender_id=u.pk),
+            ),
         ).order_by("-last_message_at", "-created_at", "-pk")
 
         items = []
         for r in rooms:
             b = r.booking
             other = b.station.owner if b.client_id == u.pk else b.client
-            unread = (
-                Message.objects.filter(room=r)
-                .exclude(sender=u)
-                .filter(created_at__gt=r.last_read_at)
-                .count()
-            )
             items.append(
                 {
                     "id": r.pk,
@@ -117,7 +116,7 @@ class ChatRoomListAPIView(APIView):
                         "created_at": r.last_message_at.isoformat() if r.last_message_at else None,
                         "sender_id": int(r.last_message_sender_id) if r.last_message_sender_id else None,
                     },
-                    "unread_count": int(unread),
+                    "unread_count": int(r.unread_aggregate),
                 }
             )
 
