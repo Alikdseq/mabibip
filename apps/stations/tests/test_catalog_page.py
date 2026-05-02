@@ -66,6 +66,20 @@ def test_brand_logo_relpath_typo_filenames(tmp_path, monkeypatch):
     assert brand_logo_relpath("renault") == "logo/reno.png"
 
 
+def test_brand_logo_webp_relpath_when_webp_exists(tmp_path, monkeypatch):
+    d = tmp_path / "logo"
+    d.mkdir(parents=True)
+    (d / "toyota.png").write_bytes(b"\x89PNG\r\n\x1a\n\x00")
+    (d / "toyota.webp").write_bytes(b"RIFF")
+    monkeypatch.setattr(
+        "apps.stations.templatetags.station_catalog._brand_logo_dir",
+        lambda: d,
+    )
+    from apps.stations.templatetags.station_catalog import brand_logo_webp_relpath
+
+    assert brand_logo_webp_relpath("toyota") == "logo/toyota.webp"
+
+
 @pytest.fixture
 def owner(db):
     return User.objects.create_user(phone="+79990003333", password="x", is_sto_owner=True)

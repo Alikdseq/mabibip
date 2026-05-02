@@ -73,16 +73,17 @@ def _norm_logo_stem(raw: str) -> str:
     return "".join(ch for ch in s if ch.isalnum())
 
 
-@register.filter
-def brand_logo_relpath(stem: str) -> str:
-    """Путь для {% static %}: logo/<файл>. Алиасы имён, регистр (Linux/Docker), jpg/webp."""
+def _resolve_brand_logo_path(stem: str) -> Path | None:
+    """
+    Фактический файл логотипа на диске (png/jpg/webp/jpeg) или None.
+    Логика совпадает с brand_logo_relpath.
+    """
     raw = (stem or "").strip()
     if not raw:
-        return "logo/.png"
+        return None
     d = _brand_logo_dir()
-    default = f"logo/{raw}.png"
     if not d.is_dir():
-        return default
+        return None
     try_stems = _try_stems_for_brand(raw)
     try_lower = {s.lower() for s in try_stems}
     try_norm = {_norm_logo_stem(s) for s in try_stems if _norm_logo_stem(s)}
@@ -91,21 +92,51 @@ def brand_logo_relpath(stem: str) -> str:
         for ext in _LOGO_SUFFIXES:
             p = d / f"{name}{ext}"
             if p.is_file():
-                return f"logo/{p.name}"
+                return p
     try:
         for p in d.iterdir():
             if not p.is_file() or p.suffix.lower() not in _LOGO_SUFFIXES:
                 continue
             stem_l = p.stem.lower()
             if stem_l in try_lower or stem_l == raw.lower():
-                return f"logo/{p.name}"
-            # Файлы с пробелами/диакритикой: "land rover.png", "citroën.png" и т.п.
+                return p
             pn = _norm_logo_stem(p.stem)
             if pn and (pn == raw_norm or pn in try_norm):
-                return f"logo/{p.name}"
+                return p
     except OSError:
-        return default
+        return None
+    return None
+
+
+@register.filter
+def brand_logo_relpath(stem: str) -> str:
+    """Путь для {% static %}: logo/<файл>. Алиасы имён, регистр (Linux/Docker), jpg/webp."""
+    raw = (stem or "").strip()
+    if not raw:
+        return "logo/.png"
+    default = f"logo/{raw}.png"
+    p = _resolve_brand_logo_path(raw)
+    if p and p.is_file():
+        return f"logo/{p.name}"
     return default
+
+
+@register.filter
+def brand_logo_webp_relpath(stem: str) -> str:
+    """
+    Путь logo/<stem>.webp для <picture><source>, если рядом с найденным логотипом есть .webp
+    с тем же stem имени файла (toyota.webp при toyota.png).
+    """
+    raw = (stem or "").strip()
+    if not raw:
+        return ""
+    resolved = _resolve_brand_logo_path(raw)
+    if not resolved or not resolved.is_file():
+        return ""
+    webp = resolved.with_suffix(".webp")
+    if webp.is_file():
+        return f"logo/{webp.name}"
+    return ""
 
 
 @register.filter
@@ -139,6 +170,12 @@ def distance_as_km(d):
     """Аннотация Distance / число метров → км для шаблона."""
     if d is None:
         return ""
+    try:
+        if hasattr(d, "km"):
+            return f"{float(d.km):.1f}"
+        return f"{float(d) / 1000:.1f}"
+    except (TypeError, ValueError):
+        return ""
 
 
 @register.simple_tag
@@ -147,12 +184,6 @@ def station_phone_e164(station) -> str:
     try:
         return station_contact_phone_e164(station)
     except Exception:
-        return ""
-    try:
-        if hasattr(d, "km"):
-            return f"{float(d.km):.1f}"
-        return f"{float(d) / 1000:.1f}"
-    except (TypeError, ValueError):
         return ""
 
 

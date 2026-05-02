@@ -1,5 +1,5 @@
 {% load static station_catalog %}
-{% with logo_rel=stem|brand_logo_relpath sz=stem|brand_logo_size %}
+{% with logo_rel=stem|brand_logo_relpath webp_rel=stem|brand_logo_webp_relpath sz=stem|brand_logo_size %}
 {% if mode == "link" %}
   <a class="btn btn-outline-secondary w-100 h-100 d-flex flex-column align-items-center justify-content-between gap-1 shadow-sm text-decoration-none px-2 py-2 pm-brand-tile"
      href="{{ href }}"
@@ -14,14 +14,28 @@
           title="{{ label }}">
 {% endif %}
     <span class="d-flex align-items-center justify-content-center flex-shrink-0 w-100 pm-brand-tile-logo">
-      <img src="{% static logo_rel %}"
-           alt=""
-           width="{{ sz }}"
-           height="{{ sz }}"
-           loading="lazy"
-           decoding="async"
-           class="d-block"
-           style="object-fit:contain;max-width:100%;max-height:100%;">
+      {% if webp_rel %}
+        <picture class="d-flex align-items-center justify-content-center w-100 h-100">
+          <source type="image/webp" srcset="{% static webp_rel %}">
+          <img src="{% static logo_rel %}"
+               alt=""
+               width="{{ sz }}"
+               height="{{ sz }}"
+               loading="lazy"
+               decoding="async"
+               class="d-block"
+               style="object-fit:contain;max-width:100%;max-height:100%;">
+        </picture>
+      {% else %}
+        <img src="{% static logo_rel %}"
+             alt=""
+             width="{{ sz }}"
+             height="{{ sz }}"
+             loading="lazy"
+             decoding="async"
+             class="d-block"
+             style="object-fit:contain;max-width:100%;max-height:100%;">
+      {% endif %}
     </span>
     <span class="small fw-medium text-center text-truncate w-100 mt-1" title="{{ label }}">{{ label }}</span>
 {% if mode == "link" %}

@@ -39,7 +39,7 @@ function postForm(url) {
   f.submit();
 }
 
-(() => {
+function pmInitHeaderInbox() {
   const el = document.getElementById('header-chat-unread');
   if (!el) return;
 
@@ -509,4 +509,23 @@ function postForm(url) {
       stoInboxWsOk = true;
     }
   } catch {}
-})();
+}
+
+function pmScheduleHeaderInbox() {
+  const run = () => {
+    pmInitHeaderInbox();
+  };
+  if (typeof window.requestIdleCallback === 'function') {
+    window.requestIdleCallback(run, { timeout: 3000 });
+  } else {
+    window.addEventListener(
+      'load',
+      () => {
+        window.setTimeout(run, 0);
+      },
+      { once: true },
+    );
+  }
+}
+
+pmScheduleHeaderInbox();

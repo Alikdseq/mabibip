@@ -73,7 +73,7 @@ cd app
 ```dotenv
 DJANGO_SETTINGS_MODULE=config.settings.prod
 DEBUG=False
-SECRET_KEY=<<<СГЕНЕРИРУЙТЕ_СИЛЬНЫЙ_СЕКРЕТ_И_ВСТАВЬТЕ_СЮДА>>>
+SECRET_KEY=sjfuoshdh37yr32gguwy8dgg283gdibshdbbi2j3897823yevghv34685y23vdhg
 
 SITE_BASE_URL=https://mabibip.ru
 ALLOWED_HOSTS=mabibip.ru,www.mabibip.ru,185.225.35.109
@@ -81,10 +81,10 @@ CSRF_TRUSTED_ORIGINS=https://mabibip.ru,https://www.mabibip.ru
 
 # Postgres (docker compose db)
 POSTGRES_USER=promaster
-POSTGRES_PASSWORD=<<<СИЛЬНЫЙ_ПАРОЛЬ_POSTGRES>>>
+POSTGRES_PASSWORD=sdijbwuhfu34uri2gruhvdbfjheufg2urroiwbdfhb
 POSTGRES_DB=promaster
 
-DATABASE_URL=postgres://promaster:<<<СИЛЬНЫЙ_ПАРОЛЬ_POSTGRES>>>@db:5432/promaster
+DATABASE_URL=postgres://promaster:sdijbwuhfu34uri2gruhvdbfjheufg2urroiwbdfhb@db:5432/promaster
 
 REDIS_URL=redis://redis:6379/0
 CELERY_BROKER_URL=redis://redis:6379/1
@@ -166,12 +166,44 @@ sudo certbot --nginx -d mabibip.ru -d www.mabibip.ru
 sudo certbot renew --dry-run
 ```
 
+### 6.4 Gzip (меньше трафика на мобильном интернете)
+
+В `server { ... }` для HTTPS добавьте сжатие текстовых типов (пример уже в [`deploy/nginx/promaster.conf.example`](../deploy/nginx/promaster.conf.example)):
+
+- `gzip on;`
+- `gzip_types text/css application/javascript ...`
+
+Проверка:
+
+```bash
+curl -H "Accept-Encoding: gzip" -I https://mabibip.ru/static/theme.css
+```
+
+В ответе должно быть `Content-Encoding: gzip` (для подходящих типов).
+
+### 6.5 Логотипы марок: WebP для `<picture>`
+
+Рядом с PNG/JPEG в `static/logo/` можно сгенерировать `.webp` (шаблон отдаёт WebP браузерам, которые умеют):
+
+```bash
+docker compose --env-file .env.prod run --rm web python manage.py optimize_brand_logos
+docker compose --env-file .env.prod run --rm web python manage.py collectstatic --noinput
+```
+
+### 6.6 DevTools Network: не путать сайт с расширениями
+
+Если в Network видны скрипты с именами вроде `webcomponents-bundle-*.js`, `main.tsx-*`, `client-*.js` (хэши Vite) — проверьте колонку **Initiator**:
+
+- если источник `chrome-extension://` или не ваш домен — это часто **расширение браузера**, а не проект;
+- повторите замер в **режиме инкогнито без расширений**.
+
 ## 7) Проверка после деплоя (checklist)
 
 - `https://mabibip.ru/` открывается, есть редирект с http → https
 - `/accounts/login/` и `/accounts/register/` работают
 - Письма уходят (если SMTP задан), ссылки ведут на `https://mabibip.ru/...`
 - Статика отдается (CSS/JS без 404)
+- Для CSS/JS включён gzip: `curl -H "Accept-Encoding: gzip" -I https://mabibip.ru/static/theme.css` → при необходимости `Content-Encoding: gzip`
 - ERP/админка: `/secure-admin/` (или ваш admin URL) доступна суперпользователю
 - `python manage.py sync_site_domain` отработал, `django_site.domain` = `mabibip.ru`
 
