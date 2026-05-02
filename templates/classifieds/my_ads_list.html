@@ -29,7 +29,11 @@
               <td><a href="{% url 'classifieds:ad_detail' a.pk %}">{{ a.title }}</a></td>
               <td>{{ a.price }} ₽</td>
               <td>
-                {% if a.is_published %}
+                {% if a.moderation_status == "pending" %}
+                  <span class="badge text-bg-warning text-dark">На проверке</span>
+                {% elif a.moderation_status == "hidden" %}
+                  <span class="badge text-bg-danger">Модерация</span>
+                {% elif a.is_published %}
                   <span class="badge text-bg-success">Опубликовано</span>
                 {% else %}
                   <span class="badge text-bg-secondary">Скрыто</span>

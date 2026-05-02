@@ -144,6 +144,7 @@ sudo systemctl start nginx
 ### 6.2 Конфиг Nginx
 
 - Возьмите пример `deploy/nginx/promaster.conf.example` из репозитория и адаптируйте.
+- В блоке `server { ... }` для HTTPS должно быть **`client_max_body_size 80m;`** (объявления с до 15 фото по 5 МБ). Если стоит **`10m`**, **`1m`** или директива отсутствует (дефолт 1 МБ), при создании объявления возможен **`413 Request Entity Too Large`** от Nginx.
 - Важно: проксирование на Docker‑сервисы `web:8000` и `asgi:8001` (если у вас websocket `/ws/`).
 
 Вариант: положить конфиг в `/etc/nginx/sites-available/mabibip` и включить:

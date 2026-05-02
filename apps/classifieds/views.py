@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import timedelta
+import logging
 import re
 from functools import lru_cache
 from pathlib import Path
@@ -57,6 +58,19 @@ from .models import (
 from .tasks import compute_ad_photo_hash
 
 MAX_PHOTOS_PER_AD = 15
+
+logger = logging.getLogger(__name__)
+
+
+def _schedule_compute_ad_photo_hash(photo_id: int) -> None:
+    """Не ломать сохранение объявления, если Redis/Celery временно недоступны."""
+    try:
+        compute_ad_photo_hash.delay(int(photo_id))
+    except Exception:
+        logger.exception(
+            "Не удалось поставить в очередь compute_ad_photo_hash (photo_id=%s)",
+            photo_id,
+        )
 
 _AD_DETAIL_VIEWED_SESSION_KEY = "classifieds_ad_detail_viewed_pks"
 
@@ -773,7 +787,8 @@ class MyAdCreateView(LoginRequiredMixin, CompletedProfileRequiredMixin, CreateVi
         if photos:
             for i, f in enumerate(photos):
                 ph = AdPhoto.objects.create(ad=ad, image=f, order=i)
-                transaction.on_commit(lambda photo_id=ph.pk: compute_ad_photo_hash.delay(photo_id))
+                pid = int(ph.pk)
+                transaction.on_commit(lambda photo_id=pid: _schedule_compute_ad_photo_hash(photo_id))
         messages.success(self.request, "Объявление создано.")
         return redirect(self.success_url)
 
@@ -805,7 +820,8 @@ class MyAdUpdateView(LoginRequiredMixin, CompletedProfileRequiredMixin, UpdateVi
             start = int(self.object.photos.count())
             for i, f in enumerate(photos):
                 ph = AdPhoto.objects.create(ad=self.object, image=f, order=start + i)
-                transaction.on_commit(lambda photo_id=ph.pk: compute_ad_photo_hash.delay(photo_id))
+                pid = int(ph.pk)
+                transaction.on_commit(lambda photo_id=pid: _schedule_compute_ad_photo_hash(photo_id))
         messages.success(self.request, "Объявление сохранено.")
         return resp
 

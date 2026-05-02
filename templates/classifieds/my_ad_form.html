@@ -5,7 +5,19 @@
   <h1 class="h4 mb-3">{% if object %}Редактировать{% else %}Новое объявление{% endif %}</h1>
   <form method="post" enctype="multipart/form-data" class="col-lg-8">
     {% csrf_token %}
-    {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+    {% if form.errors %}
+      <div class="alert alert-danger" role="alert">
+        <div class="fw-semibold mb-1">Проверьте поля и попробуйте снова</div>
+        <ul class="mb-0 small ps-3">
+          {% for field in form %}
+            {% for err in field.errors %}
+              <li><strong>{{ field.label }}:</strong> {{ err }}</li>
+            {% endfor %}
+          {% endfor %}
+          {% for err in form.non_field_errors %}<li>{{ err }}</li>{% endfor %}
+        </ul>
+      </div>
+    {% endif %}
 
     <div class="mb-3">
       <label class="form-label">Тип</label>
@@ -15,15 +27,18 @@
     <div class="mb-3">
       <label class="form-label">Заголовок</label>
       {{ form.title }}
+      {% if form.title.errors %}<div class="invalid-feedback d-block">{{ form.title.errors|join:", " }}</div>{% endif %}
     </div>
     <div class="row g-2">
       <div class="col-md-4">
         <label class="form-label">Цена</label>
         {{ form.price }}
+        {% if form.price.errors %}<div class="invalid-feedback d-block">{{ form.price.errors|join:", " }}</div>{% endif %}
       </div>
       <div class="col-md-4">
         <label class="form-label">Город</label>
         {{ form.city_label }}
+        {% if form.city_label.errors %}<div class="invalid-feedback d-block">{{ form.city_label.errors|join:", " }}</div>{% endif %}
       </div>
       <div class="col-md-4">
         <label class="form-label">Опубликовано</label>
@@ -34,6 +49,7 @@
     <div class="mb-3 mt-3">
       <label class="form-label">Описание</label>
       {{ form.description }}
+      {% if form.description.errors %}<div class="invalid-feedback d-block">{{ form.description.errors|join:", " }}</div>{% endif %}
     </div>
 
     <div class="border rounded p-3 mb-3">
@@ -55,6 +71,7 @@
       {% endif %}
       <label class="form-label">Загрузить фото</label>
       {{ form.photos }}
+      {% if form.photos.errors %}<div class="invalid-feedback d-block">{{ form.photos.errors|join:", " }}</div>{% endif %}
       {% if form.photos.help_text %}<div class="form-text">{{ form.photos.help_text }}</div>{% endif %}
     </div>
 

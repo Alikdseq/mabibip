@@ -33,6 +33,16 @@ SECURE_PROXY_SSL_HEADER=1
 
 чтобы Django видел HTTPS и корректный хост (для `docker`-настроек; см. `config/settings/docker.py`).
 
+## Загрузка файлов (объявления, фото СТО и т.д.)
+
+Если при создании объявления с несколькими фото браузер показывает **`413 Request Entity Too Large`** (`nginx/...`), увеличьте в **`server { ... }`** директиву **`client_max_body_size`** до **`80m`** (в репозитории так задано в [`deploy/nginx/promaster.conf.example`](../deploy/nginx/promaster.conf.example) и [`deploy/nginx/docker-frontend.conf`](../deploy/nginx/docker-frontend.conf)). По умолчанию у Nginx часто **1 МБ** — этого недостаточно даже для одного крупного снимка.
+
+После правки:
+
+```bash
+sudo nginx -t && sudo systemctl reload nginx
+```
+
 ## Redis
 
 Channels использует **`CHANNEL_REDIS_URL`** / **`REDIS_URL`**. Без Redis WebSocket-процессы не увидят друг друга.

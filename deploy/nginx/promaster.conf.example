@@ -42,7 +42,8 @@ server {
     # HSTS (enable only when HTTPS is stable on your domain)
     add_header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" always;
 
-    client_max_body_size 10m;
+    # Объявления: до 15 фото × 5 МБ (+ multipart) — меньше даёт 413 Request Entity Too Large
+    client_max_body_size 80m;
 
     # Сжатие ответов (HTML/CSS/JS/JSON/SVG) — меньше трафика на мобильных сетях
     gzip on;
@@ -113,6 +114,10 @@ server {
         include /etc/nginx/proxy_params;
         proxy_set_header X-Forwarded-Proto https;
         proxy_set_header X-Forwarded-Host $host;
+        # Большие multipart (объявления с фото): не обрывать до приложения
+        proxy_read_timeout 300s;
+        proxy_send_timeout 300s;
+        client_body_timeout 300s;
     }
 }
 
