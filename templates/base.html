@@ -85,14 +85,14 @@
                   {% csrf_token %}
                   <input type="hidden" name="next" value="{{ request.get_full_path }}">
                   <label class="form-label small mb-1" for="pmHeaderCitySelect">Город</label>
-                  <select id="pmHeaderCitySelect" name="city_label" class="form-select form-select-sm" size="8" required>
+                  <select id="pmHeaderCitySelect" name="city_label" class="form-select form-select-sm" required>
                     {% for c in visitor_city_choices %}
                       <option value="{{ c }}"{% if c == visitor_city_label %} selected{% endif %}>{{ c }}</option>
                     {% endfor %}
                   </select>
                   <div class="d-flex gap-2 mt-2">
                     <button type="submit" class="btn btn-sm btn-primary">Выбрать</button>
-                    <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="dropdown">Закрыть</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary pm-close-nav-city-dropdown">Закрыть</button>
                   </div>
                 </form>
               </div>
@@ -273,6 +273,21 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
         crossorigin="anonymous"></script>
+<script>
+  /* Нельзя вешать data-bs-toggle="dropdown" на кнопку без меню — будет dropdown.js: classList of null */
+  document.querySelectorAll('.pm-close-nav-city-dropdown').forEach(function (btn) {
+    btn.addEventListener('click', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      var li = btn.closest('li.nav-item.dropdown');
+      var toggle = li && li.querySelector('[data-bs-toggle="dropdown"]');
+      if (toggle && window.bootstrap && bootstrap.Dropdown) {
+        var inst = bootstrap.Dropdown.getInstance(toggle);
+        if (inst) inst.hide();
+      }
+    });
+  });
+</script>
 <script src="https://unpkg.com/htmx.org@2.0.4"></script>
 <script type="module" src="{% static 'js/app/csrf-htmx.js' %}"></script>
 {% if user.is_authenticated %}
