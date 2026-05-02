@@ -183,12 +183,43 @@ curl -H "Accept-Encoding: gzip" -I https://mabibip.ru/static/theme.css
 
 ### 6.5 Логотипы марок: WebP для `<picture>`
 
-Рядом с PNG/JPEG в `static/logo/` можно сгенерировать `.webp` (шаблон отдаёт WebP браузерам, которые умеют):
+Логотипы лежат в **`static/logo/`** (в контейнере: **`/app/static/logo/`**). В шаблонах марки выводятся через [`templates/stations/includes/car_brand_choice_tile.html`](../templates/stations/includes/car_brand_choice_tile.html) — там уже есть `<picture>` / WebP при наличии файла рядом с PNG.
+
+**Рекомендуемый способ (Pillow внутри образа, без `apt` и без пользователя `root`):**
 
 ```bash
+cd /opt/mabibip/app
 docker compose --env-file .env.prod run --rm web python manage.py optimize_brand_logos
 docker compose --env-file .env.prod run --rm web python manage.py collectstatic --noinput
+docker compose --env-file .env.prod restart web
 ```
+
+Параметры качества: `python manage.py optimize_brand_logos --quality 80`  
+Пересоздать все `.webp`: `--force`
+
+Проверка пути к файлам:
+
+```bash
+docker compose --env-file .env.prod exec web ls -la /app/static/logo/ | head
+```
+
+**Важно:** в образе контейнер по умолчанию работает от пользователя **`app`** — команды вида `apt install` через `exec web` без `-u root` **не сработают**. Не используйте `static/images/` для марок — в проекте это **`static/logo/`**.
+
+**Альтернатива — `cwebp` от root** (если принципиально нужна утилита Google):
+
+```bash
+docker compose --env-file .env.prod exec -u root web bash -lc \
+  "apt-get update && apt-get install -y --no-install-recommends webp && \
+   cd /app/static/logo && for f in *.png; do [ -f \"\$f\" ] && cwebp -q 80 \"\$f\" -o \"\${f%.png}.webp\"; done"
+docker compose --env-file .env.prod run --rm web python manage.py collectstatic --noinput
+docker compose --env-file .env.prod restart web
+```
+
+После генерации WebP при отсутствии bind-mount каталога с кодом закоммитьте новые `*.webp` в Git — иначе они пропадут при пересборке образа без копии файлов в образ.
+
+### Про скрипты `webcomponents-bundle` / `main.tsx`
+
+В репозитории шаблоны **не подключают** такие имена — см. раздел **6.6** (расширения браузера). Добавлять `defer` к несуществующим в проекте скриптам не нужно.
 
 ### 6.6 DevTools Network: не путать сайт с расширениями
 

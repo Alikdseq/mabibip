@@ -52,22 +52,45 @@ function pmInitHeaderInbox() {
   render();
 
   const base = wsBaseUrl();
+  const POLL_MS = 18000;
   let pollTimer = null;
+  /** Не запускать второй fetch, пока первый не завершился — иначе на телефоне копится очередь summary/. */
+  let pollBusy = false;
+  let pollFetchAbort = null;
   let inboxWsOk = false;
   let stoInboxWsOk = false;
+
+  function needsHttpPoll() {
+    const isApprovedSto = (document.body?.dataset?.stoApproved || '0') === '1';
+    return !inboxWsOk || (isApprovedSto && !stoInboxWsOk);
+  }
 
   function clearInboxPoll() {
     if (pollTimer) {
       window.clearInterval(pollTimer);
       pollTimer = null;
     }
+    try {
+      pollFetchAbort?.abort();
+    } catch {}
+    pollFetchAbort = null;
+    pollBusy = false;
   }
 
   async function pollInboxFromHttp() {
+    if (document.visibilityState !== 'visible') return;
+    if (!needsHttpPoll()) return;
+    if (pollBusy) return;
+    pollBusy = true;
+    try {
+      pollFetchAbort?.abort();
+    } catch {}
+    pollFetchAbort = new AbortController();
     try {
       const r = await fetch('/api/inbox/summary/', {
         credentials: 'same-origin',
         headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+        signal: pollFetchAbort.signal,
       });
       if (!r.ok) return;
       const d = await r.json();
@@ -79,23 +102,30 @@ function pmInitHeaderInbox() {
         updatePill(badge, stoBookingPending);
       }
       render();
-    } catch {}
+    } catch (e) {
+      if (e?.name === 'AbortError') return;
+    } finally {
+      pollBusy = false;
+    }
   }
 
   function scheduleInboxPollIfNeeded() {
-    const isApprovedSto = (document.body?.dataset?.stoApproved || '0') === '1';
-    const needPoll = !inboxWsOk || (isApprovedSto && !stoInboxWsOk);
-    if (!needPoll) {
+    if (!needsHttpPoll()) {
       clearInboxPoll();
       return;
     }
     if (pollTimer) return;
     pollInboxFromHttp();
-    pollTimer = window.setInterval(pollInboxFromHttp, 12000);
+    pollTimer = window.setInterval(pollInboxFromHttp, POLL_MS);
   }
 
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') pollInboxFromHttp();
+    if (document.visibilityState === 'hidden') {
+      clearInboxPoll();
+      return;
+    }
+    pollInboxFromHttp();
+    scheduleInboxPollIfNeeded();
   });
 
   const seenBuffer = new Set();
