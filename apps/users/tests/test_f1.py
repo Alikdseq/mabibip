@@ -168,6 +168,20 @@ def test_register_duplicate_phone_rejected():
     User.objects.create_user(phone="+79991110001", password="x")
     client = Client()
     client.get(reverse("users:register"))
-    r = client.post(reverse("users:register"), _register_post("+79991110001"))
+    r = client.post(
+        reverse("users:register"),
+        _register_post("+79991110001", email="dupphone@example.com"),
+    )
     assert r.status_code == 200
     assert "уже зарегистрирован" in r.content.decode()
+
+
+@pytest.mark.django_db
+def test_register_driver_requires_email():
+    client = Client()
+    client.get(reverse("users:register"))
+    r = client.post(reverse("users:register"), _register_post("+79991110002"))
+    assert r.status_code == 200
+    body = r.content.decode()
+    assert "Укажите email" in body
+    assert not User.objects.filter(phone="+79991110002").exists()

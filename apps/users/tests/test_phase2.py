@@ -42,6 +42,7 @@ def test_register_full_flow_active_user():
             "password1": "strong-pass-9",
             "password2": "strong-pass-9",
             "role": "driver",
+            "email": "phase2driver@example.com",
             "accept_privacy": "on",
             "accept_user_agreement": "on",
             "accept_pd_consent": "on",
@@ -54,7 +55,8 @@ def test_register_full_flow_active_user():
     user = User.objects.get(phone=phone)
     assert user.is_active is True
     assert user.is_phone_verified is True
-    assert user.email_verified is True
+    assert user.email == "phase2driver@example.com"
+    assert user.email_verified is False
 
 
 @pytest.mark.django_db

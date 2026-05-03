@@ -3,6 +3,11 @@
 {% block content %}
   {% include "users/cabinet/_subnav.html" %}
   <h1 class="h4 mb-3">Профиль</h1>
+  {% if user.business_role == 'driver' and not user.email %}
+    <div class="alert alert-info small col-lg-8 mb-3" role="status">
+      Укажите email в форме ниже: вход через VK/Google с тем же адресом откроет этот аккаунт, а не создаст новый.
+    </div>
+  {% endif %}
   <div class="row">
     <div class="col-lg-6">
       <form method="post" enctype="multipart/form-data" class="card card-body border shadow-sm">

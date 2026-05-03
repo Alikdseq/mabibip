@@ -103,7 +103,7 @@ class RegisterForm(RecaptchaTokenMixin, RegistrationSecurityMixin, forms.Form):
         widget=forms.PasswordInput(attrs={"class": "form-control", "autocomplete": "new-password"}),
     )
     email = forms.EmailField(
-        label="Email (необязательно)",
+        label="Email",
         required=False,
         widget=forms.EmailInput(attrs={"class": "form-control", "autocomplete": "email"}),
     )
@@ -222,6 +222,10 @@ class RoleRegisterForm(RegisterForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields["email"].label = "Email"
+        self.fields["email"].help_text = (
+            "Для роли «Водитель» обязателен — тот же адрес связывает аккаунт с входом через VK/Google."
+        )
         labels = list_allowed_city_labels()
         if labels:
             self.fields["city_label"] = forms.ChoiceField(
@@ -237,6 +241,14 @@ class RoleRegisterForm(RegisterForm):
         if role not in dict(User.BusinessRole.choices):
             raise ValidationError("Выберите роль.")
         data["role"] = role
+        if role == User.BusinessRole.DRIVER:
+            email_raw = (data.get("email") or "").strip()
+            if not email_raw:
+                self.add_error(
+                    "email",
+                    "Укажите email: он нужен, чтобы вход через VK/Google вёл в тот же аккаунт, "
+                    "и для восстановления доступа.",
+                )
         if role != User.BusinessRole.DRIVER:
             bn = (data.get("business_name") or "").strip()
             if not bn:

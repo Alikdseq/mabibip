@@ -1,17 +1,19 @@
 from __future__ import annotations
 
 import hashlib
+import logging
 
 from allauth.socialaccount.adapter import DefaultSocialAccountAdapter
 from allauth.account.utils import perform_login
 from allauth.exceptions import ImmediateHttpResponse
 from allauth.socialaccount.models import SocialLogin
-from allauth.socialaccount.providers.base import Provider
 from django.contrib.auth import get_user_model
 from django.contrib import messages
 from django.db import IntegrityError, transaction
 from django.shortcuts import redirect
 from django.utils import timezone
+
+logger = logging.getLogger(__name__)
 
 
 class TachkiSocialAccountAdapter(DefaultSocialAccountAdapter):
@@ -102,8 +104,19 @@ class TachkiSocialAccountAdapter(DefaultSocialAccountAdapter):
         # Привязываем и логиним.
         try:
             sociallogin.connect(request, existing)
-        except Exception:
-            # Даже если connect не удался, не мешаем allauth продолжить стандартный путь.
+        except Exception as exc:
+            logger.warning(
+                "pre_social_login: connect failed provider=%s email=%s: %s",
+                getattr(sociallogin.account, "provider", ""),
+                email,
+                exc,
+                exc_info=True,
+            )
+            messages.error(
+                request,
+                "Не удалось привязать соцсеть к аккаунту с этим email. "
+                "Попробуйте ещё раз или войдите по телефону и обратитесь в поддержку.",
+            )
             return
 
         resp = perform_login(
@@ -129,7 +142,10 @@ class TachkiSocialAccountAdapter(DefaultSocialAccountAdapter):
         return super().get_login_redirect_url(request)
 
     def is_auto_signup_allowed(self, request, sociallogin):
-        # Не показываем allauth страницы /oauth/*signup* — весь онбординг делаем на /accounts/complete-profile/
+        """
+        True — разрешаем автосоздание, если у провайдера уже есть валидные данные (email и т.д.).
+        Если email нет, а SOCIALACCOUNT_EMAIL_REQUIRED=True, allauth сам отправит на /oauth/.../signup/.
+        """
         return True
 
     def is_open_for_signup(self, request, sociallogin: SocialLogin) -> bool:

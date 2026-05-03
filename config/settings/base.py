@@ -229,10 +229,12 @@ ACCOUNT_USERNAME_REQUIRED = False
 ACCOUNT_USERNAME_MIN_LENGTH = 0
 # Allauth must not require username; allow login by email only for allauth flows.
 ACCOUNT_LOGIN_METHODS = {"email"}
-# Не используем allauth signup-формы: после OAuth ведём на наш онбординг.
-ACCOUNT_SIGNUP_FIELDS: list[str] = []
-ACCOUNT_EMAIL_REQUIRED = False
+# Поля формы `/oauth/.../signup/` (соцвход без email): только email — пароль задаётся через save_user соцадаптера.
+ACCOUNT_SIGNUP_FIELDS = ["email*"]
+ACCOUNT_EMAIL_REQUIRED = True
 SOCIALACCOUNT_AUTO_SIGNUP = True
+# Если провайдер не отдал email — редирект на socialaccount_signup (шаблон socialaccount/signup.html).
+SOCIALACCOUNT_EMAIL_REQUIRED = True
 SOCIALACCOUNT_ADAPTER = "apps.users.allauth_adapters.TachkiSocialAccountAdapter"
 SOCIALACCOUNT_LOGIN_ON_GET = True
 
@@ -252,7 +254,7 @@ VK_CLIENT_ID = os.getenv("VK_CLIENT_ID", "").strip()
 VK_CLIENT_SECRET = os.getenv("VK_CLIENT_SECRET", "").strip()
 if VK_CLIENT_ID and VK_CLIENT_SECRET:
     SOCIALACCOUNT_PROVIDERS["vk"] = {
-        "APPS": [
+        "APP": [
             {
                 "client_id": VK_CLIENT_ID,
                 "secret": VK_CLIENT_SECRET,

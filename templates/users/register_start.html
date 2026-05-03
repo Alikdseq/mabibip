@@ -68,6 +68,9 @@
     <div class="mb-3">
       <label class="form-label" for="{{ form.email.id_for_label }}">{{ form.email.label }}</label>
       {{ form.email }}
+      {% if form.email.help_text %}
+        <div class="form-text">{{ form.email.help_text }}</div>
+      {% endif %}
       {% for err in form.email.errors %}<div class="invalid-feedback d-block">{{ err }}</div>{% endfor %}
     </div>
 
