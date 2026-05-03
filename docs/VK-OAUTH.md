@@ -65,7 +65,7 @@ https://mabibip.ru/accounts/vk/login/callback/
 
 ### CSP
 
-При `CSP_ENABLED=1` в `prod` добавлены **`frame-src`** для iframe виджета VK и уже настроенные `script-src` / `connect-src` для `unpkg` и хостов VK.
+При `CSP_ENABLED=1` в `prod` добавлены **`frame-src`** для iframe виджета VK и уже настроенные `script-src` / `connect-src` для `unpkg` и хостов VK. Для UMD VK ID SDK по умолчанию добавляется **`'unsafe-eval'`** в `script-src` (иначе консоль: CSP blocks eval). Отключить: **`CSP_SCRIPT_ALLOW_UNSAFE_EVAL=0`**.
 
 ## 5. Ограничения входа `process=login`
 
@@ -73,4 +73,4 @@ https://mabibip.ru/accounts/vk/login/callback/
 
 ## 6. CSP (опционально)
 
-При `CSP_ENABLED=1` в `config/settings/prod.py` в allowlist добавлены хосты VK для скриптов, `connect-src` и **`frame-src`** (iframe виджета One Tap).
+При `CSP_ENABLED=1` в `config/settings/prod.py` в allowlist добавлены хосты VK для скриптов, `connect-src` и **`frame-src`** (iframe виджета One Tap). См. раздел «CSP» выше про **`unsafe-eval`** и переменную **`CSP_SCRIPT_ALLOW_UNSAFE_EVAL`**.

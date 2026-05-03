@@ -52,7 +52,16 @@ class TachkiSocialAccountAdapter(DefaultSocialAccountAdapter):
         """
         User = get_user_model()
 
-        email = (getattr(sociallogin.user, "email", "") or "").strip().lower()
+        # На `/oauth/.../signup/` email приходит из формы; allauth вызывает нас до
+        # `account_adapter.save_user`, поэтому у `sociallogin.user` он может быть ещё пустым
+        # (типично VK без scope email). Без этого мы не попадаем в `connect()` и получаем
+        # IntegrityError на уникальном `User.email`.
+        email = ""
+        if form is not None:
+            cleaned = getattr(form, "cleaned_data", None) or {}
+            email = (cleaned.get("email") or "").strip().lower()
+        if not email:
+            email = (getattr(sociallogin.user, "email", "") or "").strip().lower()
         if not email:
             sociallogin.user.email = None
         if email:

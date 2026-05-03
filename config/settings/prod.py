@@ -82,6 +82,14 @@ if CSP_ENABLED:
         "https://www.google.com",
         "https://api-maps.yandex.ru",
     ]
+    # VK ID SDK (UMD с unpkg) часто использует eval/new Function — без этого браузер режет скрипт.
+    # Отключите явно: CSP_SCRIPT_ALLOW_UNSAFE_EVAL=0
+    if os.environ.get("CSP_SCRIPT_ALLOW_UNSAFE_EVAL", "1").strip().lower() not in (
+        "0",
+        "false",
+        "no",
+    ):
+        CSP_SCRIPT_SRC_ALLOW.append("'unsafe-eval'")
     CSP_STYLE_SRC_ALLOW = [
         "https://cdn.jsdelivr.net",
         "https://fonts.googleapis.com",

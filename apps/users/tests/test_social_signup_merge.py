@@ -7,6 +7,10 @@ from django.contrib.auth import get_user_model
 
 from allauth.socialaccount.models import SocialAccount, SocialLogin
 
+from django.contrib.auth.models import AnonymousUser
+from django.test import RequestFactory
+
+from apps.users.allauth_adapters import TachkiSocialAccountAdapter
 from apps.users.social_signup_form import TachkiSocialSignupForm
 
 User = get_user_model()
@@ -22,3 +26,27 @@ def test_social_signup_form_accepts_email_of_existing_user():
     form = TachkiSocialSignupForm(sociallogin=sociallogin, data={"email": "merge-social@example.com"})
     assert form.is_valid(), form.errors
     assert form.cleaned_data["email"] == "merge-social@example.com"
+
+
+@pytest.mark.django_db
+def test_save_user_connects_using_form_email_when_social_user_has_no_email():
+    """Регрессия: email только в форме signup — sociallogin.user.email ещё пустой."""
+    existing = User.objects.create_user(
+        phone="+79995550444", password="x", email="merge-social@example.com"
+    )
+    placeholder = User(email=None, phone="oauth_vk_cccccccccccccccc")
+    account = SocialAccount(provider="vk", uid="merge-test-uid-form-email", extra_data={})
+    sociallogin = SocialLogin(user=placeholder, account=account)
+
+    form = TachkiSocialSignupForm(sociallogin=sociallogin, data={"email": "merge-social@example.com"})
+    assert form.is_valid(), form.errors
+
+    rf = RequestFactory()
+    request = rf.post("/oauth/signup/")
+    request.session = {}
+    request.user = AnonymousUser()
+
+    result = TachkiSocialAccountAdapter().save_user(request, sociallogin, form=form)
+
+    assert result.pk == existing.pk
+    assert SocialAccount.objects.filter(user=existing, provider="vk", uid="merge-test-uid-form-email").exists()
