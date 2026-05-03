@@ -3,6 +3,7 @@ from django.urls import path, reverse_lazy
 
 from . import views
 from . import onboarding_views
+from .vkid import vkid_session_complete
 from .forms import (
     EmailPasswordResetForm,
     EmailSetPasswordForm,
@@ -31,6 +32,12 @@ urlpatterns = [
         views.activate,
         name="activate",
     ),
+    path(
+        "vk/login/callback/",
+        views.vk_oauth_callback_alias,
+        name="vk_oauth_callback_alias",
+    ),
+    path("api/vkid/session/", vkid_session_complete, name="vkid_session"),
     path(
         "login/",
         views.CaptchaLoginView.as_view(),

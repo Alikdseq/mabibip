@@ -1,0 +1,13 @@
+{% load static %}
+{% if vk_oauth_enabled %}
+  <div id="vkid-onetap-host" class="vkid-onetap-host mb-2" aria-label="Вход через VK ID"></div>
+  <script src="https://unpkg.com/@vkid/sdk@2/dist-sdk/umd/index.js" defer></script>
+  <script
+    src="{% static 'js/app/vkid-onetap.js' %}"
+    defer
+    data-vk-app-id="{{ vk_app_id }}"
+    data-vk-redirect="{{ vk_oauth_redirect_alias }}"
+    data-vk-session-url="{% url 'users:vkid_session' %}"
+    data-vk-process="{{ vkid_process|default:'login' }}"
+  ></script>
+{% endif %}

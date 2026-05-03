@@ -4,16 +4,20 @@
   <h1 class="h4 mb-3">Регистрация</h1>
   {% load socialaccount %}
   {% get_providers as socialaccount_providers %}
-  {% if socialaccount_providers %}
+  {% if socialaccount_providers or vk_oauth_enabled %}
     <div class="col-lg-7 mb-3 d-none" id="oauth-signup-driver-only">
+      {% include "users/includes/vkid_onetap.html" with vkid_process="signup" %}
       <div class="d-grid gap-2">
+        {% for p in socialaccount_providers %}
+          {% if p.id == 'vk' and not vk_oauth_enabled %}
+            <a class="btn btn-vk text-white" href="{% provider_login_url 'vk' process='signup' next='/cabinet/profile/' %}">Регистрация через VK</a>
+          {% endif %}
+        {% endfor %}
         {% for p in socialaccount_providers %}
           {% if p.id == 'google' %}
             <a class="btn btn-outline-primary" href="{% provider_login_url 'google' process='signup' next='/cabinet/profile/' %}">Регистрация через Google</a>
           {% elif p.id == 'apple' %}
             <a class="btn btn-outline-dark" href="{% provider_login_url 'apple' process='signup' next='/cabinet/profile/' %}">Регистрация через Apple</a>
-          {% elif p.id == 'vk' %}
-            <a class="btn btn-outline-secondary" href="{% provider_login_url 'vk' process='signup' next='/cabinet/profile/' %}">Регистрация через VK</a>
           {% endif %}
         {% endfor %}
       </div>

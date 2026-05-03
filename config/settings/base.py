@@ -128,6 +128,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "apps.users.context_processors.recaptcha_site_key",
+                "apps.users.context_processors.vk_oauth",
                 "apps.users.context_processors.email_verification_notice",
                 "apps.calls.context_processors.calls_flags",
                 "apps.core.visitor_city.visitor_city_context",
@@ -188,6 +189,7 @@ CSP_SCRIPT_SRC_ALLOW = _csp_list("CSP_SCRIPT_SRC_ALLOW")
 CSP_STYLE_SRC_ALLOW = _csp_list("CSP_STYLE_SRC_ALLOW")
 CSP_FONT_SRC_ALLOW = _csp_list("CSP_FONT_SRC_ALLOW")
 CSP_CONNECT_SRC_ALLOW = _csp_list("CSP_CONNECT_SRC_ALLOW")
+CSP_FRAME_SRC_ALLOW = _csp_list("CSP_FRAME_SRC_ALLOW")
 
 # Ведущий «/» обязателен: иначе на вложенных URL (например /sto/) относительные пути
 # превращаются в /sto/static/... и дают 404.
@@ -242,6 +244,23 @@ SOCIALACCOUNT_PROVIDERS = {
         "AUTH_PARAMS": {"access_type": "online"},
     }
 }
+
+# VK / VK ID (django-allauth): https://docs.allauth.org/en/latest/socialaccount/providers/vk.html
+# В кабинете VK укажите redirect: https://<домен>/oauth/vk/login/callback/
+# Дополнительно поддержан алиас /accounts/vk/login/callback/ → см. apps.users.views.vk_oauth_callback_alias
+VK_CLIENT_ID = os.getenv("VK_CLIENT_ID", "").strip()
+VK_CLIENT_SECRET = os.getenv("VK_CLIENT_SECRET", "").strip()
+if VK_CLIENT_ID and VK_CLIENT_SECRET:
+    SOCIALACCOUNT_PROVIDERS["vk"] = {
+        "APPS": [
+            {
+                "client_id": VK_CLIENT_ID,
+                "secret": VK_CLIENT_SECRET,
+                "key": "",
+            }
+        ],
+        "SCOPE": ["email"],
+    }
 
 # Почта: если EMAIL_HOST задан — используем SMTP, иначе выводим письма в консоль (dev).
 _email_backend_env = os.getenv("EMAIL_BACKEND")

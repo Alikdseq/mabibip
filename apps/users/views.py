@@ -460,3 +460,19 @@ def account_delete(request: HttpRequest) -> HttpResponse:
         form = AccountDeleteForm()
 
     return render(request, "users/account_delete.html", {"form": form})
+
+
+@require_http_methods(["GET", "HEAD"])
+def vk_oauth_callback_alias(request: HttpRequest) -> HttpResponse:
+    """
+    Редирект на callback django-allauth для VK.
+
+    В кабинете VK ID часто указывают путь вида /accounts/vk/login/callback/,
+    тогда как allauth монтируется на /oauth/... — этот алиас совмещает оба варианта.
+    """
+    from django.http import HttpResponseRedirect
+
+    target = "/oauth/vk/login/callback/"
+    if request.GET:
+        target += "?" + request.GET.urlencode()
+    return HttpResponseRedirect(target)

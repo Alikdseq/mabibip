@@ -144,11 +144,20 @@ class TachkiSocialAccountAdapter(DefaultSocialAccountAdapter):
             return True
 
         email = (getattr(sociallogin.user, "email", "") or "").strip().lower()
+        acct = getattr(sociallogin, "account", None)
+        provider = (getattr(acct, "provider", None) or "").strip().lower()
         if not email:
-            messages.error(
-                request,
-                "Для входа через Google нужен email. Укажите email при регистрации по форме.",
-            )
+            if provider == "vk":
+                messages.error(
+                    request,
+                    "Для входа через VK нужен email в профиле VK: разрешите доступ «email» при авторизации "
+                    "или привяжите почту в настройках VK. Или войдите по телефону.",
+                )
+            else:
+                messages.error(
+                    request,
+                    "Для входа через Google нужен email. Укажите email при регистрации по форме.",
+                )
             return False
 
         User = get_user_model()
@@ -157,7 +166,7 @@ class TachkiSocialAccountAdapter(DefaultSocialAccountAdapter):
             messages.error(
                 request,
                 "Аккаунт с таким email не найден. "
-                "Для бизнеса регистрация только через форму, укажите email Google при регистрации.",
+                "Для бизнеса регистрация только через форму; для входа через соцсеть сначала зарегистрируйтесь с тем же email.",
             )
             return False
         return True

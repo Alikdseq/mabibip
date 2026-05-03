@@ -21,6 +21,7 @@ def _csp_value() -> str:
     style_allow = list(getattr(settings, "CSP_STYLE_SRC_ALLOW", []) or [])
     font_allow = list(getattr(settings, "CSP_FONT_SRC_ALLOW", []) or [])
     connect_allow = list(getattr(settings, "CSP_CONNECT_SRC_ALLOW", []) or [])
+    frame_allow = list(getattr(settings, "CSP_FRAME_SRC_ALLOW", []) or [])
 
     # Strict by default (no inline scripts). Inline styles remain allowed because Bootstrap/templates
     # currently include inline style blocks/attributes.
@@ -35,6 +36,7 @@ def _csp_value() -> str:
             "style-src 'self' 'unsafe-inline' " + " ".join(style_allow),
             _join("script-src", script_allow),
             _join("connect-src", connect_allow),
+            _join("frame-src", frame_allow),
             "form-action 'self'",
             "upgrade-insecure-requests",
         ]

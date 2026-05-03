@@ -229,6 +229,10 @@ docker compose --env-file .env.prod restart web
 - если источник `chrome-extension://` или не ваш домен — это часто **расширение браузера**, а не проект;
 - повторите замер в **режиме инкогнито без расширений**.
 
+## 6.7) Вход через VK (опционально)
+
+См. **[VK-OAUTH.md](VK-OAUTH.md)**: переменные `VK_CLIENT_ID` / `VK_CLIENT_SECRET` в `.env.prod`, redirect URI в кабинете VK.
+
 ## 7) Проверка после деплоя (checklist)
 
 - `https://mabibip.ru/` открывается, есть редирект с http → https

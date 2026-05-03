@@ -113,6 +113,20 @@ select.pm-city-listbox {
   border: 1px solid rgba(var(--pm-accent-rgb), 0.22);
 }
 
+/* VK ID / OAuth — узнаваемый фирменный синий */
+.btn-vk {
+  --bs-btn-color: #fff;
+  --bs-btn-bg: #0077ff;
+  --bs-btn-border-color: #0077ff;
+  --bs-btn-hover-color: #fff;
+  --bs-btn-hover-bg: #0066dd;
+  --bs-btn-hover-border-color: #0066dd;
+  --bs-btn-active-color: #fff;
+  --bs-btn-active-bg: #0055cc;
+  --bs-btn-active-border-color: #0055cc;
+  font-weight: 600;
+}
+
 .btn-primary {
   --bs-btn-color: #1a1a1a;
   --bs-btn-bg: transparent;

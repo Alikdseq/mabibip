@@ -90,7 +90,19 @@ if CSP_ENABLED:
     CSP_FONT_SRC_ALLOW = [
         "https://fonts.gstatic.com",
     ]
-    CSP_CONNECT_SRC_ALLOW = []
+    CSP_CONNECT_SRC_ALLOW = [
+        "https://id.vk.com",
+        "https://id.vk.ru",
+        "https://oauth.vk.com",
+        "https://login.vk.ru",
+        "https://api.vk.com",
+    ]
+    CSP_FRAME_SRC_ALLOW = [
+        "https://id.vk.com",
+        "https://id.vk.ru",
+        "https://login.vk.ru",
+        "https://oauth.vk.com",
+    ]
 
 # За HTTPS отвечает reverse-proxy (Nginx). Django должен корректно понимать исходный протокол/host.
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
