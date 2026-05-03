@@ -236,6 +236,7 @@ SOCIALACCOUNT_AUTO_SIGNUP = True
 # Если провайдер не отдал email — редирект на socialaccount_signup (шаблон socialaccount/signup.html).
 SOCIALACCOUNT_EMAIL_REQUIRED = True
 SOCIALACCOUNT_ADAPTER = "apps.users.allauth_adapters.TachkiSocialAccountAdapter"
+SOCIALACCOUNT_FORMS = {"signup": "apps.users.social_signup_form.TachkiSocialSignupForm"}
 SOCIALACCOUNT_LOGIN_ON_GET = True
 
 # Google OAuth: чтобы получать email (иначе allauth может создать user.email="",
