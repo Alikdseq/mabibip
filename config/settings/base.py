@@ -316,6 +316,9 @@ if SENTRY_DSN:
 
 # Абсолютные ссылки в письмах, если нет HttpRequest (например тесты)
 SITE_BASE_URL = os.getenv("SITE_BASE_URL", "").rstrip("/")
+# VK ID One Tap: redirect_uri должен побайтно совпадать с URI в кабинете VK (иначе invalid_request).
+# Если пусто — берётся origin текущего запроса + путь /accounts/vk/login/callback/ (см. context_processors.vk_oauth).
+VK_ID_REDIRECT_URI = os.getenv("VK_ID_REDIRECT_URI", "").strip()
 
 # Лимиты публичных форм (django-ratelimit); в тестах выключается в settings/tests.py.
 RATELIMIT_ENABLE = _env_bool("RATELIMIT_ENABLE", default=True)

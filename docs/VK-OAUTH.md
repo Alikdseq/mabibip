@@ -51,7 +51,13 @@ https://mabibip.ru/accounts/vk/login/callback/
 
 После успешного `exchangeCode` фронт отправляет **`access_token`** на **`POST /accounts/api/vkid/session/`** (JSON: `access_token`, `process`: `login` или `signup`). Бэкенд запрашивает профиль у VK ID (**`POST https://id.vk.ru/oauth2/user_info`**) с `client_id` и `access_token`, создаёт/обновляет `SocialAccount` (провайдер `vk`) и выполняет вход через `TachkiSocialAccountAdapter` (те же правила email и существующего аккаунта для `login`).
 
-**Redirect URI** в `VKID.Config.init` должен совпадать с зарегистрированным в кабинете VK (в шаблоне используется `{{ vk_oauth_redirect_alias }}`, например `https://<домен>/accounts/vk/login/callback/`).
+**Redirect URI** в `VKID.Config.init` должен **побайтно** совпадать с одним из URI в кабинете VK (схема `https`, хост с `www` или без — как у пользователей на сайте).
+
+По умолчанию в шаблон подставляется **`request.build_absolute_uri('/accounts/vk/login/callback/')`** (если не задан `VK_ID_REDIRECT_URI`): так `redirect_uri` совпадает с тем, с какого хоста открыта страница входа. Если в `.env` указан **`SITE_BASE_URL`**, он используется только как запасной вариант, когда построить URL из запроса нельзя.
+
+Явная настройка при расхождениях прокси или домена: **`VK_ID_REDIRECT_URI`** в окружении — полный URL, **точно** как в кабинете VK, например `https://mabibip.ru/accounts/vk/login/callback/`.
+
+Ошибка **`redirect_uri is missing or invalid`** почти всегда означает: в кабинете VK нет этого же URI, пустой `SITE_BASE_URL` и неверный `Host` у запроса, или в виджет ушёл `http://` вместо `https://` (за прокси включите `SECURE_PROXY_SSL_HEADER` или задайте `VK_ID_REDIRECT_URI` с `https`).
 
 Если виджет не нужен, можно отключить только env-ключи VK; при включённом VK кнопка «Войти по ссылке allauth» скрыта, остаётся One Tap + при необходимости Google/Apple.
 

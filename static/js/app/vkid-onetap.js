@@ -52,7 +52,20 @@
     var process = (s.getAttribute("data-vk-process") || "login").trim().toLowerCase();
     if (process !== "signup") process = "login";
 
-    if (!appId || !redirectUrl || !sessionUrl) return;
+    if (!redirectUrl) {
+      showErr(
+        "VK ID: пустой redirect_uri. Укажите SITE_BASE_URL или VK_ID_REDIRECT_URI в окружении (полный https-URL, как в кабинете VK)."
+      );
+      return;
+    }
+    var localhostHttp = /^http:\/\/(127\.0\.0\.1|localhost)(:\d+)?\//i.test(redirectUrl);
+    if (!/^https:\/\//i.test(redirectUrl) && !localhostHttp) {
+      showErr(
+        "VK ID: redirect_uri должен быть https (как в кабинете VK). Проверьте прокси (X-Forwarded-Proto) или задайте VK_ID_REDIRECT_URI."
+      );
+      return;
+    }
+    if (!appId || !sessionUrl) return;
 
     var VKID = window.VKIDSDK || window.VKID;
     if (!VKID || !VKID.Config || !VKID.OneTap) return;
