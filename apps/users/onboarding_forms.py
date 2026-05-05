@@ -62,7 +62,7 @@ class OAuthOnboardingForm(forms.Form):
             self.fields["city_label"] = forms.ChoiceField(
                 label="Город",
                 required=False,
-                choices=[("", "— выберите город —")] + [(x, x) for x in sorted(set(labels))],
+                choices=[("", "— выберите город —")] + [(x, x) for x in labels],
                 widget=forms.Select(attrs={"class": "form-select", "size": "8"}),
             )
 

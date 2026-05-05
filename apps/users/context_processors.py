@@ -69,3 +69,20 @@ def email_verification_notice(request):
     if not email_verification_needed(request.user):
         return {}
     return {"show_email_verification_banner": True}
+
+
+def missing_email_notice(request):
+    """
+    Баннер в шапке: у пользователя нет email.
+
+    Требование: email обязателен только для роли driver при регистрации.
+    Для остальных ролей email можно заполнить позже в профиле (для входа через VK/Google).
+    """
+    u = getattr(request, "user", None)
+    if not u or not getattr(u, "is_authenticated", False):
+        return {}
+    if (getattr(u, "business_role", "") or "").strip() == "driver":
+        return {}
+    if (getattr(u, "email", None) or "").strip():
+        return {}
+    return {"show_missing_email_banner": True}

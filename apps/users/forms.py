@@ -231,7 +231,7 @@ class RoleRegisterForm(RegisterForm):
             self.fields["city_label"] = forms.ChoiceField(
                 label="Город",
                 required=False,
-                choices=[("", "— выберите город —")] + [(x, x) for x in sorted(set(labels))],
+                choices=[("", "— выберите город —")] + [(x, x) for x in labels],
                 widget=forms.Select(attrs={"class": "form-select", "size": "8"}),
             )
 
@@ -297,6 +297,7 @@ class StoRegistrationForm(RecaptchaTokenMixin, RegistrationSecurityMixin, forms.
     phone = forms.CharField(label="Телефон", max_length=20)
     email = forms.EmailField(
         label="Электронная почта",
+        required=False,
         widget=forms.EmailInput(attrs={"class": "form-control", "autocomplete": "email"}),
     )
     password1 = forms.CharField(
@@ -333,7 +334,7 @@ class StoRegistrationForm(RecaptchaTokenMixin, RegistrationSecurityMixin, forms.
         if labels:
             self.fields["city_label"] = forms.ChoiceField(
                 label="Город",
-                choices=[("", "— выберите город —")] + [(x, x) for x in sorted(set(labels))],
+                choices=[("", "— выберите город —")] + [(x, x) for x in labels],
                 widget=forms.Select(attrs={"class": "form-select", "size": "8"}),
             )
 
@@ -348,10 +349,12 @@ class StoRegistrationForm(RecaptchaTokenMixin, RegistrationSecurityMixin, forms.
         return phone
 
     def clean_email(self):
-        e = self.cleaned_data["email"].strip().lower()
-        if User.objects.filter(email__iexact=e).exists():
+        raw = (self.cleaned_data.get("email") or "").strip().lower()
+        if not raw:
+            return None
+        if User.objects.filter(email__iexact=raw).exists():
             raise ValidationError("Пользователь с таким email уже зарегистрирован.")
-        return e
+        return raw
 
     def clean_city_label(self):
         raw = (self.cleaned_data.get("city_label") or "").strip()

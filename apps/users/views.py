@@ -252,19 +252,20 @@ def sto_register(request: HttpRequest) -> HttpResponse:
                 executor_kind = cd["executor_kind"]
                 station_title = cd["station_name"].strip()
                 district = District.objects.filter(city_label=city).order_by("pk").first()
-                ev_token = secrets.token_urlsafe(32)
+                email = (cd.get("email") or "").strip() or None
+                ev_token = secrets.token_urlsafe(32) if email else ""
                 with transaction.atomic():
                     user = User.objects.create_user(
                         cd["phone"],
                         password=cd["password1"],
-                        email=cd["email"],
+                        email=email,
                         is_active=True,
                         is_phone_verified=True,
                         business_role_chosen=True,
                         contact_phone=cd["phone"],
                         is_sto_owner=True,
                         sto_moderation_status=User.StoModerationStatus.PENDING,
-                        email_verified=False,
+                        email_verified=not bool(email),
                         email_verification_token=ev_token,
                     )
                     ServiceStation.objects.create(
@@ -278,23 +279,24 @@ def sto_register(request: HttpRequest) -> HttpResponse:
                     versions = [get_current_version(k) for k in REGISTRATION_REQUIRED_KEYS]
                     record_user_consents(user, versions, request)
                 uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
-                try:
-                    send_registration_verification_email(
-                        request=request,
-                        user=user,
-                        uidb64=uidb64,
-                        token=ev_token,
-                    )
-                except Exception:
-                    messages.warning(
-                        request,
-                        "Заявка принята, но письмо с подтверждением email не удалось отправить.",
-                    )
-                else:
-                    messages.info(
-                        request,
-                        "На указанный email отправлена ссылка для подтверждения адреса.",
-                    )
+                if email:
+                    try:
+                        send_registration_verification_email(
+                            request=request,
+                            user=user,
+                            uidb64=uidb64,
+                            token=ev_token,
+                        )
+                    except Exception:
+                        messages.warning(
+                            request,
+                            "Заявка принята, но письмо с подтверждением email не удалось отправить.",
+                        )
+                    else:
+                        messages.info(
+                            request,
+                            "На указанный email отправлена ссылка для подтверждения адреса.",
+                        )
                 mail_admins_sto_registration_pending(
                     user=user,
                     station_name=station_title,

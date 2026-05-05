@@ -130,6 +130,7 @@ TEMPLATES = [
                 "apps.users.context_processors.recaptcha_site_key",
                 "apps.users.context_processors.vk_oauth",
                 "apps.users.context_processors.email_verification_notice",
+                "apps.users.context_processors.missing_email_notice",
                 "apps.calls.context_processors.calls_flags",
                 "apps.core.visitor_city.visitor_city_context",
                 "apps.core.context_processors.nav_badges",

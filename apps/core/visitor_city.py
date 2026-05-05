@@ -89,7 +89,8 @@ def list_allowed_city_labels() -> list[str]:
         labels = list(RU_CITY_LABELS_FALLBACK)
 
     # Фокус-город (если задан) не ограничивает список, а лишь «поднимается» вверх.
-    focus = (getattr(settings, "APP_FOCUS_CITY_LABEL", None) or "").strip()
+    # По умолчанию «поднимаем» Владикавказ (основной город проекта).
+    focus = (getattr(settings, "APP_FOCUS_CITY_LABEL", None) or "").strip() or "Владикавказ"
     if focus:
         rest = [x for x in labels if x.casefold() != focus.casefold()]
         return [focus] + rest if any(x.casefold() == focus.casefold() for x in labels) else labels

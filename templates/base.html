@@ -52,6 +52,12 @@
     <a href="{% url 'users:email_verification_notice' %}" class="alert-link">Инструкция и повторная отправка</a>
   </div>
 {% endif %}
+{% if show_missing_email_banner %}
+  <div class="alert alert-info border-0 rounded-0 py-2 mb-0 small text-center" role="status">
+    Укажите email в профиле — он нужен, чтобы позже входить через VK/Google в этот же аккаунт.
+    <a href="{% url 'cabinet:profile' %}?next={{ request.get_full_path|urlencode }}" class="alert-link">Заполнить email</a>
+  </div>
+{% endif %}
 {% if user.is_authenticated %}
   {% if not user.contact_phone %}
     <div class="alert alert-info border-0 rounded-0 py-2 mb-0 small text-center" role="status">
