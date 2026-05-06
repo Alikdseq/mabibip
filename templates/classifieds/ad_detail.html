@@ -56,7 +56,18 @@
           {% else %}
             <h1 class="h3 mb-0 text-body pm-ad-detail-title">{{ ad.title }}</h1>
           {% endif %}
-          <div class="pm-ad-detail-price fw-bold text-nowrap">{{ ad.price|intcomma }}&nbsp;₽</div>
+          {% if ad.kind == 'car' and ad.car_deal_type == 'rent' %}
+            <div class="pm-ad-detail-price fw-bold text-nowrap">
+              {% if ad.rent_price_hour_rub %}{{ ad.rent_price_hour_rub|intcomma }} ₽/час{% endif %}
+              {% if ad.rent_price_hour_rub and ad.rent_price_day_rub %}<span class="text-muted fw-normal"> · </span>{% endif %}
+              {% if ad.rent_price_day_rub %}{{ ad.rent_price_day_rub|intcomma }} ₽/сутки{% endif %}
+              <div class="small text-muted fw-normal mt-1">
+                {% if ad.rent_vehicle_type == 'special' %}Аренда спецтехники{% else %}Аренда авто{% endif %}
+              </div>
+            </div>
+          {% else %}
+            <div class="pm-ad-detail-price fw-bold text-nowrap">{{ ad.price|intcomma }}&nbsp;₽</div>
+          {% endif %}
         </div>
 
         {% if user.is_authenticated and user.pk == ad.owner_id %}
@@ -114,6 +125,16 @@
                   <div class="fw-semibold">{% if ad.condition %}{{ ad.get_condition_display }}{% else %}—{% endif %}</div>
                 </div>
               {% else %}
+                <div class="col-sm-6">
+                  <div class="text-muted">Тип</div>
+                  <div class="fw-semibold">
+                    {% if ad.car_deal_type == 'rent' %}
+                      {% if ad.rent_vehicle_type == 'special' %}Аренда спецтехники{% else %}Аренда авто{% endif %}
+                    {% else %}
+                      Продажа
+                    {% endif %}
+                  </div>
+                </div>
                 <div class="col-sm-6">
                   <div class="text-muted">Марка и модель</div>
                   <div class="fw-semibold">

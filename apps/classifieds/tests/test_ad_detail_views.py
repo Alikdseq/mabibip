@@ -3,7 +3,7 @@
 import pytest
 from django.urls import reverse
 
-from apps.classifieds.models import Ad, AdKind, FavoriteAd
+from apps.classifieds.models import Ad, AdKind, CarDealType, FavoriteAd
 from apps.users.models import User
 
 
@@ -15,6 +15,7 @@ def test_ad_detail_increments_view_count_once_per_session(client):
         kind=AdKind.CAR,
         title="Test car",
         price=100_000,
+        car_deal_type=CarDealType.SALE,
         is_published=True,
     )
     url = reverse("classifieds:ad_detail", kwargs={"pk": ad.pk})
@@ -58,6 +59,7 @@ def test_ad_detail_seller_public_ads_count(client):
         kind=AdKind.CAR,
         title="One",
         price=1,
+        car_deal_type=CarDealType.SALE,
         is_published=True,
     )
     Ad.objects.create(
@@ -72,6 +74,7 @@ def test_ad_detail_seller_public_ads_count(client):
         kind=AdKind.CAR,
         title="Draft",
         price=3,
+        car_deal_type=CarDealType.SALE,
         is_published=False,
     )
     r = client.get(reverse("classifieds:ad_detail", kwargs={"pk": ad1.pk}))

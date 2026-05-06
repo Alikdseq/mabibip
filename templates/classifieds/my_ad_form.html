@@ -31,7 +31,7 @@
     </div>
     <div class="row g-2">
       <div class="col-md-4">
-        <label class="form-label">Цена</label>
+        <label class="form-label" id="pm-ad-price-label">Цена</label>
         {{ form.price }}
         {% if form.price.errors %}<div class="invalid-feedback d-block">{{ form.price.errors|join:", " }}</div>{% endif %}
       </div>
@@ -96,6 +96,30 @@
 
     <div id="pm-ad-car-block" class="border rounded p-3 mb-4 {% if form.kind.value != 'car' %}d-none{% endif %}">
       <div class="fw-semibold mb-2">Автомобиль</div>
+      <div class="row g-2 mb-2">
+        <div class="col-md-6">
+          <label class="form-label">Сделка</label>
+          {{ form.car_deal_type }}
+          {% if form.car_deal_type.errors %}<div class="invalid-feedback d-block">{{ form.car_deal_type.errors|join:", " }}</div>{% endif %}
+        </div>
+        <div class="col-md-6" id="pm-ad-rent-type-wrap">
+          <label class="form-label">Тип аренды</label>
+          {{ form.rent_vehicle_type }}
+          {% if form.rent_vehicle_type.errors %}<div class="invalid-feedback d-block">{{ form.rent_vehicle_type.errors|join:", " }}</div>{% endif %}
+        </div>
+      </div>
+      <div class="row g-2 mb-2" id="pm-ad-rent-prices-wrap">
+        <div class="col-md-6">
+          <label class="form-label">Цена аренды, ₽/час</label>
+          {{ form.rent_price_hour_rub }}
+          {% if form.rent_price_hour_rub.errors %}<div class="invalid-feedback d-block">{{ form.rent_price_hour_rub.errors|join:", " }}</div>{% endif %}
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Цена аренды, ₽/сутки</label>
+          {{ form.rent_price_day_rub }}
+          {% if form.rent_price_day_rub.errors %}<div class="invalid-feedback d-block">{{ form.rent_price_day_rub.errors|join:", " }}</div>{% endif %}
+        </div>
+      </div>
       <p class="small text-muted">Характеристики необязательны, но помогают покупателю и фильтрам каталога.</p>
       <div class="row g-2">
         <div class="col-md-6">
@@ -185,6 +209,11 @@
       var kind = document.querySelector('select[name="kind"]');
       var partBlock = document.getElementById('pm-ad-part-block');
       var carBlock = document.getElementById('pm-ad-car-block');
+      var deal = document.querySelector('select[name="car_deal_type"]');
+      var rentTypeWrap = document.getElementById('pm-ad-rent-type-wrap');
+      var rentPricesWrap = document.getElementById('pm-ad-rent-prices-wrap');
+      var priceLabel = document.getElementById('pm-ad-price-label');
+      var priceInput = document.getElementById('id_price');
       if (!kind || !partBlock || !carBlock) return;
       function sync() {
         var v = kind.value || 'part';
@@ -195,8 +224,18 @@
           carBlock.classList.add('d-none');
           partBlock.classList.remove('d-none');
         }
+        var dealVal = (deal && deal.value) ? deal.value : 'sale';
+        var isRent = (v === 'car' && dealVal === 'rent');
+        if (rentTypeWrap) rentTypeWrap.classList.toggle('d-none', !isRent);
+        if (rentPricesWrap) rentPricesWrap.classList.toggle('d-none', !isRent);
+        if (priceLabel) priceLabel.textContent = isRent ? 'Цена продажи (не нужна для аренды)' : 'Цена';
+        if (priceInput) {
+          priceInput.disabled = !!isRent;
+          if (isRent) priceInput.value = '0';
+        }
       }
       kind.addEventListener('change', sync);
+      if (deal) deal.addEventListener('change', sync);
       sync();
     })();
   </script>

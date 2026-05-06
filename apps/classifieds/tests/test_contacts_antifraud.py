@@ -4,7 +4,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from apps.classifieds.forms import AdForm
-from apps.classifieds.models import Ad, AdKind, AdReport, PhoneRevealLog
+from apps.classifieds.models import Ad, AdKind, AdReport, CarDealType, PhoneRevealLog
 from apps.users.models import User
 
 
@@ -18,7 +18,7 @@ def test_reveal_phone_ok(client):
         email="buyer@example.com",
         email_verified=True,
     )
-    ad = Ad.objects.create(owner=owner, kind=AdKind.CAR, title="Car", price=1, is_published=True)
+    ad = Ad.objects.create(owner=owner, kind=AdKind.CAR, title="Car", price=1, car_deal_type=CarDealType.SALE, is_published=True)
 
     client.force_login(buyer)
     r = client.get(reverse("classifieds_api:ad_reveal_phone", kwargs={"pk": ad.pk}))
@@ -64,7 +64,7 @@ def test_reveal_phone_requires_verified_email(client):
         email="buyer3@example.com",
         email_verified=False,
     )
-    ad = Ad.objects.create(owner=owner, kind=AdKind.CAR, title="Car", price=1, is_published=True)
+    ad = Ad.objects.create(owner=owner, kind=AdKind.CAR, title="Car", price=1, car_deal_type=CarDealType.SALE, is_published=True)
 
     client.force_login(buyer)
     r = client.get(reverse("classifieds_api:ad_reveal_phone", kwargs={"pk": ad.pk}))
@@ -86,7 +86,7 @@ def test_reveal_phone_approved_business_bypasses_email(client):
         is_sto_owner=True,
         sto_moderation_status=User.StoModerationStatus.APPROVED,
     )
-    ad = Ad.objects.create(owner=owner, kind=AdKind.CAR, title="Car", price=1, is_published=True)
+    ad = Ad.objects.create(owner=owner, kind=AdKind.CAR, title="Car", price=1, car_deal_type=CarDealType.SALE, is_published=True)
 
     client.force_login(buyer)
     r = client.get(reverse("classifieds_api:ad_reveal_phone", kwargs={"pk": ad.pk}))
@@ -99,7 +99,7 @@ def test_reveal_phone_approved_business_bypasses_email(client):
 @pytest.mark.django_db
 def test_report_unpublishes_after_three_unique_reports(client):
     owner = User.objects.create_user(phone="+79991120101", password="x")
-    ad = Ad.objects.create(owner=owner, kind=AdKind.CAR, title="Car", price=1, is_published=True)
+    ad = Ad.objects.create(owner=owner, kind=AdKind.CAR, title="Car", price=1, car_deal_type=CarDealType.SALE, is_published=True)
 
     reporters = [
         User.objects.create_user(phone="+79991120102", password="x", contact_phone="+79991120102"),

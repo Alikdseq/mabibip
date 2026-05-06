@@ -142,6 +142,16 @@ class AdKind(models.TextChoices):
     CAR = "car", "Автомобиль"
 
 
+class CarDealType(models.TextChoices):
+    SALE = "sale", "Продажа"
+    RENT = "rent", "Аренда"
+
+
+class RentVehicleType(models.TextChoices):
+    CAR = "car", "Аренда авто"
+    SPECIAL = "special", "Аренда спецтехники"
+
+
 class AdCondition(models.TextChoices):
     NEW = "new", "Новая"
     USED = "used", "Б/у"
@@ -275,6 +285,26 @@ class Ad(models.Model):
     )
 
     # cars
+    car_deal_type = models.CharField(
+        "Сделка (для авто)",
+        max_length=12,
+        choices=CarDealType.choices,
+        default=CarDealType.SALE,
+        db_index=True,
+        help_text="Продажа или аренда. Используется только для объявлений типа «Автомобиль».",
+    )
+    rent_vehicle_type = models.CharField(
+        "Тип аренды",
+        max_length=12,
+        choices=RentVehicleType.choices,
+        blank=True,
+        default="",
+        db_index=True,
+        help_text="Для аренды: авто или спецтехника. Для продажи пусто.",
+    )
+    rent_price_hour_rub = models.PositiveIntegerField("Цена аренды, ₽/час", null=True, blank=True, default=None)
+    rent_price_day_rub = models.PositiveIntegerField("Цена аренды, ₽/сутки", null=True, blank=True, default=None)
+
     car_brand = models.ForeignKey(
         CarBrand,
         on_delete=models.SET_NULL,

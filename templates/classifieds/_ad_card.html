@@ -27,7 +27,18 @@
 
     <div class="pm-ad-card-mobile-footer d-flex align-items-start gap-2 px-3 pb-2 pt-2">
       <a href="{% url 'classifieds:ad_detail' ad.pk %}" class="text-decoration-none text-body pm-ad-card-mobile-text flex-grow-1 min-w-0">
-        <div class="pm-m-block pm-m-price pm-ad-card-mobile-price fw-bold">{{ ad.price|intcomma }}&nbsp;₽</div>
+        {% if ad.kind == 'car' and ad.car_deal_type == 'rent' %}
+          <div class="pm-m-block pm-m-price pm-ad-card-mobile-price fw-bold">
+            {% if ad.rent_price_hour_rub %}{{ ad.rent_price_hour_rub|intcomma }} ₽/час{% endif %}
+            {% if ad.rent_price_hour_rub and ad.rent_price_day_rub %}<span class="text-muted fw-normal"> · </span>{% endif %}
+            {% if ad.rent_price_day_rub %}{{ ad.rent_price_day_rub|intcomma }} ₽/сутки{% endif %}
+          </div>
+          <div class="small text-muted">
+            {% if ad.rent_vehicle_type == 'special' %}Аренда спецтехники{% else %}Аренда авто{% endif %}
+          </div>
+        {% else %}
+          <div class="pm-m-block pm-m-price pm-ad-card-mobile-price fw-bold">{{ ad.price|intcomma }}&nbsp;₽</div>
+        {% endif %}
         <div class="pm-m-block pm-m-title">
           {% if ad.kind == 'car' %}
             <h2 class="h6 mb-0 text-body pm-ad-card-title pm-ad-card-mobile-title">{{ ad.car_card_headline }}</h2>
@@ -132,7 +143,18 @@
                   </div>
                 {% endif %}
               </div>
-              <div class="pm-ad-card-price fw-bold text-nowrap">{{ ad.price|intcomma }}&nbsp;₽</div>
+              {% if ad.kind == 'car' and ad.car_deal_type == 'rent' %}
+                <div class="text-end">
+                  <div class="pm-ad-card-price fw-bold text-nowrap">
+                    {% if ad.rent_price_day_rub %}{{ ad.rent_price_day_rub|intcomma }} ₽/сутки{% elif ad.rent_price_hour_rub %}{{ ad.rent_price_hour_rub|intcomma }} ₽/час{% endif %}
+                  </div>
+                  <div class="small text-muted">
+                    {% if ad.rent_vehicle_type == 'special' %}Аренда спецтехники{% else %}Аренда авто{% endif %}
+                  </div>
+                </div>
+              {% else %}
+                <div class="pm-ad-card-price fw-bold text-nowrap">{{ ad.price|intcomma }}&nbsp;₽</div>
+              {% endif %}
             </div>
 
             {# описание и дата в карточке не показываем (как в Avito) #}

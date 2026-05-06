@@ -4,7 +4,7 @@ import pytest
 from django.urls import reverse
 
 from apps.classifieds.erp_stats import platform_classifieds_stats_context
-from apps.classifieds.models import Ad, AdCallClickEvent, AdKind
+from apps.classifieds.models import Ad, AdCallClickEvent, AdKind, CarDealType
 from apps.users.models import User
 
 
@@ -34,6 +34,7 @@ def test_ad_call_click_owner_does_not_create_row(client):
         kind=AdKind.CAR,
         title="Car",
         price=1,
+        car_deal_type=CarDealType.SALE,
         is_published=True,
     )
     client.force_login(owner)
@@ -78,8 +79,8 @@ def test_ad_call_click_post_only(client):
 def test_platform_classifieds_stats_active_ads():
     owner = User.objects.create_user(phone="+79991110016", password="x")
     Ad.objects.create(owner=owner, kind=AdKind.PART, title="P", price=1, is_published=True)
-    Ad.objects.create(owner=owner, kind=AdKind.CAR, title="C", price=2, is_published=True)
-    Ad.objects.create(owner=owner, kind=AdKind.CAR, title="Draft", price=3, is_published=False)
+    Ad.objects.create(owner=owner, kind=AdKind.CAR, title="C", price=2, car_deal_type=CarDealType.SALE, is_published=True)
+    Ad.objects.create(owner=owner, kind=AdKind.CAR, title="Draft", price=3, car_deal_type=CarDealType.SALE, is_published=False)
     ctx = platform_classifieds_stats_context()
     assert ctx["ads_active_published"] == {"part": 1, "car": 1, "total": 2}
 

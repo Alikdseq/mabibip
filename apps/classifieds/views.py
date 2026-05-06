@@ -294,12 +294,27 @@ class AdsListView(ListView):
         if city:
             qs = qs.filter(city_label__iexact=city)
 
+        deal = (g.get("deal") or "sale").strip().lower()
+        # deal:
+        # - sale
+        # - rent_car
+        # - rent_special
+        if deal not in ("sale", "rent_car", "rent_special"):
+            deal = "sale"
+
         price_min = _parse_opt_int(g, "price_min", min_v=0)
         price_max = _parse_opt_int(g, "price_max", min_v=0)
-        if price_min is not None:
-            qs = qs.filter(price__gte=price_min)
-        if price_max is not None:
-            qs = qs.filter(price__lte=price_max)
+        if tab == AdKind.CAR and deal in ("rent_car", "rent_special"):
+            # Для аренды: фильтр цены используем по ₽/сутки (основной показатель в каталоге).
+            if price_min is not None:
+                qs = qs.filter(rent_price_day_rub__gte=price_min)
+            if price_max is not None:
+                qs = qs.filter(rent_price_day_rub__lte=price_max)
+        else:
+            if price_min is not None:
+                qs = qs.filter(price__gte=price_min)
+            if price_max is not None:
+                qs = qs.filter(price__lte=price_max)
 
         if tab == AdKind.PART:
             cat = (g.get("cat") or "").strip()
@@ -312,6 +327,13 @@ class AdsListView(ListView):
             if pb is not None and CarBrand.objects.filter(pk=pb).exists():
                 qs = qs.filter(part_brand_id=pb)
         else:
+            if deal == "sale":
+                qs = qs.filter(car_deal_type="sale")
+            elif deal == "rent_car":
+                qs = qs.filter(car_deal_type="rent", rent_vehicle_type="car")
+            else:
+                qs = qs.filter(car_deal_type="rent", rent_vehicle_type="special")
+
             cb = _parse_opt_brand_id(g, "car_brand")
             if cb is not None and CarBrand.objects.filter(pk=cb).exists():
                 qs = qs.filter(car_brand_id=cb)
@@ -388,6 +410,9 @@ class AdsListView(ListView):
         ctx["car_drive"] = (g.get("car_drive") or "").strip()
         ctx["car_body"] = (g.get("car_body") or "").strip()
         ctx["car_not_crashed"] = (g.get("car_not_crashed") or "").strip()
+        ctx["deal"] = (g.get("deal") or "sale").strip().lower()
+        if ctx["deal"] not in ("sale", "rent_car", "rent_special"):
+            ctx["deal"] = "sale"
 
         qp = g.copy()
         if "page" in qp:

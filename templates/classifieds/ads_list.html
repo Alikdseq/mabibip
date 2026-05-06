@@ -40,6 +40,16 @@
         <a class="btn btn-sm {% if tab == 'car' %}btn-primary{% else %}btn-outline-primary{% endif %}"
            href="{% url 'classifieds:ads_list' %}?tab=car">Автомобили</a>
       </div>
+      {% if tab == 'car' %}
+        <div class="btn-group flex-wrap" role="group" aria-label="Продажа или аренда">
+          <a class="btn btn-sm {% if deal == 'sale' %}btn-dark{% else %}btn-outline-dark{% endif %}"
+             href="{% url 'classifieds:ads_list' %}?tab=car&deal=sale">Продажа</a>
+          <a class="btn btn-sm {% if deal == 'rent_car' %}btn-dark{% else %}btn-outline-dark{% endif %}"
+             href="{% url 'classifieds:ads_list' %}?tab=car&deal=rent_car">Аренда авто</a>
+          <a class="btn btn-sm {% if deal == 'rent_special' %}btn-dark{% else %}btn-outline-dark{% endif %}"
+             href="{% url 'classifieds:ads_list' %}?tab=car&deal=rent_special">Аренда спецтехники</a>
+        </div>
+      {% endif %}
       {% if user.is_authenticated %}
         <a class="btn btn-sm btn-outline-secondary ms-md-auto" href="{% url 'classifieds:my_ads' %}">Мои объявления</a>
       {% else %}
@@ -48,7 +58,7 @@
     </div>
   </div>
 
-  {% if tab == 'car' and popular_car_brands %}
+  {% if tab == 'car' and deal == 'sale' and popular_car_brands %}
     <div class="mb-4">
       <div class="d-flex align-items-baseline justify-content-between gap-2 mb-2">
         <h2 class="h6 mb-0">Популярные марки</h2>
@@ -57,7 +67,7 @@
         {% for b in popular_car_brands %}
           <div class="col">
             <a class="d-flex justify-content-between align-items-center rounded-3 border bg-white px-3 py-2 small pm-ad-quick-link text-decoration-none"
-               href="{% url 'classifieds:ads_list' %}?tab=car&amp;car_brand={{ b.pk }}">
+               href="{% url 'classifieds:ads_list' %}?tab=car&amp;deal=sale&amp;car_brand={{ b.pk }}">
               <span class="text-body fw-medium">{{ b.name }}</span>
               <span class="text-muted">{{ b.ad_count }}</span>
             </a>
@@ -88,6 +98,9 @@
     <div class="card-body">
       <form class="row g-2 g-md-3 align-items-end" method="get" id="pm-ads-filters">
         <input type="hidden" name="tab" value="{{ tab }}">
+        {% if tab == 'car' %}
+          <input type="hidden" name="deal" value="{{ deal }}">
+        {% endif %}
 
         {% if tab == 'part' %}
         <div class="col-12 col-md-4 col-lg-3 position-relative" id="pm-ads-q-suggest">
@@ -168,11 +181,11 @@
             </div>
           </div>
           <div class="col-6 col-md-3 col-lg-2">
-            <label class="form-label small mb-1">Цена от</label>
+            <label class="form-label small mb-1">{% if deal != 'sale' %}₽/сутки от{% else %}Цена от{% endif %}</label>
             <input class="form-control" type="number" inputmode="numeric" name="price_min" value="{{ price_min }}" placeholder="0" min="0">
           </div>
           <div class="col-6 col-md-3 col-lg-2">
-            <label class="form-label small mb-1">Цена до</label>
+            <label class="form-label small mb-1">{% if deal != 'sale' %}₽/сутки до{% else %}Цена до{% endif %}</label>
             <input class="form-control" type="number" inputmode="numeric" name="price_max" value="{{ price_max }}" placeholder="∞" min="0">
           </div>
           <div class="col-6 col-md-3 col-lg-2">

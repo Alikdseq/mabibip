@@ -17,11 +17,13 @@ from .text_moderation import validate_listing_text
 from .models import (
     Ad,
     AdKind,
+    CarDealType,
     AutoShopBranch,
     AutoShopProfile,
     CarBodyType,
     CarDrive,
     CarFuel,
+    RentVehicleType,
     CarSteering,
     CarTransmission,
     PartCategory,
@@ -78,6 +80,10 @@ class AdForm(forms.ModelForm):
             "part_category",
             "part_brand",
             "condition",
+            "car_deal_type",
+            "rent_vehicle_type",
+            "rent_price_hour_rub",
+            "rent_price_day_rub",
             "car_brand",
             "car_model",
             "car_year",
@@ -105,6 +111,10 @@ class AdForm(forms.ModelForm):
             "part_category": forms.Select(attrs={"class": "form-select"}),
             "part_brand": forms.Select(attrs={"class": "form-select"}),
             "condition": forms.Select(attrs={"class": "form-select"}),
+            "car_deal_type": forms.Select(attrs={"class": "form-select"}),
+            "rent_vehicle_type": forms.Select(attrs={"class": "form-select"}),
+            "rent_price_hour_rub": forms.NumberInput(attrs={"class": "form-control", "min": "0"}),
+            "rent_price_day_rub": forms.NumberInput(attrs={"class": "form-control", "min": "0"}),
             "car_brand": forms.Select(attrs={"class": "form-select"}),
             "car_model": forms.TextInput(attrs={"class": "form-control"}),
             "car_year": forms.NumberInput(attrs={"class": "form-control"}),
@@ -164,6 +174,11 @@ class AdForm(forms.ModelForm):
         ):
             self.fields[_fname].choices = [("", "— не указано —")] + list(choices.choices)
 
+        # Переименуем label под UX: продажи/аренда.
+        self.fields["price"].label = "Цена продажи, ₽"
+        self.fields["rent_price_hour_rub"].label = "Цена аренды, ₽/час"
+        self.fields["rent_price_day_rub"].label = "Цена аренды, ₽/сутки"
+
     def clean_city_label(self):
         raw = (self.cleaned_data.get("city_label") or "").strip()
         if not raw:
@@ -184,6 +199,10 @@ class AdForm(forms.ModelForm):
         kind = cleaned.get("kind")
         if kind == AdKind.PART:
             cleaned["car_brand"] = None
+            cleaned["car_deal_type"] = CarDealType.SALE
+            cleaned["rent_vehicle_type"] = ""
+            cleaned["rent_price_hour_rub"] = None
+            cleaned["rent_price_day_rub"] = None
             cleaned["car_model"] = ""
             cleaned["car_year"] = None
             cleaned["car_mileage_km"] = None
@@ -203,6 +222,26 @@ class AdForm(forms.ModelForm):
             cleaned["part_category"] = None
             cleaned["part_brand"] = None
             cleaned["condition"] = ""
+
+            deal = cleaned.get("car_deal_type") or CarDealType.SALE
+            cleaned["car_deal_type"] = deal
+            if deal == CarDealType.SALE:
+                cleaned["rent_vehicle_type"] = ""
+                cleaned["rent_price_hour_rub"] = None
+                cleaned["rent_price_day_rub"] = None
+                price = cleaned.get("price") or 0
+                if int(price) <= 0:
+                    self.add_error("price", "Укажите цену продажи (больше нуля).")
+            elif deal == CarDealType.RENT:
+                rent_vehicle = (cleaned.get("rent_vehicle_type") or "").strip()
+                if rent_vehicle not in {x for x, _ in RentVehicleType.choices}:
+                    self.add_error("rent_vehicle_type", "Выберите: аренда авто или аренда спецтехники.")
+                h = cleaned.get("rent_price_hour_rub")
+                d = cleaned.get("rent_price_day_rub")
+                if (h in (None, "", 0)) and (d in (None, "", 0)):
+                    self.add_error("rent_price_day_rub", "Укажите цену аренды: ₽/час и/или ₽/сутки.")
+                # Цена продажи для аренды не используется.
+                cleaned["price"] = 0
 
         # Антифрод: контакты/мессенджеры/email в тексте объявления → на модерацию.
         title = (cleaned.get("title") or "").strip()
