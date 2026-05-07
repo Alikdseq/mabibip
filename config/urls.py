@@ -7,6 +7,7 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.contrib.sitemaps.views import sitemap
 from django.urls import include, path, re_path
+from django.views.generic import TemplateView
 from django.views.static import serve as static_serve
 
 from apps.core.sitemaps import (
@@ -37,6 +38,11 @@ SEO_SITEMAPS = {
 }
 
 urlpatterns = [
+    path(
+        "yandex_031c56bd834c49a6.html",
+        TemplateView.as_view(template_name="yandex_031c56bd834c49a6.html", content_type="text/html"),
+        name="yandex_verification",
+    ),
     path("robots.txt", core_views.robots_txt, name="robots_txt"),
     path(
         "sitemap.xml",
