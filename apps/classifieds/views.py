@@ -35,6 +35,7 @@ from apps.billing.models import ClassifiedsDeal, WalletLedgerEntry
 from apps.billing.deal_services import ensure_wallet, ledger_idempotent, mark_buyer_confirmed, release_deal_funds
 from apps.billing.yookassa_api import YooKassaError, create_payment, create_refund
 from .call_ui import build_ad_call_context
+from .detail_schema import ad_detail_json_ld
 from .forms import AdForm, AdUnpublishForm, SellerReviewForm
 from .models import (
     Ad,
@@ -57,6 +58,7 @@ from .models import (
     seller_review_done_owner_ids_for_user,
 )
 from .tasks import compute_ad_photo_hash
+from .shop_schema import shop_detail_json_ld
 
 # Боковые блоки «популярное» на списке объявлений — тяжёлые агрегации; кеш коротким TTL.
 _CLASSIFIEDS_SIDEBAR_POPULAR_TTL = 300
@@ -500,6 +502,13 @@ class AdDetailView(DetailView):
             except Exception:
                 pass
 
+        try:
+            from django.utils.safestring import mark_safe
+
+            ctx["schema_json_ld"] = mark_safe(ad_detail_json_ld(ad, request=request))
+        except Exception:
+            ctx["schema_json_ld"] = ""
+
         ctx["ad_call"] = build_ad_call_context(request=request, ad=ad)
         ctx["is_favorite_ad"] = request.user.is_authenticated and FavoriteAd.objects.filter(
             user=request.user,
@@ -724,6 +733,12 @@ class ShopDetailView(DetailView):
         if not desc:
             desc = f"Профиль автомагазина {shop.name}. Объявления по автозапчастям и автомобилям."
         ctx["seo_meta_description"] = clamp_seo_description(desc, max_len=160)
+        try:
+            from django.utils.safestring import mark_safe
+
+            ctx["schema_json_ld"] = mark_safe(shop_detail_json_ld(shop, request=self.request))
+        except Exception:
+            ctx["schema_json_ld"] = ""
         return ctx
 
 

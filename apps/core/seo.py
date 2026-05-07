@@ -194,10 +194,15 @@ def build_canonical_url(request) -> str:
         city = (request.GET.get("city") or "").strip()
         query = urlencode([("city", city)]) if city else ""
     elif full_name == "classifieds:ads_list":
-        # Дубли фильтров не индексируем: в индекс попадает только «вкладка» (тип лота).
+        # Дубли фильтров не индексируем: в индекс попадают только устойчивые выдачи.
         tab = (request.GET.get("tab") or "").strip()
-        if tab in ("part", "car"):
-            query = urlencode([("tab", tab)])
+        if tab == "part":
+            query = urlencode([("tab", "part")])
+        elif tab == "car":
+            deal = (request.GET.get("deal") or "sale").strip().lower()
+            if deal not in ("sale", "rent_car", "rent_special"):
+                deal = "sale"
+            query = urlencode([("tab", "car"), ("deal", deal)])
         else:
             query = ""
     elif full_name in ("classifieds:ad_detail", "classifieds:shop_detail"):

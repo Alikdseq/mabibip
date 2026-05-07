@@ -5,6 +5,9 @@
   {% if faq_json_ld %}
     <script type="application/ld+json">{{ faq_json_ld }}</script>
   {% endif %}
+  {% if breadcrumb_json_ld %}
+    <script type="application/ld+json">{{ breadcrumb_json_ld }}</script>
+  {% endif %}
 {% endblock %}
 {% block content %}
   <nav aria-label="breadcrumb">

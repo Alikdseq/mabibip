@@ -63,6 +63,26 @@ class StaticViewSitemap(SiteBaseURLMixin, Sitemap):
         return 0.8
 
 
+class ClassifiedCarDealListSitemap(SiteBaseURLMixin, Sitemap):
+    """
+    Стабильные выдачи «Автомобили»: продажа и аренда.
+
+    Важно для SEO: отдельные страницы под index:
+    - /ads/?tab=car&deal=sale
+    - /ads/?tab=car&deal=rent_car
+    - /ads/?tab=car&deal=rent_special
+    """
+
+    changefreq = "daily"
+    priority = 0.82
+
+    def items(self) -> list[str]:
+        return ["sale", "rent_car", "rent_special"]
+
+    def location(self, item: str) -> str:
+        return f"{reverse('classifieds:ads_list')}?tab=car&deal={item}"
+
+
 class ServiceCategorySitemap(SiteBaseURLMixin, Sitemap):
     """Лендинги услуг /uslugi/<slug>/ — только категории с исполнителями в каталоге."""
 

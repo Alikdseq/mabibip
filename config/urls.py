@@ -12,6 +12,7 @@ from django.views.static import serve as static_serve
 from apps.core.sitemaps import (
     AutoShopSitemap,
     CarBrandSitemap,
+    ClassifiedCarDealListSitemap,
     ClassifiedAdsSitemap,
     ServiceCategorySitemap,
     ServiceSectionSitemap,
@@ -26,6 +27,7 @@ from apps.stations.views import HomePageView
 
 SEO_SITEMAPS = {
     "static": StaticViewSitemap,
+    "car_deals": ClassifiedCarDealListSitemap,
     "services": ServiceCategorySitemap,
     "sections": ServiceSectionSitemap,
     "brands": CarBrandSitemap,

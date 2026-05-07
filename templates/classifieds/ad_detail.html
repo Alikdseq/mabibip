@@ -2,6 +2,11 @@
 {% load humanize %}
 {% load static %}
 {% block title %}{{ ad.title }} — объявления — МаБибип{% endblock %}
+{% block extra_head %}
+  {% if schema_json_ld %}
+    <script type="application/ld+json">{{ schema_json_ld }}</script>
+  {% endif %}
+{% endblock %}
 {% block content %}
   <nav aria-label="breadcrumb">
     <ol class="breadcrumb">

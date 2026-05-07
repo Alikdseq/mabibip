@@ -6,6 +6,7 @@ from urllib.parse import quote
 
 from django.conf import settings
 from django.db.models import Count, Q
+from django.urls import reverse
 from django.views.generic import DetailView
 from django.utils import timezone
 
@@ -22,6 +23,7 @@ from .landing_seo import (
 )
 from .models import CarBrand, ServiceCategory, ServiceSection, ServiceStation
 from .section_seo import build_service_section_seo, service_section_faq_json_ld
+from .breadcrumb_schema import breadcrumb_json_ld
 
 
 def _visible_stations_qs(today, *, city_label: str | None):
@@ -152,6 +154,16 @@ class ServiceCategoryLandingView(DetailView):
         faq_items = normalized_landing_faq(cat.landing_faq)
         ctx["landing_faq"] = faq_items
         ctx["faq_json_ld"] = mark_safe(service_category_faq_json_ld(request=self.request, category=cat, faq_items=faq_items))
+        ctx["breadcrumb_json_ld"] = mark_safe(
+            breadcrumb_json_ld(
+                request=self.request,
+                items=[
+                    ("Главная", reverse("home")),
+                    ("Каталог", reverse("stations:list")),
+                    (cat.name, reverse("landing:service_category", kwargs={"slug": cat.slug})),
+                ],
+            )
+        )
         return ctx
 
 
@@ -227,6 +239,16 @@ class ServiceSectionLandingView(DetailView):
         ctx["faq_json_ld"] = mark_safe(
             service_section_faq_json_ld(request=self.request, section=sec, faq_items=faq_items)
         )
+        ctx["breadcrumb_json_ld"] = mark_safe(
+            breadcrumb_json_ld(
+                request=self.request,
+                items=[
+                    ("Главная", reverse("home")),
+                    ("Каталог", reverse("stations:list")),
+                    (sec.name, reverse("landing:service_section", kwargs={"slug": sec.slug})),
+                ],
+            )
+        )
         return ctx
 
 
@@ -279,4 +301,14 @@ class CarBrandLandingView(DetailView):
             ctx["seo_meta_description"] = clamp_seo_description(
                 f"{brand.name}: каталог исполнителей, популярные услуги, запись онлайн — МаБибип."
             )
+        ctx["breadcrumb_json_ld"] = mark_safe(
+            breadcrumb_json_ld(
+                request=self.request,
+                items=[
+                    ("Главная", reverse("home")),
+                    ("Каталог", reverse("stations:list")),
+                    (brand.name, reverse("landing:car_brand", kwargs={"slug": brand.slug})),
+                ],
+            )
+        )
         return ctx
