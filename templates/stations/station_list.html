@@ -15,7 +15,7 @@
       hasBrand: {{ catalog_brand|yesno:'true,false' }},
       hasService: {{ catalog_cat_ids|length|yesno:'true,false' }},
       hasSection: {{ catalog_section|yesno:'true,false' }},
-      serviceTileCount: {{ catalog_service_tiles|length }},
+      serviceTileCount: {{ catalog_section_tiles|length }},
     })"
   >
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-start gap-2">

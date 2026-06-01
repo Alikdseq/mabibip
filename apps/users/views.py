@@ -26,11 +26,14 @@ from apps.core.city_expansion import record_business_city
 
 from .forms import (
     AccountDeleteForm,
+    LiteRegisterForm,
     PhoneAuthenticationForm,
     RegisterForm,
     RoleRegisterForm,
     StoRegistrationForm,
 )
+from .profile_completion import registration_moderation_enabled
+from .registration_flags import is_registration_lite, registration_lite_enabled
 from .sto_moderation_mail import mail_admins_sto_registration_pending
 from .email_verification import send_registration_verification_email
 from .recaptcha import RecaptchaError, verify_recaptcha
@@ -84,6 +87,129 @@ class CaptchaLoginView(LoginView):
         return super().form_valid(form)
 
 
+def _create_business_profile_from_registration(user: User, form, *, role: str) -> None:
+    """Станция или профиль автомагазина после регистрации бизнес-роли."""
+    from apps.stations.constants import EXECUTOR_KIND_PRIVATE, EXECUTOR_KIND_STO
+
+    business_name = (form.cleaned_data.get("business_name") or "").strip()
+    if role == User.BusinessRole.INSTRUCTOR:
+        user.save()
+    else:
+        user.is_sto_owner = True
+        mod_status = (
+            User.StoModerationStatus.PENDING
+            if registration_moderation_enabled()
+            else User.StoModerationStatus.APPROVED
+        )
+        user.sto_moderation_status = mod_status
+        user.save(update_fields=["is_sto_owner", "sto_moderation_status"])
+    city = (form.cleaned_data.get("city_label") or "").strip()
+    record_business_city(city)
+    district = District.objects.filter(city_label=city).order_by("pk").first()
+    if role in (User.BusinessRole.MASTER, User.BusinessRole.AUTOSERVICE):
+        executor_kind = (
+            EXECUTOR_KIND_PRIVATE if role == User.BusinessRole.MASTER else EXECUTOR_KIND_STO
+        )
+        ServiceStation.objects.create(
+            owner=user,
+            name=business_name,
+            address=f"{city}, адрес уточняется после модерации",
+            executor_kind=executor_kind,
+            is_active=False,
+            district=district,
+        )
+    elif role == User.BusinessRole.INSTRUCTOR:
+        from apps.driving_instructors.models import DrivingInstructorProfile
+
+        DrivingInstructorProfile.objects.create(
+            owner=user,
+            name=business_name,
+            city_label=city,
+            contact_phone=user.phone,
+            is_published=False,
+        )
+    else:
+        from apps.classifieds.models import AutoShopProfile
+
+        AutoShopProfile.objects.create(
+            owner=user,
+            name=business_name,
+            city_label=city,
+            contact_phone=user.phone,
+            kind=form.cleaned_data.get("autoshop_kind") or AutoShopProfile.Kind.SHOP,
+        )
+
+
+def _redirect_after_business_registration(
+    request: HttpRequest,
+    user: User,
+    *,
+    role: str,
+) -> HttpResponse:
+    if role == User.BusinessRole.INSTRUCTOR:
+        messages.success(
+            request,
+            "Регистрация завершена. Заполните профиль автоинструктора.",
+        )
+        return redirect("instructor_owner:profile_edit")
+    if role == User.BusinessRole.AUTOSHOP:
+        messages.success(
+            request,
+            "Регистрация завершена. Заполните профиль магазина — так вас увидят клиенты.",
+        )
+        return redirect("shop_owner:profile_edit")
+    station = ServiceStation.objects.filter(owner=user).order_by("pk").first()
+    messages.success(
+        request,
+        "Регистрация завершена. Заполните профиль — так вас увидят в каталоге.",
+    )
+    if station:
+        return redirect("sto_owner:station_profile", slug=station.slug)
+    return redirect("sto_owner:dashboard")
+
+
+def _register_lite(request: HttpRequest, form: LiteRegisterForm) -> HttpResponse:
+    role = form.cleaned_data["role"]
+    with transaction.atomic():
+        user = User.objects.create_user(
+            phone=form.cleaned_data["phone"],
+            password=form.cleaned_data["password1"],
+            email=None,
+            is_active=True,
+            is_phone_verified=True,
+            business_role=role,
+            business_role_chosen=True,
+            contact_phone=form.cleaned_data["phone"],
+            email_verified=True,
+            email_verification_token="",
+        )
+        if role != User.BusinessRole.DRIVER:
+            _create_business_profile_from_registration(user, form, role=role)
+        versions = [get_current_version(k) for k in REGISTRATION_REQUIRED_KEYS]
+        record_user_consents(user, versions, request)
+    login(request, user, backend="django.contrib.auth.backends.ModelBackend")
+    if role == User.BusinessRole.DRIVER:
+        messages.success(request, "Регистрация завершена. Добро пожаловать!")
+        return redirect(reverse("home"))
+    if registration_moderation_enabled():
+        from apps.stations.constants import EXECUTOR_KIND_PRIVATE, EXECUTOR_KIND_STO
+
+        mail_admins_sto_registration_pending(
+            user=user,
+            station_name=(form.cleaned_data.get("business_name") or "").strip(),
+            city_label=(form.cleaned_data.get("city_label") or "").strip(),
+            executor_kind_display=_executor_kind_display(
+                EXECUTOR_KIND_PRIVATE if role == User.BusinessRole.MASTER else EXECUTOR_KIND_STO
+            ),
+        )
+        messages.success(
+            request,
+            "Заявка отправлена. После проверки модератором вы получите доступ к кабинету бизнеса.",
+        )
+        return redirect("sto_owner:pending_moderation")
+    return _redirect_after_business_registration(request, user, role=role)
+
+
 @ratelimit(key="ip", rate="3/h", method="POST", block=False)
 @require_http_methods(["GET", "POST"])
 def register_start(request: HttpRequest) -> HttpResponse:
@@ -91,11 +217,25 @@ def register_start(request: HttpRequest) -> HttpResponse:
     if request.user.is_authenticated:
         return redirect(settings.LOGIN_REDIRECT_URL)
 
+    registration_lite = registration_lite_enabled()
+
     if request.method == "POST":
-        if getattr(settings, "RATELIMIT_ENABLE", True) and getattr(request, "limited", False):
+        post_role = request.POST.get("role", User.BusinessRole.DRIVER)
+        use_lite = is_registration_lite(post_role)
+
+        if not use_lite and getattr(settings, "RATELIMIT_ENABLE", True) and getattr(
+            request, "limited", False
+        ):
             return render(request, "users/ratelimited.html", status=429)
-        form = RoleRegisterForm(request.POST)
-        if form.is_valid():
+
+        if use_lite:
+            form = LiteRegisterForm(request.POST)
+            if form.is_valid():
+                return _register_lite(request, form)
+        else:
+            form = RoleRegisterForm(request.POST)
+
+        if not use_lite and form.is_valid():
             token = form.cleaned_data.get("recaptcha_token") or ""
             try:
                 verify_recaptcha(
@@ -123,35 +263,7 @@ def register_start(request: HttpRequest) -> HttpResponse:
                         email_verification_token=ev_token if email else "",
                     )
                     if role != User.BusinessRole.DRIVER:
-                        user.is_sto_owner = True
-                        user.sto_moderation_status = User.StoModerationStatus.PENDING
-                        user.save(update_fields=["is_sto_owner", "sto_moderation_status"])
-                        from apps.stations.constants import EXECUTOR_KIND_PRIVATE, EXECUTOR_KIND_STO
-
-                        business_name = (form.cleaned_data.get("business_name") or "").strip()
-                        city = (form.cleaned_data.get("city_label") or "").strip()
-                        record_business_city(city)
-                        district = District.objects.filter(city_label=city).order_by("pk").first()
-                        if role in (User.BusinessRole.MASTER, User.BusinessRole.AUTOSERVICE):
-                            executor_kind = EXECUTOR_KIND_PRIVATE if role == User.BusinessRole.MASTER else EXECUTOR_KIND_STO
-                            ServiceStation.objects.create(
-                                owner=user,
-                                name=business_name,
-                                address=f"{city}, адрес уточняется после модерации",
-                                executor_kind=executor_kind,
-                                is_active=False,
-                                district=district,
-                            )
-                        else:
-                            from apps.classifieds.models import AutoShopProfile
-
-                            AutoShopProfile.objects.create(
-                                owner=user,
-                                name=business_name,
-                                city_label=city,
-                                contact_phone=user.phone,
-                                kind=form.cleaned_data.get("autoshop_kind") or AutoShopProfile.Kind.SHOP,
-                            )
+                        _create_business_profile_from_registration(user, form, role=role)
                     versions = [get_current_version(k) for k in REGISTRATION_REQUIRED_KEYS]
                     record_user_consents(user, versions, request)
                 if email:
@@ -182,28 +294,41 @@ def register_start(request: HttpRequest) -> HttpResponse:
                 if role == User.BusinessRole.DRIVER:
                     messages.success(request, "Регистрация завершена. Добро пожаловать!")
                     return redirect(reverse("home"))
-                if role == User.BusinessRole.AUTOSHOP:
-                    messages.success(request, "Регистрация завершена. Добро пожаловать в кабинет автомагазина!")
-                    return redirect("shop_owner:dashboard")
-                mail_admins_sto_registration_pending(
-                    user=user,
-                    station_name=(form.cleaned_data.get("business_name") or "").strip(),
-                    city_label=(form.cleaned_data.get("city_label") or "").strip(),
-                    executor_kind_display=_executor_kind_display(
-                        EXECUTOR_KIND_PRIVATE if role == User.BusinessRole.MASTER else EXECUTOR_KIND_STO
+                if role in (User.BusinessRole.AUTOSHOP, User.BusinessRole.INSTRUCTOR):
+                    if role == User.BusinessRole.AUTOSHOP and registration_moderation_enabled():
+                        messages.success(
+                            request,
+                            "Регистрация завершена. Добро пожаловать в кабинет автомагазина!",
+                        )
+                        return redirect("shop_owner:dashboard")
+                    return _redirect_after_business_registration(request, user, role=role)
+                if registration_moderation_enabled():
+                    mail_admins_sto_registration_pending(
+                        user=user,
+                        station_name=(form.cleaned_data.get("business_name") or "").strip(),
+                        city_label=(form.cleaned_data.get("city_label") or "").strip(),
+                        executor_kind_display=_executor_kind_display(
+                            EXECUTOR_KIND_PRIVATE if role == User.BusinessRole.MASTER else EXECUTOR_KIND_STO
+                        ),
                     )
-                    if role != User.BusinessRole.AUTOSHOP
-                    else "Автомагазин/разборка",
-                )
-                messages.success(
-                    request,
-                    "Заявка отправлена. После проверки модератором вы получите доступ к кабинету бизнеса.",
-                )
-                return redirect("sto_owner:pending_moderation")
+                    messages.success(
+                        request,
+                        "Заявка отправлена. После проверки модератором вы получите доступ к кабинету бизнеса.",
+                    )
+                    return redirect("sto_owner:pending_moderation")
+                return _redirect_after_business_registration(request, user, role=role)
     else:
         form = RoleRegisterForm(initial={"role": User.BusinessRole.DRIVER})
 
-    return render(request, "users/register_start.html", {"form": form})
+    return render(
+        request,
+        "users/register_start.html",
+        {
+            "form": form,
+            "driver_registration_lite": registration_lite,
+            "registration_lite": registration_lite,
+        },
+    )
 
 
 @ratelimit(key="ip", rate="3/h", method="POST", block=False)
@@ -254,6 +379,11 @@ def sto_register(request: HttpRequest) -> HttpResponse:
                 district = District.objects.filter(city_label=city).order_by("pk").first()
                 email = (cd.get("email") or "").strip() or None
                 ev_token = secrets.token_urlsafe(32) if email else ""
+                mod_status = (
+                    User.StoModerationStatus.PENDING
+                    if registration_moderation_enabled()
+                    else User.StoModerationStatus.APPROVED
+                )
                 with transaction.atomic():
                     user = User.objects.create_user(
                         cd["phone"],
@@ -264,7 +394,7 @@ def sto_register(request: HttpRequest) -> HttpResponse:
                         business_role_chosen=True,
                         contact_phone=cd["phone"],
                         is_sto_owner=True,
-                        sto_moderation_status=User.StoModerationStatus.PENDING,
+                        sto_moderation_status=mod_status,
                         email_verified=not bool(email),
                         email_verification_token=ev_token,
                     )
@@ -297,22 +427,31 @@ def sto_register(request: HttpRequest) -> HttpResponse:
                             request,
                             "На указанный email отправлена ссылка для подтверждения адреса.",
                         )
-                mail_admins_sto_registration_pending(
-                    user=user,
-                    station_name=station_title,
-                    city_label=city,
-                    executor_kind_display=_executor_kind_display(executor_kind),
-                )
                 login(
                     request,
                     user,
                     backend="django.contrib.auth.backends.ModelBackend",
                 )
+                if registration_moderation_enabled():
+                    mail_admins_sto_registration_pending(
+                        user=user,
+                        station_name=station_title,
+                        city_label=city,
+                        executor_kind_display=_executor_kind_display(executor_kind),
+                    )
+                    messages.success(
+                        request,
+                        "Заявка отправлена. После проверки модератором вы получите доступ к кабинету СТО.",
+                    )
+                    return redirect("sto_owner:pending_moderation")
                 messages.success(
                     request,
-                    "Заявка отправлена. После проверки модератором вы получите доступ к кабинету СТО.",
+                    "Регистрация завершена. Заполните профиль — так вас увидят в каталоге.",
                 )
-                return redirect("sto_owner:pending_moderation")
+                station = ServiceStation.objects.filter(owner=user).order_by("pk").first()
+                if station:
+                    return redirect("sto_owner:station_profile", slug=station.slug)
+                return redirect("sto_owner:dashboard")
     else:
         form = StoRegistrationForm()
 

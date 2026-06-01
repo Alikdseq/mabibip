@@ -8,7 +8,7 @@ from django.shortcuts import redirect, render
 from apps.users.email_verification_access import require_verified_email
 from apps.users.onboarding_access import require_completed_profile
 
-from .forms import AutoShopBranchForm
+from .forms import AutoShopBranchForm, AutoShopProfileForm
 from .models import Ad, AutoShopBranch
 from .views import _ad_photos_prefetch
 
@@ -33,6 +33,26 @@ def _get_shop_or_404(request: HttpRequest):
 def dashboard(request: HttpRequest) -> HttpResponse:
     shop = _get_shop_or_404(request)
     return render(request, "autoshop_owner/dashboard.html", {"shop": shop})
+
+
+@login_required
+def profile_edit(request: HttpRequest) -> HttpResponse:
+    if not _autoshop_required(request.user):
+        raise Http404
+    shop = _get_shop_or_404(request)
+    if request.method == "POST":
+        form = AutoShopProfileForm(request.POST, instance=shop)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Профиль магазина сохранён.")
+            return redirect("shop_owner:profile_edit")
+    else:
+        form = AutoShopProfileForm(instance=shop)
+    return render(
+        request,
+        "autoshop_owner/profile_edit.html",
+        {"shop": shop, "form": form},
+    )
 
 
 @login_required

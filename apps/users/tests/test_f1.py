@@ -12,7 +12,7 @@ from django.utils.http import urlsafe_base64_encode
 
 from apps.legal.models import UserConsent
 from apps.users.services_anonymize import anonymize_user
-from apps.users.tests.registration_helpers import REGISTRATION_SECURITY_POST
+from apps.users.tests.registration_helpers import DRIVER_LITE_SECURITY_POST, REGISTRATION_SECURITY_POST
 
 User = get_user_model()
 
@@ -128,6 +128,7 @@ def test_register_confirm_url_redirects_to_register():
 
 
 @pytest.mark.django_db
+@override_settings(DRIVER_REGISTRATION_LITE=False)
 def test_register_full_flow_creates_consents():
     phone = "+79991119999"
     client = Client()
@@ -143,6 +144,7 @@ def test_register_full_flow_creates_consents():
 
 
 @pytest.mark.django_db
+@override_settings(DRIVER_REGISTRATION_LITE=False)
 def test_register_verify_email_link_confirms():
     from django.core import mail
 
@@ -164,6 +166,7 @@ def test_register_verify_email_link_confirms():
 
 
 @pytest.mark.django_db
+@override_settings(DRIVER_REGISTRATION_LITE=False)
 def test_register_duplicate_phone_rejected():
     User.objects.create_user(phone="+79991110001", password="x")
     client = Client()
@@ -176,12 +179,80 @@ def test_register_duplicate_phone_rejected():
     assert "уже зарегистрирован" in r.content.decode()
 
 
+def _lite_post(phone: str, *, role: str = "driver", **extra):
+    return {
+        "phone": phone,
+        "password1": "strong-pass-9",
+        "password2": "strong-pass-9",
+        "role": role,
+        "accept_all_terms": "on",
+        "recaptcha_token": "",
+        **DRIVER_LITE_SECURITY_POST,
+        **extra,
+    }
+
+
 @pytest.mark.django_db
-def test_register_driver_requires_email():
+@override_settings(DRIVER_REGISTRATION_LITE=True)
+def test_register_driver_lite_without_email_succeeds():
+    from django.core import mail
+
+    phone = "+79991110002"
     client = Client()
     client.get(reverse("users:register"))
-    r = client.post(reverse("users:register"), _register_post("+79991110002"))
+    r = client.post(reverse("users:register"), _lite_post(phone))
+    assert r.status_code == 302
+    assert r["Location"] == reverse("home")
+    u = User.objects.get(phone=phone)
+    assert u.email_verified is True
+    assert not (u.email or "").strip()
+    assert UserConsent.objects.filter(user=u).count() == 3
+    assert len(mail.outbox) == 0
+
+
+@pytest.mark.django_db
+@override_settings(DRIVER_REGISTRATION_LITE=False)
+def test_register_driver_requires_email_when_lite_disabled():
+    client = Client()
+    client.get(reverse("users:register"))
+    r = client.post(reverse("users:register"), _register_post("+79991110003"))
     assert r.status_code == 200
     body = r.content.decode()
     assert "Укажите email" in body
-    assert not User.objects.filter(phone="+79991110002").exists()
+    assert not User.objects.filter(phone="+79991110003").exists()
+
+
+@pytest.mark.django_db
+@override_settings(DRIVER_REGISTRATION_LITE=True)
+def test_register_master_lite_requires_business_fields():
+    client = Client()
+    client.get(reverse("users:register"))
+    r = client.post(reverse("users:register"), _lite_post("+79991110004", role="master"))
+    assert r.status_code == 200
+    assert not User.objects.filter(phone="+79991110004").exists()
+
+
+@pytest.mark.django_db
+@override_settings(DRIVER_REGISTRATION_LITE=True)
+def test_register_master_lite_without_email_succeeds():
+    from apps.stations.models import ServiceStation
+
+    phone = "+79991110005"
+    client = Client()
+    client.get(reverse("users:register"))
+    r = client.post(
+        reverse("users:register"),
+        _lite_post(
+            phone,
+            role="master",
+            business_name="Иван Мастер",
+            city_label="Москва",
+        ),
+    )
+    assert r.status_code == 302
+    u = User.objects.get(phone=phone)
+    assert u.business_role == "master"
+    assert u.sto_moderation_status == User.StoModerationStatus.APPROVED
+    assert not (u.email or "").strip()
+    st = ServiceStation.objects.get(owner=u)
+    assert r.url == reverse("sto_owner:station_profile", kwargs={"slug": st.slug})

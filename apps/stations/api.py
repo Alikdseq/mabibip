@@ -80,8 +80,10 @@ class StationsNearbyAPIView(APIView):
                 ServiceStation.objects.filter(pk__in=ids)
                 .annotate(
                     avg_rating=Avg(
-                        "bookings__review__rating",
-                        filter=Q(bookings__status=BookingStatus.COMPLETED),
+                        "reviews__rating",
+                        filter=Q(
+                            reviews__moderation_status__in=["ok", "under_review"],
+                        ),
                     )
                 )
                 .values("id", "avg_rating")

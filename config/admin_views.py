@@ -353,15 +353,9 @@ def _build_dashboard_context() -> dict[str, Any]:
 
 def annotate_station_ratings_for_admin(qs):
     """Средний рейтинг для строк таблицы (как в каталоге)."""
-    rev_ok = Q(
-        bookings__status=BookingStatus.COMPLETED,
-        bookings__review__moderation_status__in=[
-            ModerationStatus.OK,
-            ModerationStatus.UNDER_REVIEW,
-        ],
-    )
+    rev_ok = Q(reviews__moderation_status__in=[ModerationStatus.OK, ModerationStatus.UNDER_REVIEW])
     return qs.annotate(
-        station_avg_rating=Avg("bookings__review__rating", filter=rev_ok),
+        station_avg_rating=Avg("reviews__rating", filter=rev_ok),
     )
 
 

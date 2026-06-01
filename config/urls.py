@@ -15,6 +15,7 @@ from apps.core.sitemaps import (
     CarBrandSitemap,
     ClassifiedCarDealListSitemap,
     ClassifiedAdsSitemap,
+    InstructorSitemap,
     ServiceCategorySitemap,
     ServiceSectionSitemap,
     StationSitemap,
@@ -35,6 +36,7 @@ SEO_SITEMAPS = {
     "stations": StationSitemap,
     "ads": ClassifiedAdsSitemap,
     "shops": AutoShopSitemap,
+    "instructors": InstructorSitemap,
 }
 
 urlpatterns = [
@@ -57,6 +59,10 @@ urlpatterns = [
     path("cabinet/", include("apps.users.cabinet_urls")),
     path("sto/cabinet/", include("apps.stations.owner_urls")),
     path("shops/cabinet/", include("apps.classifieds.shop_owner_urls")),
+    path("instruktory/cabinet/", include("apps.driving_instructors.owner_urls")),
+    path("pomoshch/", include("apps.driver_help.urls")),
+    path("problemy/", include("apps.driver_problems.urls")),
+    path("instruktory/", include("apps.driving_instructors.urls")),
     path("sto/", include("apps.stations.urls")),
     path("accounts/", include("apps.users.urls")),
     path("oauth/", include("allauth.urls")),

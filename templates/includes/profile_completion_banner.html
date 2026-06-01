@@ -1,0 +1,20 @@
+{% if show_profile_completion_banner and profile_completion_edit_url %}
+  <div class="profile-completion-banner alert alert-warning border-warning border-2 shadow-sm mb-4" role="alert">
+    <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+      <div class="flex-grow-1">
+        <h2 class="h4 fw-bold mb-2 mb-md-1">Заполните профиль</h2>
+        <p class="mb-2 mb-md-1 small">Без этого вас не увидят клиенты в каталоге.</p>
+        <ul class="mb-0 small ps-3">
+          {% for item in profile_completion_checklist %}
+            <li>{{ item }}</li>
+          {% endfor %}
+        </ul>
+      </div>
+      <div class="flex-shrink-0 w-100 w-md-auto">
+        <a href="{{ profile_completion_edit_url }}" class="btn btn-dark btn-lg fw-semibold w-100 w-md-auto text-nowrap">
+          Заполнить профиль
+        </a>
+      </div>
+    </div>
+  </div>
+{% endif %}

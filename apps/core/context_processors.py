@@ -103,9 +103,11 @@ def seo_canonical(request):
         default_img = request.build_absolute_uri(static("pm-brand-sprite.svg"))
     except Exception:
         pass
+    gsv = (getattr(settings, "GOOGLE_SITE_VERIFICATION", None) or "").strip()
     return {
         "canonical_url": build_canonical_url(request),
         "seo_og_image_default": default_img,
+        "google_site_verification": gsv,
         **_default_seo_for_request(request),
     }
 

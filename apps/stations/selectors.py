@@ -11,14 +11,11 @@ from apps.stations.constants import CATALOG_DAY_RANGE
 
 
 def annotate_station_ratings(qs):
-    """Средний рейтинг и число отзывов: завершённые визиты, отзыв не скрыт модерацией."""
-    rev_ok = Q(
-        bookings__status=BookingStatus.COMPLETED,
-        bookings__review__moderation_status__in=["ok", "under_review"],
-    )
+    """Средний рейтинг и число отзывов (все публичные отзывы станции)."""
+    rev_ok = Q(reviews__moderation_status__in=["ok", "under_review"])
     return qs.annotate(
-        avg_rating=Avg("bookings__review__rating", filter=rev_ok),
-        review_count=Count("bookings__review", filter=rev_ok, distinct=True),
+        avg_rating=Avg("reviews__rating", filter=rev_ok),
+        review_count=Count("reviews", filter=rev_ok, distinct=True),
     )
 
 

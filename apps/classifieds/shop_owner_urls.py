@@ -8,6 +8,7 @@ app_name = "shop_owner"
 
 urlpatterns = [
     path("", shop_owner_views.dashboard, name="dashboard"),
+    path("profile/", shop_owner_views.profile_edit, name="profile_edit"),
     path("products/", shop_owner_views.products, name="products"),
     path("branches/", shop_owner_views.branches, name="branches"),
     path("branches/add/", shop_owner_views.branch_add, name="branch_add"),

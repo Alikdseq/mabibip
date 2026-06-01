@@ -1,0 +1,16 @@
+{% load driver_help_tags %}
+{% for req in help_requests %}
+  <button type="button"
+          class="btn btn-outline-pm-soft-danger w-100 text-start mb-2 py-3 help-feed-card"
+          data-help-id="{{ req.pk }}"
+          data-help-author="{{ req.author|help_author_display }}"
+          data-help-message="{{ req.message|escape }}"
+          data-resolve-url="{% url 'driver_help:resolve' req.pk %}"
+          {% if not user.is_authenticated %}disabled title="Войдите, чтобы откликнуться"{% endif %}>
+    <div class="fw-semibold">{{ req.author|help_author_display }}</div>
+    <div class="small mt-1">{{ req.message|truncatechars:120 }}</div>
+    <div class="small text-muted mt-1">{{ req.created_at|timesince }} назад</div>
+  </button>
+{% empty %}
+  <p class="text-muted">Пока нет активных обращений.</p>
+{% endfor %}

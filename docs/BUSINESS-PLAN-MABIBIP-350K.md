@@ -1,4 +1,11 @@
 # БИЗНЕС‑ПЛАН (соцконтракт 350 000 ₽)
+
+> **⚠ Устарело — не подавать:** [`docs/BUSINESS-PLAN-MABIBIP-350K.docx`](BUSINESS-PLAN-MABIBIP-350K.docx) (сгенерирован из неверного шаблона `Бизнес план.docx`, не Приложение 12).
+>
+> **Актуальная версия для подачи:** [`docs/BUSINESS-PLAN-MABIBIP-350K-APP12.docx`](BUSINESS-PLAN-MABIBIP-350K-APP12.docx)  
+> Мастер-текст: [`docs/BUSINESS-PLAN-MABIBIP-350K-APP12-FILLED.md`](BUSINESS-PLAN-MABIBIP-350K-APP12-FILLED.md)  
+> Перегенерация: `python scripts/fill_business_plan_app12.py`
+
 к Правилам оказания государственной социальной помощи на основании социального контракта  
 Постановление Правительства РСО‑Алания от 01.10.2024 №434  
 Форма: **Приложение 12**

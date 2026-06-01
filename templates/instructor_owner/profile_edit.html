@@ -1,0 +1,45 @@
+{% extends "instructor_owner/base.html" %}
+{% block title %}Профиль автоинструктора — МаБибип{% endblock %}
+{% block instructor_owner_main %}
+  <h1 class="h4 mb-1">Профиль автоинструктора</h1>
+  <p class="text-muted small mb-4">
+    Заполните карточку — после сохранения она появится в
+    <a href="{% url 'driving_instructors:list' %}">каталоге инструкторов</a>.
+  </p>
+  {% if instructor.is_published %}
+    <div class="alert alert-success py-2 small mb-3" role="status">
+      Карточка опубликована в каталоге.
+      <a href="{% url 'driving_instructors:detail' instructor.slug %}" class="alert-link" target="_blank" rel="noopener">Открыть</a>
+    </div>
+  {% else %}
+    <div class="alert alert-warning py-2 small mb-3" role="status">
+      Укажите имя, город, описание (от 20 символов), цену за час и телефон — тогда карточка появится в каталоге.
+    </div>
+  {% endif %}
+  <div class="card border-0 shadow-sm">
+    <div class="card-body p-3 p-md-4">
+      <form method="post" novalidate>
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+          <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+        {% endif %}
+        {% for field in form %}
+          <div class="mb-3">
+            {% if field.field.widget.input_type == 'checkbox' %}
+              <div class="form-check">
+                {{ field }}
+                <label class="form-check-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+              </div>
+            {% else %}
+              <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+              {{ field }}
+            {% endif %}
+            {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
+            {% for err in field.errors %}<div class="invalid-feedback d-block">{{ err }}</div>{% endfor %}
+          </div>
+        {% endfor %}
+        <button type="submit" class="btn btn-primary btn-lg w-100 w-md-auto">Сохранить профиль</button>
+      </form>
+    </div>
+  </div>
+{% endblock %}

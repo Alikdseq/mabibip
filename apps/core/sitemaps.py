@@ -12,6 +12,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from apps.classifieds.models import Ad, AutoShopProfile
+from apps.driving_instructors.models import DrivingInstructorProfile
 from apps.stations.models import CarBrand, ServiceCategory, ServiceSection, ServiceStation
 
 
@@ -41,7 +42,15 @@ class StaticViewSitemap(SiteBaseURLMixin, Sitemap):
     changefreq = "daily"
 
     def items(self) -> list[str]:
-        items = ["home", "stations:list", "classifieds:ads_list"]
+        items = [
+            "home",
+            "stations:list",
+            "classifieds:ads_list",
+            "classifieds:shops_list",
+            "driving_instructors:list",
+            "driver_help:feed",
+            "driver_problems:board",
+        ]
         if getattr(settings, "MAP_FEATURE_ENABLED", False):
             items.insert(2, "stations:nearby_map")
         return items
@@ -49,11 +58,7 @@ class StaticViewSitemap(SiteBaseURLMixin, Sitemap):
     def location(self, item: str) -> str:
         if item == "home":
             return "/"
-        if item == "stations:list":
-            return reverse("stations:list")
-        if item == "classifieds:ads_list":
-            return reverse("classifieds:ads_list")
-        return reverse("stations:nearby_map")
+        return reverse(item)
 
     def priority(self, item: str) -> float:  # type: ignore[override]
         if item == "home":
@@ -182,3 +187,14 @@ class AutoShopSitemap(SiteBaseURLMixin, Sitemap):
 
     def location(self, obj: AutoShopProfile) -> str:
         return reverse("classifieds:shop_detail", kwargs={"slug": obj.slug})
+
+
+class InstructorSitemap(SiteBaseURLMixin, Sitemap):
+    changefreq = "weekly"
+    priority = 0.5
+
+    def items(self):
+        return DrivingInstructorProfile.objects.filter(is_published=True).order_by("pk")
+
+    def location(self, obj: DrivingInstructorProfile) -> str:
+        return reverse("driving_instructors:detail", kwargs={"slug": obj.slug})

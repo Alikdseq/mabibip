@@ -1,0 +1,32 @@
+{% comment %}Кабинет автоинструктора: один раздел — профиль.{% endcomment %}
+{% with url_name=request.resolver_match.url_name instructor=user.instructor_profile %}
+  <nav class="card border-0 shadow-sm instructor-owner-sidebar-nav" aria-label="Кабинет автоинструктора">
+    <div class="card-body p-0">
+      <div class="px-3 pt-3 pb-2 border-bottom bg-light rounded-top">
+        <span class="small fw-semibold text-body-secondary text-uppercase letter-spacing">Кабинет инструктора</span>
+      </div>
+      <div class="list-group list-group-flush rounded-0 rounded-bottom">
+        <a class="list-group-item list-group-item-action border-0 py-2 px-3 d-flex align-items-center gap-2{% if url_name == 'profile_edit' %} active fw-semibold{% endif %}"
+           href="{% url 'instructor_owner:profile_edit' %}"
+           {% if url_name == 'profile_edit' %}aria-current="page"{% endif %}>
+          <i class="bi bi-person-vcard {% if url_name == 'profile_edit' %}text-white{% else %}text-primary{% endif %}" aria-hidden="true"></i>
+          <span>Профиль</span>
+        </a>
+        {% if instructor and instructor.is_published %}
+          <a class="list-group-item list-group-item-action border-0 py-2 px-3 d-flex align-items-center gap-2"
+             href="{% url 'driving_instructors:detail' instructor.slug %}"
+             target="_blank"
+             rel="noopener">
+            <i class="bi bi-box-arrow-up-right text-primary" aria-hidden="true"></i>
+            <span>Моя карточка</span>
+          </a>
+        {% endif %}
+        <a class="list-group-item list-group-item-action border-0 py-2 px-3 d-flex align-items-center gap-2"
+           href="{% url 'home' %}">
+          <i class="bi bi-house-door text-primary" aria-hidden="true"></i>
+          <span>На главную</span>
+        </a>
+      </div>
+    </div>
+  </nav>
+{% endwith %}

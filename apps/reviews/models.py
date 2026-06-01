@@ -1,5 +1,6 @@
 from datetime import timedelta
 
+from django.conf import settings
 from django.core.validators import FileExtensionValidator, MaxValueValidator, MinValueValidator
 from django.db import models
 from django.utils import timezone
@@ -30,6 +31,20 @@ class Review(models.Model):
         on_delete=models.CASCADE,
         related_name="review",
         verbose_name="Бронирование",
+        null=True,
+        blank=True,
+    )
+    author = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="station_reviews_written",
+        verbose_name="Автор отзыва",
+    )
+    station = models.ForeignKey(
+        "stations.ServiceStation",
+        on_delete=models.CASCADE,
+        related_name="reviews",
+        verbose_name="СТО / мастер",
     )
     rating = models.PositiveSmallIntegerField(
         "Оценка",
@@ -69,9 +84,28 @@ class Review(models.Model):
         verbose_name = "Отзыв"
         verbose_name_plural = "Отзывы"
         ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["author", "station"],
+                name="reviews_author_station_uniq",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["station", "moderation_status", "-created_at"]),
+        ]
 
     def __str__(self) -> str:
-        return f"★{self.rating} — {self.booking}"
+        if self.booking_id:
+            return f"★{self.rating} — {self.booking}"
+        return f"★{self.rating} — station {self.station_id}"
+
+    def save(self, *args, **kwargs):
+        if self.booking_id:
+            if not self.author_id:
+                self.author_id = self.booking.client_id
+            if not self.station_id:
+                self.station_id = self.booking.station_id
+        super().save(*args, **kwargs)
 
     def is_editable_by_client(self, *, now=None) -> bool:
         now = now or timezone.now()

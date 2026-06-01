@@ -97,6 +97,7 @@ class User(AbstractUser):
         MASTER = "master", "Мастер"
         AUTOSERVICE = "autoservice", "Автосервис"
         AUTOSHOP = "autoshop", "Автомагазин/разборка"
+        INSTRUCTOR = "instructor", "Автоинструктор"
 
     business_role = models.CharField(
         "Роль",

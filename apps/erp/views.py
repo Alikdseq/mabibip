@@ -393,10 +393,7 @@ def _build_activity(*, start: date, end: date) -> dict:
     base = ServiceStation.objects.all()
     in_range = Q(bookings__created_at__date__gte=start, bookings__created_at__date__lte=end)
 
-    rev_ok = Q(
-        bookings__status=BookingStatus.COMPLETED,
-        bookings__review__moderation_status__in=[ModerationStatus.OK, ModerationStatus.UNDER_REVIEW],
-    )
+    rev_ok = Q(reviews__moderation_status__in=[ModerationStatus.OK, ModerationStatus.UNDER_REVIEW])
 
     qs = (
         base.annotate(
@@ -411,7 +408,7 @@ def _build_activity(*, start: date, end: date) -> dict:
                 filter=in_range & Q(bookings__status=BookingStatus.COMPLETED),
                 distinct=True,
             ),
-            avg_rating=Avg("bookings__review__rating", filter=rev_ok),
+            avg_rating=Avg("reviews__rating", filter=rev_ok),
         )
         .filter(bookings_cnt__gt=0)
     )
@@ -1991,7 +1988,7 @@ def station_detail(request: HttpRequest, station_id: int) -> HttpResponse:
     bookings = Booking.objects.select_related("client", "slot").filter(station=st).order_by("-created_at")[:200]
     reviews = (
         Review.objects.select_related("booking", "booking__client")
-        .filter(booking__station=st)
+        .filter(station=st)
         .order_by("-created_at")[:200]
     )
     audit = AuditLog.objects.filter(object_type="stations.ServiceStation", object_id=st.id).order_by("-created_at")[:200]
@@ -2176,7 +2173,7 @@ def station_reviews_xlsx(request: HttpRequest, station_id: int) -> HttpResponse:
     st = ServiceStation.objects.get(pk=station_id)
     reviews = (
         Review.objects.select_related("booking", "booking__client")
-        .filter(booking__station=st)
+        .filter(station=st)
         .order_by("-created_at")[:10000]
     )
     complaints = (

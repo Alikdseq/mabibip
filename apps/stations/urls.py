@@ -15,5 +15,6 @@ urlpatterns = [
     path("<slug:slug>/slots/", views.station_slots_partial, name="slots_partial"),
     path("<slug:slug>/book/<int:slot_id>/form/", views.booking_form_partial, name="booking_form"),
     path("<slug:slug>/book/<int:slot_id>/submit/", views.booking_submit, name="booking_submit"),
+    path("<slug:slug>/review/", views.station_review_create, name="station_review_create"),
     path("<slug:slug>/", views.StationDetailView.as_view(), name="detail"),
 ]

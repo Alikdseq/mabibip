@@ -182,6 +182,124 @@ class RegisterForm(RecaptchaTokenMixin, RegistrationSecurityMixin, forms.Form):
         return data
 
 
+class LiteRegisterForm(RecaptchaTokenMixin, forms.Form):
+    """Упрощённая регистрация: телефон, пароль, одна галочка; бизнес-поля по роли."""
+
+    role = forms.ChoiceField(
+        label="Роль",
+        choices=User.BusinessRole.choices,
+        widget=forms.HiddenInput,
+        initial=User.BusinessRole.DRIVER,
+        required=True,
+    )
+    business_name = forms.CharField(
+        label="Название",
+        max_length=200,
+        required=False,
+        widget=forms.TextInput(attrs={"class": "form-control"}),
+    )
+    city_label = forms.CharField(label="Город", max_length=120, required=False)
+    autoshop_kind = forms.ChoiceField(
+        label="Тип автомагазина",
+        required=False,
+        choices=AutoShopProfile.Kind.choices,
+        widget=forms.Select(attrs={"class": "form-select"}),
+    )
+    phone = forms.CharField(label="Телефон", max_length=20)
+    password1 = forms.CharField(
+        label="Пароль",
+        strip=False,
+        widget=forms.PasswordInput(attrs={"class": "form-control", "autocomplete": "new-password"}),
+    )
+    password2 = forms.CharField(
+        label="Пароль ещё раз",
+        strip=False,
+        widget=forms.PasswordInput(attrs={"class": "form-control", "autocomplete": "new-password"}),
+    )
+    accept_all_terms = forms.BooleanField(
+        required=True,
+        label="",
+        error_messages={"required": "Необходимо принять условия использования сервиса."},
+    )
+    website_url = forms.CharField(
+        required=False,
+        label="",
+        widget=forms.TextInput(
+            attrs={
+                "autocomplete": "off",
+                "tabindex": "-1",
+                "aria-hidden": "true",
+                "style": "display:none",
+            },
+        ),
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["phone"].widget.attrs.setdefault("class", "form-control")
+        self.fields["phone"].widget.attrs.setdefault("autocomplete", "tel-national")
+        labels = list_allowed_city_labels()
+        if labels:
+            self.fields["city_label"] = forms.ChoiceField(
+                label="Город",
+                required=False,
+                choices=[("", "— выберите город —")] + [(x, x) for x in labels],
+                widget=forms.Select(attrs={"class": "form-select", "size": "8"}),
+            )
+
+    def clean_phone(self):
+        raw = self.cleaned_data["phone"]
+        try:
+            phone = normalize_to_e164(raw)
+        except PhoneValidationError as e:
+            raise ValidationError(str(e)) from e
+        if User.objects.filter(phone=phone).exists():
+            raise ValidationError("Пользователь с таким номером уже зарегистрирован.")
+        return phone
+
+    def clean_password1(self):
+        p1 = self.cleaned_data.get("password1")
+        if not p1:
+            return p1
+        phone = self.cleaned_data.get("phone") or ""
+        validate_password(p1, user=User(phone=phone))
+        return p1
+
+    def clean(self):
+        data = super().clean()
+        if (data.get("website_url") or "").strip():
+            raise ValidationError("Подача заявки отклонена системой защиты от спама.")
+        p1, p2 = data.get("password1"), data.get("password2")
+        if p1 and p2 and p1 != p2:
+            raise ValidationError("Пароли не совпадают.")
+        missing_docs = [k for k in REGISTRATION_REQUIRED_KEYS if get_current_version(k) is None]
+        if missing_docs:
+            raise ValidationError(
+                "Юридические документы временно недоступны. "
+                "Попробуйте позже или обратитесь в поддержку.",
+            )
+        role = (data.get("role") or User.BusinessRole.DRIVER).strip()
+        if role not in dict(User.BusinessRole.choices):
+            raise ValidationError("Выберите роль.")
+        data["role"] = role
+        if role != User.BusinessRole.DRIVER:
+            bn = (data.get("business_name") or "").strip()
+            if not bn:
+                raise ValidationError("Укажите название/имя для бизнеса.")
+            city = (data.get("city_label") or "").strip()
+            if not city:
+                raise ValidationError("Укажите город.")
+        if role == User.BusinessRole.AUTOSHOP:
+            k = (data.get("autoshop_kind") or "").strip()
+            allowed = {x for x, _ in AutoShopProfile.Kind.choices}
+            if k not in allowed:
+                raise ValidationError("Выберите тип: автомагазин / разборка / автосалон.")
+        return data
+
+
+DriverLiteRegisterForm = LiteRegisterForm
+
+
 class RoleRegisterForm(RegisterForm):
     field_order = [
         "role",
@@ -241,7 +359,9 @@ class RoleRegisterForm(RegisterForm):
         if role not in dict(User.BusinessRole.choices):
             raise ValidationError("Выберите роль.")
         data["role"] = role
-        if role == User.BusinessRole.DRIVER:
+        from .registration_flags import driver_registration_lite_enabled
+
+        if role == User.BusinessRole.DRIVER and not driver_registration_lite_enabled():
             email_raw = (data.get("email") or "").strip()
             if not email_raw:
                 self.add_error(

@@ -14,12 +14,37 @@
     <p class="text-muted mb-0">Найдите свободное окно прямо сейчас. Выберите мастера или сервис и оформите визит за пару минут.</p>
   </section>
 
-  <div class="rounded-3 pm-hero-section p-3 p-md-4 mb-4">
-    <div class="d-grid gap-2 d-md-flex">
+  <div class="rounded-3 pm-hero-section p-3 p-md-4 mb-3 mb-md-4">
+    <div class="d-grid gap-2 d-md-flex flex-wrap">
       <a href="{% url 'classifieds:ads_list' %}" class="btn btn-primary">Смотреть объявления</a>
       <a href="{% url 'classifieds:shops_list' %}" class="btn btn-outline-primary">Автомагазины / Разборки</a>
+      <a href="{% url 'driving_instructors:list' %}" class="btn btn-outline-primary">Автоинструкторы</a>
     </div>
   </div>
+
+  <section class="rounded-3 pm-home-sos-block p-3 p-md-4 mb-4" aria-labelledby="home-sos-heading">
+    <div class="pm-home-sos-block__head mb-3">
+      <h2 class="h6 fw-bold mb-1" id="home-sos-heading">
+        <i class="bi bi-life-preserver text-primary me-1" aria-hidden="true"></i>
+        Помощь и проблемы на дороге
+      </h2>
+      <p class="small text-muted mb-0">Срочный SOS между водителями или заявка мастерам на ремонт</p>
+    </div>
+    <div class="d-grid gap-2 pm-home-sos-block__actions">
+      <a href="{% url 'driver_help:feed' %}" class="btn btn-pm-soft-danger position-relative pm-home-sos-btn">
+        <span class="pm-home-sos-btn__label">Нужна помощь — пиши</span>
+        {% if home_help_active_count %}
+          <span class="badge rounded-pill bg-dark pm-home-sos-badge">{{ home_help_active_count }}</span>
+        {% endif %}
+      </a>
+      <a href="{% url 'driver_problems:board' %}" class="btn btn-outline-pm-soft-danger position-relative pm-home-sos-btn">
+        <span class="pm-home-sos-btn__label">Проблемы водителей</span>
+        {% if home_problems_open_count %}
+          <span class="badge rounded-pill badge-pm-soft-danger pm-home-sos-badge">{{ home_problems_open_count }}</span>
+        {% endif %}
+      </a>
+    </div>
+  </section>
 
   {# ——— Блок 2: марки (9 в первом ряду на телефоне; 10-я на md+; остальные — «Ещё») ——— #}
   <section class="mb-5" x-data="{ more: false }">

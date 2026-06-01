@@ -3,6 +3,10 @@
 :root {
   --pm-accent: #0d6efd;
   --pm-accent-rgb: 13, 110, 253;
+  --pm-sos-blue: #00bfff;
+  --pm-sos-blue-hover: #0099cc;
+  --pm-sos-blue-border: #66d4ff;
+  --pm-sos-blue-rgb: 0, 191, 255;
   --pm-hero-bg: #cfe2ff;
   --pm-gradient: linear-gradient(
     78deg,
@@ -113,6 +117,62 @@ select.pm-city-listbox {
   border: 1px solid rgba(var(--pm-accent-rgb), 0.22);
 }
 
+/* Главная: отдельный блок SOS (мобильный — на всю ширину, свой фон) */
+.pm-home-sos-block {
+  background: linear-gradient(145deg, #ffffff 0%, #eefbff 55%, rgba(var(--pm-sos-blue-rgb), 0.12) 100%);
+  border: 1px solid rgba(var(--pm-sos-blue-rgb), 0.35);
+  border-left: 4px solid var(--pm-sos-blue);
+  box-shadow: 0 4px 18px rgba(var(--pm-sos-blue-rgb), 0.12);
+}
+
+.pm-home-sos-block__head {
+  padding-bottom: 0.25rem;
+  border-bottom: 1px dashed rgba(var(--pm-sos-blue-rgb), 0.25);
+}
+
+.pm-home-sos-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 3rem;
+  padding-top: 0.65rem;
+  padding-bottom: 0.65rem;
+}
+
+.pm-home-sos-btn__label {
+  text-align: center;
+}
+
+.pm-home-sos-badge {
+  position: static;
+  transform: none;
+  flex-shrink: 0;
+}
+
+@media (max-width: 767.98px) {
+  .pm-home-sos-block {
+    margin-top: 0.25rem;
+    padding: 1rem 1rem 1.1rem !important;
+  }
+
+  .pm-home-sos-block__actions {
+    gap: 0.65rem !important;
+  }
+
+  .pm-home-sos-btn {
+    width: 100%;
+    font-size: 1rem;
+    border-radius: 0.75rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .pm-home-sos-block__actions {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
 /* VK ID / OAuth — узнаваемый фирменный синий */
 .btn-vk {
   --bs-btn-color: #fff;
@@ -179,6 +239,54 @@ select.pm-city-listbox {
 
 .bg-primary {
   background-color: var(--pm-accent) !important;
+}
+
+/* SOS-кнопки: «Нужна помощь» — градиент белый → #00BFFF; outline — в том же цвете */
+.btn-pm-soft-danger {
+  color: #046082;
+  background: linear-gradient(105deg, #ffffff 0%, #e8f9ff 45%, var(--pm-sos-blue) 100%);
+  border: 1.5px solid var(--pm-sos-blue-border);
+  font-weight: 600;
+  box-shadow: 0 2px 10px rgba(var(--pm-sos-blue-rgb), 0.22);
+  transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.btn-pm-soft-danger:hover,
+.btn-pm-soft-danger:focus-visible {
+  color: #fff;
+  background: linear-gradient(105deg, #f0fbff 0%, #33cfff 50%, var(--pm-sos-blue) 100%);
+  border-color: var(--pm-sos-blue);
+  box-shadow: 0 4px 14px rgba(var(--pm-sos-blue-rgb), 0.35);
+}
+
+.btn-pm-soft-danger:active {
+  color: #fff;
+  background: linear-gradient(105deg, #ccefff 0%, var(--pm-sos-blue-hover) 100%);
+  border-color: var(--pm-sos-blue-hover);
+}
+
+.btn-pm-soft-danger:focus-visible {
+  outline: 0;
+  box-shadow: 0 0 0 0.25rem rgba(var(--pm-sos-blue-rgb), 0.35);
+}
+
+.btn-outline-pm-soft-danger {
+  --bs-btn-color: #0090c4;
+  --bs-btn-border-color: var(--pm-sos-blue);
+  --bs-btn-bg: rgba(var(--pm-sos-blue-rgb), 0.08);
+  --bs-btn-hover-color: #fff;
+  --bs-btn-hover-bg: var(--pm-sos-blue);
+  --bs-btn-hover-border-color: var(--pm-sos-blue);
+  --bs-btn-active-color: #fff;
+  --bs-btn-active-bg: var(--pm-sos-blue-hover);
+  --bs-btn-active-border-color: var(--pm-sos-blue-hover);
+  --bs-btn-focus-shadow-rgb: var(--pm-sos-blue-rgb);
+  font-weight: 600;
+}
+
+.badge-pm-soft-danger {
+  background-color: var(--pm-sos-blue) !important;
+  color: #fff !important;
 }
 
 .pm-station-card {
@@ -804,4 +912,44 @@ select.pm-city-listbox {
   .pm-ad-card-aside {
     border-left: 0 !important;
   }
+}
+
+/* --- Password visibility toggle (input-group + eye button) --- */
+.password-toggle-group > .form-control {
+  border-right: 0;
+}
+
+.password-toggle-group > .form-control:focus {
+  box-shadow: none;
+}
+
+.password-toggle-group:focus-within {
+  border-radius: var(--bs-border-radius);
+  box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.25);
+}
+
+.password-toggle-group .password-toggle-btn {
+  min-width: 2.75rem;
+  padding-left: 0.65rem;
+  padding-right: 0.65rem;
+  border-color: var(--bs-border-color);
+  color: var(--bs-secondary-color);
+  background-color: var(--bs-body-bg);
+}
+
+.password-toggle-group .password-toggle-btn:hover,
+.password-toggle-group .password-toggle-btn:focus {
+  color: var(--bs-body-color);
+  background-color: var(--bs-tertiary-bg);
+  border-color: var(--bs-border-color);
+}
+
+.password-toggle-group .password-toggle-btn:focus {
+  box-shadow: none;
+}
+
+.password-toggle-group .password-toggle-btn .password-toggle-icon {
+  font-size: 1.1rem;
+  line-height: 1;
+  pointer-events: none;
 }

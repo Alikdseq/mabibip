@@ -1,5 +1,6 @@
 {# Поля фильтров: подключаются в форму десктопа и мобильного модального окна. suffix — суффикс для id. #}
 <input type="hidden" name="brand" value="{{ catalog_brand }}">
+<input type="hidden" name="section" id="catalog-filter-section" value="{{ catalog_section|default:'' }}">
 <input type="hidden" name="entry" value="{{ request.GET.entry|default:'' }}">
 <input type="hidden" name="quick" value="{{ request.GET.quick|default:'' }}">
 <input type="hidden" name="service" value="{{ catalog_service_slug|default:'' }}">

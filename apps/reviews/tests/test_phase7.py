@@ -42,6 +42,18 @@ def _station(owner, slug="st-phase7"):
     )
 
 
+def _review_from_booking(booking, **kwargs):
+    defaults = {
+        "booking": booking,
+        "author": booking.client,
+        "station": booking.station,
+        "rating": 5,
+        "text": "ok",
+    }
+    defaults.update(kwargs)
+    return Review.objects.create(**defaults)
+
+
 def _completed_booking(owner, client_user, slug="st-phase7", hour=10):
     st = _station(owner, slug=slug)
     bay = WorkBay.objects.create(station=st, name="П1")
@@ -91,21 +103,25 @@ def test_review_create_pending_returns_404(owner, client_user):
 
 
 @pytest.mark.django_db
-def test_second_review_integrity_error_shows_message(owner, client_user):
+def test_second_review_blocked_when_station_review_exists(owner, client_user):
     _, b = _completed_booking(owner, client_user, slug="st-dup", hour=11)
-    Review.objects.create(booking=b, rating=5, text="first")
+    _review_from_booking(b, rating=5, text="first")
 
     c = Client()
     c.force_login(client_user)
     url = reverse("cabinet:review_create", kwargs={"booking_pk": b.pk})
-    r = c.post(url, {"rating": 4, "text": "second"})
-    assert r.status_code == 200
+    r = c.post(url, {"rating": 4, "text": "second"}, follow=False)
+    assert r.status_code == 302
+    assert r.url == reverse("cabinet:bookings")
     msgs = [m.message for m in get_messages(r.wsgi_request)]
-    assert any("уже добавлен" in m.lower() for m in msgs)
+    assert any("сервисе" in m.lower() for m in msgs)
 
 
 @pytest.mark.django_db
 def test_avg_rating_on_station_detail_updates_after_reviews(owner, client_user):
+    client_user2 = User.objects.create_user(
+        phone="+79996660103", password="x", email="cl7b@t.test"
+    )
     st = _station(owner, slug="st-avg")
     bay = WorkBay.objects.create(station=st, name="П1")
     d = date(2026, 4, 3)
@@ -128,7 +144,7 @@ def test_avg_rating_on_station_detail_updates_after_reviews(owner, client_user):
         status=BookingStatus.COMPLETED,
     )
     b2 = Booking.objects.create(
-        client=client_user,
+        client=client_user2,
         station=st,
         slot=slot(11),
         car_info="B",
@@ -148,12 +164,14 @@ def test_avg_rating_on_station_detail_updates_after_reviews(owner, client_user):
     assert r1.status_code == 200
     assert float(r1.context["station"].avg_rating) == 4.0
 
-    c.post(
+    c2 = Client()
+    c2.force_login(client_user2)
+    c2.post(
         reverse("cabinet:review_create", kwargs={"booking_pk": b2.pk}),
         {"rating": 2, "text": "meh"},
         follow=True,
     )
-    r2 = c.get(reverse("stations:detail", kwargs={"slug": st.slug}))
+    r2 = c2.get(reverse("stations:detail", kwargs={"slug": st.slug}))
     assert r2.status_code == 200
     assert float(r2.context["station"].avg_rating) == 3.0
 
@@ -162,7 +180,7 @@ def test_avg_rating_on_station_detail_updates_after_reviews(owner, client_user):
 def test_review_text_escaped_on_station_detail(owner, client_user):
     st, b = _completed_booking(owner, client_user, slug="st-xss", hour=14)
     payload = "<script>alert(1)</script>\nline2"
-    Review.objects.create(booking=b, rating=5, text=payload)
+    _review_from_booking(b, rating=5, text=payload)
 
     r = Client().get(reverse("stations:detail", kwargs={"slug": st.slug}))
     assert r.status_code == 200
@@ -174,7 +192,7 @@ def test_review_text_escaped_on_station_detail(owner, client_user):
 @pytest.mark.django_db
 def test_review_already_exists_get_redirects_to_cabinet(owner, client_user):
     _, b = _completed_booking(owner, client_user, slug="st-redir", hour=15)
-    Review.objects.create(booking=b, rating=3, text="y")
+    _review_from_booking(b, rating=3, text="y")
 
     c = Client()
     c.force_login(client_user)

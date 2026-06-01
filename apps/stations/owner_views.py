@@ -671,6 +671,9 @@ class StationProfileEditView(StoOwnerRequiredMixin, View):
                     self.template_name,
                     {"station": station, "form": form, "formset": formset},
                 )
+            from apps.users.profile_completion import maybe_activate_station_after_profile_save
+
+            maybe_activate_station_after_profile_save(station)
             messages.success(request, "Профиль и прайс сохранены.")
             return redirect("sto_owner:station_profile", slug=station.slug)
         sections = list(ServiceSection.objects.order_by("sort_order", "name"))
@@ -838,9 +841,9 @@ class OwnerReviewListView(StoOwnerRequiredMixin, ListView):
 
     def get_queryset(self):
         return (
-            Review.objects.filter(booking__station__owner=self.request.user)
+            Review.objects.filter(station__owner=self.request.user)
             .exclude(moderation_status=ModerationStatus.HIDDEN)
-            .select_related("booking", "booking__station", "booking__client", "owner_reply")
+            .select_related("author", "station", "booking", "booking__client", "owner_reply")
             .order_by("-created_at")
         )
 
@@ -852,8 +855,8 @@ class OwnerReviewReplyView(StoOwnerRequiredMixin, FormView):
 
     def dispatch(self, request, *args, **kwargs):
         self.review = get_object_or_404(
-            Review.objects.filter(booking__station__owner=request.user).select_related(
-                "booking", "booking__station", "owner_reply"
+            Review.objects.filter(station__owner=request.user).select_related(
+                "station", "booking", "owner_reply"
             ),
             pk=kwargs["review_pk"],
         )
@@ -869,7 +872,7 @@ class OwnerReviewReplyView(StoOwnerRequiredMixin, FormView):
         ctx = super().get_context_data(**kwargs)
         ctx["review"] = self.review
         ctx["booking"] = self.review.booking
-        ctx["station"] = self.review.booking.station
+        ctx["station"] = self.review.station
         return ctx
 
     def form_valid(self, form):
@@ -885,7 +888,7 @@ class OwnerReviewReplyView(StoOwnerRequiredMixin, FormView):
 @require_POST
 def review_complaint(request, review_pk):
     review = get_object_or_404(
-        Review.objects.filter(booking__station__owner=request.user),
+        Review.objects.filter(station__owner=request.user),
         pk=review_pk,
     )
     form = OwnerReviewComplaintForm(request.POST)
@@ -894,7 +897,7 @@ def review_complaint(request, review_pk):
         return redirect("sto_owner:reviews")
     ReviewComplaint.objects.create(
         review=review,
-        station=review.booking.station,
+        station=review.station,
         reason=form.cleaned_data["reason"].strip()[:300],
     )
     messages.success(request, "Жалоба отправлена модератору платформы.")

@@ -4,3 +4,7 @@ REGISTRATION_SECURITY_POST = {
     "website_url": "",
     "phone_owner_confirm": "on",
 }
+
+DRIVER_LITE_SECURITY_POST = {
+    "website_url": "",
+}

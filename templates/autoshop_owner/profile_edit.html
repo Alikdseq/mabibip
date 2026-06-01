@@ -1,0 +1,21 @@
+{% extends "autoshop_owner/base.html" %}
+{% block title %}Профиль магазина — МаБибип{% endblock %}
+
+{% block autoshop_owner_main %}
+  <h1 class="h4 mb-3">Профиль магазина</h1>
+  <form method="post" class="col-lg-8" novalidate>
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+      <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+    {% endif %}
+    {% for field in form %}
+      <div class="mb-3">
+        <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {% for err in field.errors %}<div class="invalid-feedback d-block">{{ err }}</div>{% endfor %}
+      </div>
+    {% endfor %}
+    <button type="submit" class="btn btn-primary">Сохранить</button>
+    <a class="btn btn-outline-secondary ms-2" href="{% url 'shop_owner:dashboard' %}">В кабинет</a>
+  </form>
+{% endblock %}

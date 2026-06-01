@@ -33,6 +33,7 @@
     <button type="button" class="btn btn-outline-primary js-role flex-grow-1 text-nowrap" data-role="master">Мастер</button>
     <button type="button" class="btn btn-outline-primary js-role flex-grow-1 text-nowrap" data-role="autoservice">Автосервис</button>
     <button type="button" class="btn btn-outline-primary js-role flex-grow-1 text-nowrap" data-role="autoshop">Автомагазин</button>
+    <button type="button" class="btn btn-outline-primary js-role flex-grow-1 text-nowrap" data-role="instructor">Автоинструктор</button>
   </div>
 
   <form method="post" class="col-lg-7" id="register-form" data-recaptcha-action="register" novalidate>
@@ -65,7 +66,7 @@
       {{ form.password2 }}
       {% for err in form.password2.errors %}<div class="invalid-feedback d-block">{{ err }}</div>{% endfor %}
     </div>
-    <div class="mb-3">
+    <div class="mb-3" id="email-block">
       <label class="form-label" for="{{ form.email.id_for_label }}">{{ form.email.label }}</label>
       {{ form.email }}
       {% if form.email.help_text %}
@@ -92,29 +93,47 @@
       </div>
       <p class="small text-muted mt-2 mb-0">После модерации откроется кабинет бизнеса.</p>
     </div>
-    <div class="form-check mb-2">
-      {{ form.accept_privacy }}
-      <label class="form-check-label" for="{{ form.accept_privacy.id_for_label }}">
-        Принимаю <a href="{% url 'legal:document' key='privacy' %}" target="_blank" rel="noopener">политику конфиденциальности</a>
-      </label>
-      {% for err in form.accept_privacy.errors %}<div class="invalid-feedback d-block">{{ err }}</div>{% endfor %}
+    <div id="consent-three-blocks">
+      <div class="form-check mb-2">
+        {{ form.accept_privacy }}
+        <label class="form-check-label" for="{{ form.accept_privacy.id_for_label }}">
+          Принимаю <a href="{% url 'legal:document' key='privacy' %}" target="_blank" rel="noopener">политику конфиденциальности</a>
+        </label>
+        {% for err in form.accept_privacy.errors %}<div class="invalid-feedback d-block">{{ err }}</div>{% endfor %}
+      </div>
+      <div class="form-check mb-2">
+        {{ form.accept_user_agreement }}
+        <label class="form-check-label" for="{{ form.accept_user_agreement.id_for_label }}">
+          Принимаю <a href="{% url 'legal:document' key='user_agreement' %}" target="_blank" rel="noopener">пользовательское соглашение</a>
+        </label>
+        {% for err in form.accept_user_agreement.errors %}<div class="invalid-feedback d-block">{{ err }}</div>{% endfor %}
+      </div>
+      <div class="form-check mb-2">
+        {{ form.accept_pd_consent }}
+        <label class="form-check-label" for="{{ form.accept_pd_consent.id_for_label }}">
+          Даю <a href="{% url 'legal:document' key='pd_consent' %}" target="_blank" rel="noopener">согласие на обработку персональных данных</a>
+        </label>
+        {% for err in form.accept_pd_consent.errors %}<div class="invalid-feedback d-block">{{ err }}</div>{% endfor %}
+      </div>
     </div>
-    <div class="form-check mb-2">
-      {{ form.accept_user_agreement }}
-      <label class="form-check-label" for="{{ form.accept_user_agreement.id_for_label }}">
-        Принимаю <a href="{% url 'legal:document' key='user_agreement' %}" target="_blank" rel="noopener">пользовательское соглашение</a>
+    {% if registration_lite or driver_registration_lite %}
+    <div id="registration-lite-consent" class="form-check mb-2 d-none">
+      <input type="checkbox" name="accept_all_terms" id="id_accept_all_terms" class="form-check-input" value="on"
+        {% if form.accept_all_terms.value %}checked{% endif %}>
+      <label class="form-check-label" for="id_accept_all_terms">
+        Принимаю
+        <a href="{% url 'legal:document' key='privacy' %}" target="_blank" rel="noopener">политику конфиденциальности</a>,
+        <a href="{% url 'legal:document' key='user_agreement' %}" target="_blank" rel="noopener">пользовательское соглашение</a>
+        и даю
+        <a href="{% url 'legal:document' key='pd_consent' %}" target="_blank" rel="noopener">согласие на обработку персональных данных</a>
       </label>
-      {% for err in form.accept_user_agreement.errors %}<div class="invalid-feedback d-block">{{ err }}</div>{% endfor %}
+      {% if form.accept_all_terms.errors %}
+        {% for err in form.accept_all_terms.errors %}<div class="invalid-feedback d-block">{{ err }}</div>{% endfor %}
+      {% endif %}
     </div>
-    <div class="form-check mb-2">
-      {{ form.accept_pd_consent }}
-      <label class="form-check-label" for="{{ form.accept_pd_consent.id_for_label }}">
-        Даю <a href="{% url 'legal:document' key='pd_consent' %}" target="_blank" rel="noopener">согласие на обработку персональных данных</a>
-      </label>
-      {% for err in form.accept_pd_consent.errors %}<div class="invalid-feedback d-block">{{ err }}</div>{% endfor %}
-    </div>
+    {% endif %}
     {{ form.recaptcha_token }}
-    <button type="submit" class="btn btn-primary text-nowrap" id="register-submit-btn" disabled>Зарегистрироваться</button>
+    <button type="submit" class="btn btn-primary text-nowrap" id="register-submit-btn">Зарегистрироваться</button>
   </form>
   {% include "users/includes/recaptcha_submit.html" with form_id="register-form" %}
   <script src="https://unpkg.com/imask"></script>
@@ -132,6 +151,12 @@
       var biz = document.getElementById('biz-fields');
       var kind = document.getElementById('autoshop-kind-fields');
       var oauth = document.getElementById('oauth-signup-driver-only');
+      var emailBlock = document.getElementById('email-block');
+      var consentThree = document.getElementById('consent-three-blocks');
+      var consentLite = document.getElementById('registration-lite-consent');
+      var phoneOwnerBlock = document.getElementById('phone-owner-block');
+      var registrationLite = {{ registration_lite|default:driver_registration_lite|yesno:"true,false" }};
+      var btn = document.getElementById('register-submit-btn');
       function setRole(r) {
         if (roleInput) roleInput.value = r;
         document.querySelectorAll('.js-role').forEach(function (b) {
@@ -139,9 +164,20 @@
           b.classList.toggle('btn-outline-primary', b.getAttribute('data-role') !== r);
         });
         var isBiz = r !== 'driver';
+        var isAutoshop = r === 'autoshop';
+        var isInstructor = r === 'instructor';
+        var isLite = registrationLite;
         if (biz) biz.classList.toggle('d-none', !isBiz);
-        if (kind) kind.classList.toggle('d-none', r !== 'autoshop');
+        if (kind) kind.classList.toggle('d-none', !isAutoshop);
         if (oauth) oauth.classList.toggle('d-none', r !== 'driver');
+        if (emailBlock) emailBlock.classList.toggle('d-none', isLite);
+        if (consentThree) consentThree.classList.toggle('d-none', isLite);
+        if (consentLite) consentLite.classList.toggle('d-none', !isLite);
+        if (phoneOwnerBlock && isLite) {
+          phoneOwnerBlock.classList.add('d-none');
+          phoneOwnerBlock.classList.remove('d-block');
+        }
+        if (btn && isLite) btn.disabled = false;
       }
       document.querySelectorAll('.js-role').forEach(function (b) {
         b.addEventListener('click', function () { setRole(b.getAttribute('data-role')); });
@@ -149,6 +185,7 @@
       setRole((roleInput && roleInput.value) || 'driver');
     })();
   </script>
+  {% if not registration_lite and not driver_registration_lite %}
   <script>
     (function () {
       var phone = document.getElementById('{{ form.phone.id_for_label }}');
@@ -202,4 +239,5 @@
       onPhoneInput();
     })();
   </script>
+  {% endif %}
 {% endblock %}

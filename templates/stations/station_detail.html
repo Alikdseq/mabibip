@@ -315,7 +315,18 @@
   <div class="row g-5">
     <div class="col-lg-7">
       <section id="reviews">
-        <h2 class="h4 border-bottom pb-2">Отзывы</h2>
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 border-bottom pb-2 mb-0">
+          <h2 class="h4 mb-0">Отзывы</h2>
+          {% if can_leave_station_review %}
+            <a class="btn btn-sm btn-outline-primary"
+               href="{% url 'stations:station_review_create' station.slug %}?next={{ request.get_full_path|urlencode }}#reviews">Оставить отзыв</a>
+          {% elif user.is_authenticated and user.pk != station.owner_id and not can_leave_station_review %}
+            <span class="small text-muted">Вы уже оставили отзыв</span>
+          {% elif not user.is_authenticated %}
+            <a class="btn btn-sm btn-outline-primary"
+               href="{% url 'users:login' %}?next={{ request.get_full_path|urlencode }}%23reviews">Войти, чтобы оставить отзыв</a>
+          {% endif %}
+        </div>
         {% if station.avg_rating and recent_reviews %}
           <p class="mb-2"><span class="text-warning">★</span> Средняя оценка: <strong>{{ station.avg_rating|floatformat:1 }}</strong></p>
           <div class="mb-3 small">

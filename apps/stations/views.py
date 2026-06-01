@@ -1,10 +1,13 @@
 import json
+import logging
 from collections import Counter
 from datetime import date, timedelta
 from urllib.parse import urlencode
 
 from django.conf import settings
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.db import transaction
 from django.db.models import Prefetch
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -23,7 +26,13 @@ from apps.bookings.services import create_booking_request
 from apps.bookings.slot_rules import slot_is_bookable
 from apps.core.decorators import htmx_login_required
 from apps.core.seo import clamp_seo_description
+from apps.reviews.forms import ReviewForm
 from apps.reviews.models import Review
+from apps.reviews.services import (
+    ReviewAlreadyExistsError,
+    create_station_review,
+    user_has_station_review,
+)
 from apps.users.models import FavoriteStation, SavedCar
 from apps.stations.card_cache import get_station_card_cache, set_station_card_cache
 from apps.stations.constants import (
@@ -37,7 +46,7 @@ from apps.stations.display import (
     format_public_address,
     map_links_wgs84,
     mask_phone_e164,
-    review_client_public_name,
+    review_author_public_name,
     station_contact_phone_e164,
     telegram_href,
 )
@@ -57,6 +66,8 @@ from .selectors import (
     station_has_slots_today,
 )
 from .visibility import station_accepts_online_booking, station_is_visible
+
+logger = logging.getLogger(__name__)
 
 
 def _saved_cars_for_booking_form(user):
@@ -254,7 +265,7 @@ class StationListView(ListView):
         ctx["car_brands_primary"] = popular[:9]
         ctx["car_brands_10th"] = popular[9] if len(popular) > 9 else None
         ctx["car_brands_more"] = popular[10:] + list(
-            CarBrand.objects.filter(is_popular=False).order_by("sort_order", "name")[:20]
+            CarBrand.objects.filter(is_popular=False).order_by("sort_order", "name")
         )
         ctx["catalog_listing"] = True
         ctx["catalog_view"] = (self.request.GET.get("view") or "list").strip().lower()
@@ -393,11 +404,10 @@ class StationDetailView(DetailView):
 
         all_reviews = list(
             Review.objects.filter(
-                booking__station=station,
-                booking__status=BookingStatus.COMPLETED,
+                station=station,
                 moderation_status__in=["ok", "under_review"],
             )
-            .select_related("booking", "booking__client", "owner_reply")
+            .select_related("author", "booking", "booking__client", "owner_reply")
             .order_by("-created_at"),
         )
         cutoff = timezone.now() - timedelta(days=183)
@@ -412,9 +422,80 @@ class StationDetailView(DetailView):
             for s in (5, 4, 3, 2, 1)
         ]
         ctx["review_names"] = {
-            r.pk: review_client_public_name(r.booking) for r in ctx["recent_reviews"]
+            r.pk: review_author_public_name(r) for r in ctx["recent_reviews"]
         }
+        ctx["can_leave_station_review"] = (
+            u.is_authenticated
+            and u.pk != station.owner_id
+            and not user_has_station_review(author=u, station=station)
+        )
         return ctx
+
+
+def _station_review_redirect(request, station: ServiceStation):
+    next_raw = (request.POST.get("next") or request.GET.get("next") or "").strip()
+    if next_raw.startswith("/"):
+        return redirect(next_raw)
+    return redirect(reverse("stations:detail", kwargs={"slug": station.slug}) + "#reviews")
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def station_review_create(request, slug):
+    station = get_object_or_404(_active_station_queryset(), slug=slug)
+    if request.user.pk == station.owner_id:
+        messages.error(request, "Нельзя оставить отзыв своей станции.")
+        return redirect(reverse("stations:detail", kwargs={"slug": station.slug}))
+    if user_has_station_review(author=request.user, station=station):
+        messages.info(request, "Вы уже оставили отзыв об этом сервисе.")
+        return _station_review_redirect(request, station)
+
+    next_raw = (request.POST.get("next") or request.GET.get("next") or "").strip()
+
+    if request.method == "POST":
+        form = ReviewForm(request.POST, request.FILES)
+        if form.is_valid():
+            try:
+                review = create_station_review(
+                    author=request.user,
+                    station=station,
+                    rating=form.cleaned_data["rating"],
+                    text=form.cleaned_data.get("text") or "",
+                    photo=form.cleaned_data.get("photo"),
+                )
+            except ReviewAlreadyExistsError:
+                messages.warning(
+                    request,
+                    "Отзыв уже был сохранён. Если страница открыта в нескольких вкладках, обновите её.",
+                )
+                return _station_review_redirect(request, station)
+
+            rid = review.pk
+
+            def _notify_sto() -> None:
+                from apps.reviews.mail import mail_sto_new_review
+
+                try:
+                    rev = Review.objects.select_related("station", "station__owner").get(pk=rid)
+                    mail_sto_new_review(rev)
+                except Exception:
+                    logger.exception("mail_sto_new_review failed review_id=%s", rid)
+
+            transaction.on_commit(_notify_sto)
+            messages.success(request, "Спасибо, ваш отзыв сохранён.")
+            return _station_review_redirect(request, station)
+    else:
+        form = ReviewForm()
+
+    return render(
+        request,
+        "stations/station_review_form.html",
+        {
+            "station": station,
+            "form": form,
+            "review_next_url": next_raw,
+        },
+    )
 
 
 def station_slots_partial(request, slug):

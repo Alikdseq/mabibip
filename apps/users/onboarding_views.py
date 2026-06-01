@@ -14,6 +14,7 @@ from apps.stations.models import District, ServiceStation
 from apps.core.city_expansion import record_business_city
 
 from .onboarding_forms import OAuthOnboardingForm
+from .profile_completion import registration_moderation_enabled
 from .sto_moderation_mail import mail_admins_sto_registration_pending
 
 User = get_user_model()
@@ -36,12 +37,32 @@ def _apply_business_role_side_effects(
     if role == User.BusinessRole.DRIVER:
         return
 
-    user.is_sto_owner = True
-    user.sto_moderation_status = User.StoModerationStatus.PENDING
-    user.save(update_fields=["is_sto_owner", "sto_moderation_status"])
-    record_business_city(city_label)
+    from apps.users.profile_completion import registration_moderation_enabled
 
+    record_business_city(city_label)
     district = District.objects.filter(city_label=city_label).order_by("pk").first()
+
+    if role == User.BusinessRole.INSTRUCTOR:
+        from apps.driving_instructors.models import DrivingInstructorProfile
+
+        DrivingInstructorProfile.objects.get_or_create(
+            owner=user,
+            defaults={
+                "name": business_name,
+                "city_label": city_label,
+                "contact_phone": user.contact_phone or user.phone,
+                "is_published": False,
+            },
+        )
+        return
+
+    user.is_sto_owner = True
+    user.sto_moderation_status = (
+        User.StoModerationStatus.PENDING
+        if registration_moderation_enabled()
+        else User.StoModerationStatus.APPROVED
+    )
+    user.save(update_fields=["is_sto_owner", "sto_moderation_status"])
 
     if role in (User.BusinessRole.MASTER, User.BusinessRole.AUTOSERVICE):
         from apps.stations.constants import EXECUTOR_KIND_PRIVATE, EXECUTOR_KIND_STO
@@ -105,25 +126,42 @@ def complete_profile(request: HttpRequest) -> HttpResponse:
             if role == User.BusinessRole.DRIVER:
                 messages.success(request, "Профиль заполнен. Добро пожаловать!")
                 return redirect(request.GET.get("next") or reverse("home"))
+            if role == User.BusinessRole.INSTRUCTOR:
+                messages.success(
+                    request,
+                    "Профиль заполнен. Заполните карточку автоинструктора.",
+                )
+                return redirect("instructor_owner:profile_edit")
             if role == User.BusinessRole.AUTOSHOP:
-                messages.success(request, "Профиль заполнен. Добро пожаловать в кабинет автомагазина!")
-                return redirect("shop_owner:dashboard")
+                if registration_moderation_enabled():
+                    messages.success(
+                        request,
+                        "Профиль заполнен. Добро пожаловать в кабинет автомагазина!",
+                    )
+                    return redirect("shop_owner:dashboard")
+                from .views import _redirect_after_business_registration
 
-            from apps.stations.constants import EXECUTOR_KIND_PRIVATE, EXECUTOR_KIND_STO
+                return _redirect_after_business_registration(request, u, role=role)
 
-            mail_admins_sto_registration_pending(
-                user=u,
-                station_name=(cd.get("business_name") or "").strip(),
-                city_label=(cd.get("city_label") or "").strip(),
-                executor_kind_display=_executor_kind_display(
-                    EXECUTOR_KIND_PRIVATE if role == User.BusinessRole.MASTER else EXECUTOR_KIND_STO
-                ),
-            )
-            messages.success(
-                request,
-                "Заявка отправлена. После проверки модератором вы получите доступ к кабинету бизнеса.",
-            )
-            return redirect("sto_owner:pending_moderation")
+            if registration_moderation_enabled():
+                from apps.stations.constants import EXECUTOR_KIND_PRIVATE, EXECUTOR_KIND_STO
+
+                mail_admins_sto_registration_pending(
+                    user=u,
+                    station_name=(cd.get("business_name") or "").strip(),
+                    city_label=(cd.get("city_label") or "").strip(),
+                    executor_kind_display=_executor_kind_display(
+                        EXECUTOR_KIND_PRIVATE if role == User.BusinessRole.MASTER else EXECUTOR_KIND_STO
+                    ),
+                )
+                messages.success(
+                    request,
+                    "Заявка отправлена. После проверки модератором вы получите доступ к кабинету бизнеса.",
+                )
+                return redirect("sto_owner:pending_moderation")
+            from .views import _redirect_after_business_registration
+
+            return _redirect_after_business_registration(request, u, role=role)
     else:
         form = OAuthOnboardingForm(
             initial={

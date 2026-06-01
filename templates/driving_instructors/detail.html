@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% load instructor_catalog %}
+{% block title %}{{ instructor.name }} — автоинструктор — МаБибип{% endblock %}
+{% block content %}
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'driving_instructors:list' %}">Автоинструкторы</a></li>
+      <li class="breadcrumb-item active" aria-current="page">{{ instructor.name }}</li>
+    </ol>
+  </nav>
+
+  <section id="profile" class="mb-5">
+    <div class="row g-4 align-items-start">
+      <div class="col-lg-5">
+        <div class="ratio ratio-1x1 bg-secondary bg-opacity-10 rounded-3 shadow d-flex align-items-center justify-content-center">
+          <i class="bi bi-person-badge text-primary" style="font-size: 4rem;" aria-hidden="true"></i>
+        </div>
+      </div>
+      <div class="col-lg-7">
+        <h1 class="h2 mb-2">
+          {{ instructor.name }}
+          <span class="badge text-bg-info ms-1 align-middle small">Автоинструктор</span>
+        </h1>
+        <p class="text-muted mb-2">
+          {% if instructor.city_label %}{{ instructor.city_label }}{% endif %}
+          {% if instructor.address %} · {{ instructor.address }}{% endif %}
+        </p>
+        <p class="mb-2">
+          <span class="badge text-bg-light text-dark border">КПП: {{ instructor.get_transmission_display }}</span>
+          {% if instructor.experience_years %}
+            <span class="badge text-bg-light text-dark border">Стаж {{ instructor.experience_years }} лет</span>
+          {% endif %}
+        </p>
+        {% if instructor.price_per_hour %}
+          <p class="fw-bold fs-5 mb-3">от {{ instructor.price_per_hour|floatformat:0 }} ₽/час</p>
+        {% endif %}
+        {% if instructor.price_exam_package %}
+          <p class="text-muted mb-3">Пакет к экзамену: {{ instructor.price_exam_package|floatformat:0 }} ₽</p>
+        {% endif %}
+        <div class="d-flex flex-wrap gap-2 mb-3">
+          {% if instructor.contact_phone %}
+            <a class="btn btn-primary btn-lg rounded-pill px-4" href="tel:{{ instructor.contact_phone }}">Позвонить</a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </section>
+
+  {% if instructor.description %}
+    <section id="about" class="mb-5">
+      <h2 class="h4 mb-3">О инструкторе</h2>
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">{{ instructor.description|linebreaks }}</div>
+      </div>
+    </section>
+  {% endif %}
+
+  {% with services=instructor|instructor_services_all %}
+    {% if services %}
+      <section id="services" class="mb-5">
+        <h2 class="h4 mb-3">Услуги</h2>
+        <div class="d-flex flex-wrap gap-2">
+          {% for svc in services %}
+            <span class="badge rounded-pill pm-service-tag fs-6">{{ svc }}</span>
+          {% endfor %}
+        </div>
+      </section>
+    {% endif %}
+  {% endwith %}
+
+  <section id="contacts" class="mb-4">
+    <h2 class="h4 mb-3">Контакты</h2>
+    {% if instructor.contact_phone %}
+      <a class="btn btn-outline-primary" href="tel:{{ instructor.contact_phone }}">{{ instructor.contact_phone }}</a>
+    {% else %}
+      <p class="text-muted mb-0">Телефон уточняйте через каталог после публикации профиля.</p>
+    {% endif %}
+  </section>
+{% endblock %}

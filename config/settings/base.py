@@ -92,6 +92,9 @@ INSTALLED_APPS = [
     "apps.calls",
     "apps.classifieds",
     "apps.support.apps.SupportConfig",
+    "apps.driver_help",
+    "apps.driver_problems",
+    "apps.driving_instructors",
 ]
 
 # Порядок: SecurityMiddleware (заголовки), XFrameOptionsMiddleware (clickjacking) — фаза 9.1.1
@@ -131,6 +134,7 @@ TEMPLATES = [
                 "apps.users.context_processors.vk_oauth",
                 "apps.users.context_processors.email_verification_notice",
                 "apps.users.context_processors.missing_email_notice",
+                "apps.users.context_processors_profile.profile_completion_banner",
                 "apps.calls.context_processors.calls_flags",
                 "apps.core.visitor_city.visitor_city_context",
                 "apps.core.context_processors.nav_badges",
@@ -320,12 +324,22 @@ if SENTRY_DSN:
 
 # Абсолютные ссылки в письмах, если нет HttpRequest (например тесты)
 SITE_BASE_URL = os.getenv("SITE_BASE_URL", "").rstrip("/")
+GOOGLE_SITE_VERIFICATION = os.getenv("GOOGLE_SITE_VERIFICATION", "").strip()
 # VK ID One Tap: redirect_uri должен побайтно совпадать с URI в кабинете VK (иначе invalid_request).
 # Если пусто — берётся origin текущего запроса + путь /accounts/vk/login/callback/ (см. context_processors.vk_oauth).
 VK_ID_REDIRECT_URI = os.getenv("VK_ID_REDIRECT_URI", "").strip()
 
 # Лимиты публичных форм (django-ratelimit); в тестах выключается в settings/tests.py.
 RATELIMIT_ENABLE = _env_bool("RATELIMIT_ENABLE", default=True)
+
+# Упрощённая регистрация всех ролей на register_start: одна галочка, без email (reCAPTCHA/rate limit off).
+DRIVER_REGISTRATION_LITE = _env_bool("DRIVER_REGISTRATION_LITE", default=True)
+
+# Премодерация мастера/СТО после register_start (False = сразу APPROVED и заполнение профиля).
+REGISTRATION_MODERATION_ENABLED = _env_bool("REGISTRATION_MODERATION_ENABLED", default=False)
+
+DRIVER_HELP_ENABLED = _env_bool("DRIVER_HELP_ENABLED", default=True)
+DRIVER_PROBLEMS_ENABLED = _env_bool("DRIVER_PROBLEMS_ENABLED", default=True)
 
 # WebRTC звонки (LiveKit + Channels). По умолчанию выключены до готовности инфраструктуры.
 CALLS_ENABLED = _env_bool("CALLS_ENABLED", default=False)

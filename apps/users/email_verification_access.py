@@ -48,6 +48,10 @@ def contacts_email_verification_needed(user) -> bool:
         return False
     if is_business_approved(user):
         return False
+    from .registration_flags import registration_lite_enabled
+
+    if registration_lite_enabled() and not (getattr(user, "email", None) or "").strip():
+        return False
     email = (getattr(user, "email", None) or "").strip()
     if not email:
         return True

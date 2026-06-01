@@ -183,14 +183,8 @@ class ServiceStationAdmin(ExportActionMixin, gis_admin.GISModelAdmin):
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
-        rev_ok = Q(
-            bookings__status=BookingStatus.COMPLETED,
-            bookings__review__moderation_status__in=[
-                ModerationStatus.OK,
-                ModerationStatus.UNDER_REVIEW,
-            ],
-        )
-        return qs.annotate(station_avg_rating=Avg("bookings__review__rating", filter=rev_ok))
+        rev_station = Q(reviews__moderation_status__in=["ok", "under_review"])
+        return qs.annotate(station_avg_rating=Avg("reviews__rating", filter=rev_station))
 
     @admin.action(
         description="Продлить подписку (оплачено до) на 30 дней от max(сегодня, текущая дата)"

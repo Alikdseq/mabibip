@@ -30,7 +30,11 @@ def bust_cache_work_bay(sender, instance, **kwargs):
 @receiver(post_save, sender="reviews.Review")
 @receiver(post_delete, sender="reviews.Review")
 def bust_cache_review(sender, instance, **kwargs):
-    invalidate_station_card(instance.booking.station_id)
+    station_id = instance.station_id or (
+        instance.booking.station_id if instance.booking_id else None
+    )
+    if station_id:
+        invalidate_station_card(station_id)
 
 
 @receiver(post_save, sender="bookings.Booking")

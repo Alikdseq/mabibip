@@ -67,9 +67,18 @@ def map_links_wgs84(location) -> tuple[str, str] | tuple[None, None]:
     return yandex, google
 
 
-def review_client_public_name(booking) -> str:
-    """Имя и первая буква фамилии; иначе нейтральная подпись."""
-    u = booking.client
+def review_author_public_name(review) -> str:
+    """Публичное имя автора отзыва (с записи или без)."""
+    if getattr(review, "author_id", None):
+        u = review.author
+    elif review.booking_id:
+        u = review.booking.client
+    else:
+        return "Клиент"
+    return _user_public_display_name(u)
+
+
+def _user_public_display_name(u) -> str:
     first = (getattr(u, "first_name", None) or "").strip()
     last = (getattr(u, "last_name", None) or "").strip()
     if first and last:
@@ -80,3 +89,8 @@ def review_client_public_name(booking) -> str:
     if len(phone) >= 4:
         return f"Клиент ••{phone[-2:]}"
     return "Клиент"
+
+
+def review_client_public_name(booking) -> str:
+    """Имя и первая буква фамилии; иначе нейтральная подпись."""
+    return _user_public_display_name(booking.client)

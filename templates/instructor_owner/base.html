@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block content %}
+  <style>
+    .instructor-owner-sidebar-nav .list-group-item.active {
+      background-color: var(--bs-primary);
+      border-color: var(--bs-primary);
+      color: #fff;
+    }
+    .instructor-owner-sidebar-nav .list-group-item.active .bi {
+      color: #fff !important;
+    }
+    @media (min-width: 992px) {
+      .instructor-owner-sidebar-sticky {
+        position: sticky;
+        top: 1rem;
+      }
+    }
+  </style>
+  <div class="row g-4 align-items-start instructor-owner-layout">
+    <aside class="col-lg-4 col-xl-3">
+      <div class="instructor-owner-sidebar-sticky">
+        {% include "instructor_owner/_sidebar_nav.html" %}
+      </div>
+    </aside>
+    <div class="col-lg-8 col-xl-9 min-w-0">
+      {% include "includes/profile_completion_banner.html" %}
+      {% block instructor_owner_main %}{% endblock %}
+    </div>
+  </div>
+{% endblock %}

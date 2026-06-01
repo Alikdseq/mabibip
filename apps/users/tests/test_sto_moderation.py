@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 import pytest
 from django.contrib.auth import get_user_model
-from django.test import Client
+from django.test import Client, override_settings
 from django.urls import reverse
 
 from apps.legal.models import DocumentKey, UserConsent, get_current_version
@@ -33,6 +33,7 @@ def _top_nav_html(content: str) -> str:
 
 
 @pytest.mark.django_db
+@override_settings(REGISTRATION_MODERATION_ENABLED=True)
 @patch("apps.users.sto_moderation_mail.mail_admins")
 def test_sto_register_creates_pending_owner_and_hidden_station(mock_mail):
     phone = "+79991333001"
@@ -147,6 +148,36 @@ def test_nav_home_shows_business_dropdown_for_approved_sto():
     nav = _top_nav_html(body)
     assert "Кабинет бизнеса" in nav
     assert "Как клиент" in nav
+
+
+@pytest.mark.django_db
+@override_settings(REGISTRATION_MODERATION_ENABLED=False, RATELIMIT_ENABLE=False)
+@patch("apps.users.sto_moderation_mail.mail_admins")
+def test_sto_register_without_moderation_redirects_to_profile(mock_mail):
+    phone = "+79991333005"
+    client = Client()
+    r = client.post(
+        reverse("users:sto_register"),
+        data={
+            "executor_kind": EXECUTOR_KIND_STO,
+            "station_name": "СТО без модерации",
+            "city_label": "Москва",
+            "phone": phone,
+            "password1": "strong-pass-9",
+            "password2": "strong-pass-9",
+            "accept_privacy": "on",
+            "accept_user_agreement": "on",
+            "accept_pd_consent": "on",
+            "recaptcha_token": "",
+            **REGISTRATION_SECURITY_POST,
+        },
+    )
+    assert r.status_code == 302
+    user = User.objects.get(phone=phone)
+    assert user.sto_moderation_status == User.StoModerationStatus.APPROVED
+    st = ServiceStation.objects.get(owner=user)
+    assert r.url == reverse("sto_owner:station_profile", kwargs={"slug": st.slug})
+    mock_mail.assert_not_called()
 
 
 @pytest.mark.django_db

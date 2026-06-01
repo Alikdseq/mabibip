@@ -12,6 +12,9 @@
   {% if seo_meta_description %}
     <meta name="description" content="{{ seo_meta_description }}">
   {% endif %}
+  {% if google_site_verification %}
+    <meta name="google-site-verification" content="{{ google_site_verification }}">
+  {% endif %}
   {% if canonical_url and seo_og_title and seo_meta_description %}
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="МаБибип">
@@ -136,7 +139,11 @@
                     aria-live="polite">{{ nav_chats_unread_total }}</span>
             </a>
           </li>
-          {% if user.is_sto_owner %}
+          {% if user.business_role == 'instructor' %}
+            <li class="nav-item">
+              <a class="nav-link fw-semibold" href="{% url 'instructor_owner:profile_edit' %}">Кабинет инструктора</a>
+            </li>
+          {% elif user.is_sto_owner %}
             {% if user.business_role == 'autoshop' %}
               <li class="nav-item">
                 <a class="nav-link fw-semibold" href="{% url 'shop_owner:dashboard' %}">Кабинет бизнеса</a>
@@ -164,7 +171,7 @@
           {% endif %}
           <li class="nav-item">
             <a class="nav-link" href="{% url 'cabinet:profile' %}">
-              {% if user.is_sto_owner and user.sto_moderation_status == 'approved' %}Как клиент{% else %}Личный кабинет{% endif %}
+              {% if user.business_role == 'instructor' or user.is_sto_owner and user.sto_moderation_status == 'approved' %}Как клиент{% else %}Личный кабинет{% endif %}
             </a>
           </li>
           <li class="nav-item">
@@ -222,7 +229,13 @@
         </div>
         <div>Чаты</div>
       </a>
-      {% if user.is_authenticated and user.is_sto_owner %}
+      {% if user.is_authenticated and user.business_role == 'instructor' %}
+        <a href="{% url 'instructor_owner:profile_edit' %}"
+           class="flex-fill text-decoration-none text-light small">
+          <div><i class="bi bi-person-vcard fs-5" aria-hidden="true"></i></div>
+          <div>Инструктор</div>
+        </a>
+      {% elif user.is_authenticated and user.is_sto_owner %}
         <a href="{% if user.business_role == 'autoshop' %}{% url 'shop_owner:dashboard' %}{% elif user.sto_moderation_status == 'approved' %}{% url 'sto_owner:dashboard' %}{% elif user.sto_moderation_status == 'pending' %}{% url 'sto_owner:pending_moderation' %}{% else %}{% url 'sto_owner:moderation_rejected' %}{% endif %}"
            class="flex-fill text-decoration-none text-light small position-relative">
           <div>
@@ -272,6 +285,7 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
         crossorigin="anonymous"></script>
+<script src="{% static 'js/app/password-toggle.js' %}" defer></script>
 <script>
   /* Нельзя вешать data-bs-toggle="dropdown" на кнопку без меню — будет dropdown.js: classList of null */
   document.querySelectorAll('.pm-close-nav-city-dropdown').forEach(function (btn) {

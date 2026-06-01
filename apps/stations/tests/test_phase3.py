@@ -202,6 +202,7 @@ def test_search_q_filters_list(owner):
 @pytest.mark.django_db
 def test_avg_rating_two_reviews(owner):
     client_user = User.objects.create_user(phone="+79994440102", password="x", email="c@t.test")
+    client_user2 = User.objects.create_user(phone="+79994440103", password="x", email="c2@t.test")
     st = _station(owner, slug="rate-sto", subscription_plan=SUBSCRIPTION_PLAN_FREE)
     bay = WorkBay.objects.create(station=st, name="П1")
     slot1 = TimeSlot.objects.create(
@@ -226,7 +227,7 @@ def test_avg_rating_two_reviews(owner):
         status=BookingStatus.COMPLETED,
     )
     b2 = Booking.objects.create(
-        client=client_user,
+        client=client_user2,
         station=st,
         slot=slot2,
         car_info="B222BB",
@@ -234,8 +235,12 @@ def test_avg_rating_two_reviews(owner):
         description="y",
         status=BookingStatus.COMPLETED,
     )
-    Review.objects.create(booking=b1, rating=4, text="норм")
-    Review.objects.create(booking=b2, rating=2, text="так себе")
+    Review.objects.create(
+        booking=b1, author=client_user, station=st, rating=4, text="норм"
+    )
+    Review.objects.create(
+        booking=b2, author=client_user2, station=st, rating=2, text="так себе"
+    )
 
     qs = annotate_station_ratings(ServiceStation.objects.filter(pk=st.pk))
     row = qs.get()

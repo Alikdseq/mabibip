@@ -116,6 +116,31 @@ def _service_landing_href(slug: str, city_label: str | None) -> str:
     return _href_with_city(reverse("landing:service_category", kwargs={"slug": slug}), city_label)
 
 
+def home_car_brand_tile_groups(city_label: str | None) -> tuple[list[dict], dict | None, list[dict]]:
+    """Плитки марок с главной из БД (popular 9 + 10-я, остальные в «Ещё»)."""
+    popular = list(CarBrand.objects.filter(is_popular=True).order_by("sort_order", "name"))
+    if popular:
+        primary_src = popular[:9]
+        tenth = popular[9] if len(popular) > 9 else None
+        more_src = list(CarBrand.objects.filter(is_popular=False).order_by("sort_order", "name"))
+    else:
+        all_brands = list(CarBrand.objects.order_by("sort_order", "name"))
+        primary_src = all_brands[:9]
+        tenth = all_brands[9] if len(all_brands) > 9 else None
+        more_src = all_brands[10:]
+
+    def _tile(b: CarBrand) -> dict:
+        stem = (b.logo_png_stem or b.sprite_key or b.slug or "").strip()
+        return {
+            "key": b.slug,
+            "label": b.name,
+            "href": _brand_landing_href(b.slug, city_label),
+            "logo_stem": stem,
+        }
+
+    return [_tile(b) for b in primary_src], (_tile(tenth) if tenth else None), [_tile(b) for b in more_src]
+
+
 def _brand_landing_href(slug: str, city_label: str | None) -> str:
     from django.urls import reverse
 
@@ -311,52 +336,11 @@ def build_homepage_context(city_label: str | None = None) -> dict:
         ServiceCategory.objects.filter(stations__in=visible).values("pk").distinct().count()
     )
 
-    _home_brands_row = [
-        {"key": "lada", "label": "LADA", "href": _brand_landing_href("lada", city_label)},
-        {"key": "audi", "label": "Audi", "href": _brand_landing_href("audi", city_label)},
-        {"key": "bmw", "label": "BMW", "href": _brand_landing_href("bmw", city_label)},
-        {"key": "ford", "label": "Ford", "href": _brand_landing_href("ford", city_label)},
-        {"key": "hyundai", "label": "Hyundai", "href": _brand_landing_href("hyundai", city_label)},
-        {"key": "kia", "label": "KIA", "href": _brand_landing_href("kia", city_label)},
-        {"key": "mercedes", "label": "Mercedes-Benz", "href": _brand_landing_href("mercedes-benz", city_label)},
-        {"key": "nissan", "label": "Nissan", "href": _brand_landing_href("nissan", city_label)},
-        {"key": "toyota", "label": "Toyota", "href": _brand_landing_href("toyota", city_label)},
-        {
-            "key": "vw",
-            "label": "Volkswagen",
-            "href": _brand_landing_href("volkswagen", city_label),
-            "logo_stem": "volkswagen",
-        },
-    ]
+    brands_primary, brands_10th, brands_more = home_car_brand_tile_groups(city_label)
     return {
-        # 9 в первом ряду; 10-я (VW) только на md+ в первом ряду; на мобильных VW в блоке «Ещё».
-        "home_car_brands_primary": _home_brands_row[:9],
-        "home_car_brands_10th": _home_brands_row[9],
-        "home_car_brands_more": [
-            {"key": "renault", "label": "Renault", "href": _brand_landing_href("renault", city_label)},
-            {"key": "skoda", "label": "Skoda", "href": _brand_landing_href("skoda", city_label)},
-            {"key": "chevrolet", "label": "Chevrolet", "href": _brand_landing_href("chevrolet", city_label)},
-            {"key": "mazda", "label": "Mazda", "href": _brand_landing_href("mazda", city_label)},
-            {"key": "mitsubishi", "label": "Mitsubishi", "href": _brand_landing_href("mitsubishi", city_label)},
-            {"key": "opel", "label": "Opel", "href": _brand_landing_href("opel", city_label)},
-            {"key": "peugeot", "label": "Peugeot", "href": _brand_landing_href("peugeot", city_label)},
-            {"key": "honda", "label": "Honda", "href": _brand_landing_href("honda", city_label)},
-            {"key": "lexus", "label": "Lexus", "href": _brand_landing_href("lexus", city_label)},
-            {"key": "geely", "label": "Geely", "href": _brand_landing_href("geely", city_label)},
-            {"key": "chery", "label": "Chery", "href": _brand_landing_href("chery", city_label)},
-            {"key": "changan", "label": "Changan", "href": _brand_landing_href("changan", city_label)},
-            {"key": "haval", "label": "Haval", "href": _brand_landing_href("haval", city_label)},
-            {"key": "tank", "label": "Tank", "href": _brand_landing_href("tank", city_label)},
-            {"key": "volvo", "label": "Volvo", "href": _brand_landing_href("volvo", city_label)},
-            {"key": "porsche", "label": "Porsche", "href": _brand_landing_href("porsche", city_label)},
-            {"key": "land-rover", "label": "Land Rover", "href": _brand_landing_href("land-rover", city_label), "logo_stem": "land-rover"},
-            {"key": "citroen", "label": "Citroën", "href": _brand_landing_href("citroen", city_label)},
-            {"key": "infiniti", "label": "Infiniti", "href": _brand_landing_href("infiniti", city_label)},
-            {"key": "jeep", "label": "Jeep", "href": _brand_landing_href("jeep", city_label)},
-            {"key": "dodge", "label": "Dodge", "href": _brand_landing_href("dodge", city_label)},
-            {"key": "exeed", "label": "Exeed", "href": _brand_landing_href("exeed", city_label)},
-            {"key": "gaz", "label": "GAZ", "href": _brand_landing_href("gaz", city_label)},
-        ],
+        "home_car_brands_primary": brands_primary,
+        "home_car_brands_10th": brands_10th,
+        "home_car_brands_more": brands_more,
         "home_station_count": station_count,
         "home_categories_count": categories_with_providers,
         "home_service_section_tiles": all_service_section_tiles(today, city_label=city_label),
@@ -375,4 +359,26 @@ def build_homepage_context(city_label: str | None = None) -> dict:
         "catalog_listing": False,
         "home_today": today,
         "home_tomorrow": today + timedelta(days=1),
+        **_home_feature_badges(),
     }
+
+
+def _home_feature_badges() -> dict:
+    from django.conf import settings
+
+    out = {"home_help_active_count": 0, "home_problems_open_count": 0}
+    if getattr(settings, "DRIVER_HELP_ENABLED", True):
+        try:
+            from apps.driver_help.services import active_help_count
+
+            out["home_help_active_count"] = active_help_count()
+        except Exception:
+            pass
+    if getattr(settings, "DRIVER_PROBLEMS_ENABLED", True):
+        try:
+            from apps.driver_problems.services import open_problems_count
+
+            out["home_problems_open_count"] = open_problems_count()
+        except Exception:
+            pass
+    return out

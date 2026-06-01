@@ -410,13 +410,35 @@ class ClientReviewCreateView(CabinetSectionMixin, LoginRequiredMixin, CreateView
         if Review.objects.filter(booking=self._booking).exists() and request.method == "GET":
             messages.info(request, "Отзыв по этой записи уже оставлен.")
             return redirect("cabinet:bookings")
+        from apps.reviews.services import user_has_station_review
+
+        if user_has_station_review(author=request.user, station=self._booking.station):
+            messages.info(
+                request,
+                "Вы уже оставили отзыв об этом сервисе (в том числе с карточки СТО).",
+            )
+            return redirect("cabinet:bookings")
         return super().dispatch(request, *args, **kwargs)
 
     def form_valid(self, form):
-        form.instance.booking = self._booking
+        from apps.reviews.services import ReviewAlreadyExistsError, create_station_review
+
         try:
             with transaction.atomic():
-                self.object = form.save()
+                self.object = create_station_review(
+                    author=self.request.user,
+                    station=self._booking.station,
+                    rating=form.cleaned_data["rating"],
+                    text=form.cleaned_data.get("text") or "",
+                    photo=form.cleaned_data.get("photo"),
+                    booking=self._booking,
+                )
+        except ReviewAlreadyExistsError:
+            messages.error(
+                self.request,
+                "Отзыв об этом сервисе уже добавлен.",
+            )
+            return self.form_invalid(form)
         except IntegrityError:
             messages.error(
                 self.request,
@@ -430,7 +452,7 @@ class ClientReviewCreateView(CabinetSectionMixin, LoginRequiredMixin, CreateView
             from apps.reviews.mail import mail_sto_new_review
 
             try:
-                rev = Review.objects.select_related("booking", "booking__station").get(pk=rid)
+                rev = Review.objects.select_related("station", "station__owner", "booking").get(pk=rid)
                 mail_sto_new_review(rev)
             except Exception:
                 logger.exception("mail_sto_new_review failed review_id=%s", rid)
