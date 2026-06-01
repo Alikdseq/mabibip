@@ -95,31 +95,11 @@
     </div>
   </section>
 
-  {# ——— Блок 3: разделы услуг (кнопки по группам) ——— #}
-  <section class="mb-5" x-data="homeServiceTiles({{ home_service_section_tiles|length }})">
-    <h2 class="h4 mb-1">Какой раздел услуг нужен</h2>
-    <div class="small text-muted mb-3">Сначала выберите раздел, потом — услугу и марку при подборе мастера</div>
-    <div class="row row-cols-2 row-cols-sm-4 g-2 g-md-3">
-      {% for tile in home_service_section_tiles %}
-        <div class="col" x-show="showAt({{ forloop.counter0 }})" x-cloak>
-          <a href="{{ tile.href }}" class="text-decoration-none">
-            <div class="card h-100 border shadow-sm hover-shadow transition-all py-3 text-center">
-              <i class="bi {{ tile.icon }} fs-3 text-primary mb-2" aria-hidden="true"></i>
-              <div class="small fw-medium text-body px-1">{{ tile.label }}</div>
-            </div>
-          </a>
-        </div>
-      {% endfor %}
-    </div>
-    <div class="d-flex justify-content-end mt-3">
-      <button type="button"
-              class="btn btn-outline-primary btn-sm pm-brands-more-btn"
-              x-show="hasMore"
-              x-cloak
-              @click="loadMore()">
-        Ещё
-      </button>
-    </div>
+  {# ——— Блок 3: все категории услуг (2 ряда + «Ещё») ——— #}
+  <section class="mb-5" x-data="serviceCategoryTiles({{ home_service_category_tiles|length }})">
+    <h2 class="h4 mb-1">Какая услуга нужна</h2>
+    <div class="small text-muted mb-3">Выберите услугу — откроется подбор мастеров и сервисов в каталоге.</div>
+    {% include "stations/includes/service_category_tiles_grid.html" with tiles=home_service_category_tiles mode="link" %}
     <p class="small text-muted mt-3 mb-0">
       Нужны фильтры по району, рейтингу и марке —
       <a href="{% url 'stations:list' %}">полный список мастеров и сервисов</a>.

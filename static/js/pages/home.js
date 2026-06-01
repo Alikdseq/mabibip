@@ -1,25 +1,14 @@
+import { registerServiceCategoryTilesAlpine } from '../app/service-category-tiles.js';
+
 (() => {
   const suggestUrlEl = document.getElementById('home-suggest-url');
   const nearbyUrlEl = document.getElementById('home-nearby-url');
   const suggestUrl = suggestUrlEl ? JSON.parse(suggestUrlEl.textContent || '""') : '';
   const nearbyMapUrl = nearbyUrlEl ? JSON.parse(nearbyUrlEl.textContent || '""') : '';
 
-  document.addEventListener('alpine:init', () => {
-    window.Alpine.data('homeServiceTiles', (total) => ({
-      total: total || 0,
-      step: 8,
-      shown: Math.min(8, total || 0),
-      showAt(i) {
-        return i < this.shown;
-      },
-      loadMore() {
-        this.shown = Math.min(this.shown + this.step, this.total);
-      },
-      get hasMore() {
-        return this.shown < this.total;
-      },
-    }));
+  registerServiceCategoryTilesAlpine();
 
+  document.addEventListener('alpine:init', () => {
     window.Alpine.data('homeSearch', () => ({
       q: '',
       results: [],

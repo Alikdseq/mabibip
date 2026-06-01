@@ -15,7 +15,7 @@
       hasBrand: {{ catalog_brand|yesno:'true,false' }},
       hasService: {{ catalog_cat_ids|length|yesno:'true,false' }},
       hasSection: {{ catalog_section|yesno:'true,false' }},
-      serviceTileCount: {{ catalog_section_tiles|length }},
+      serviceTileCount: {{ catalog_service_tiles|length }},
     })"
   >
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-start gap-2">
@@ -88,33 +88,11 @@
       </div>
     </section>
 
-    {# Разделы услуг (+8 по «Ещё») #}
+    {# Категории услуг: 2 ряда, «Ещё» — все #}
     <section class="mb-5 mt-3" x-show="showServices" x-cloak x-transition.duration.300ms>
-      <h2 class="h4 mb-1">Какой раздел услуг нужен</h2>
-      <div class="small text-muted mb-3">Сначала раздел, потом — услуга и марка в фильтрах</div>
-      <div class="row row-cols-2 row-cols-sm-4 g-2 g-md-3">
-        {% for tile in catalog_section_tiles %}
-          <div class="col" x-show="svcShowAt({{ forloop.counter0 }})" x-cloak>
-            <button type="button"
-                    class="w-100 p-0 border-0 bg-transparent text-decoration-none d-block"
-                    @click="applyService({ kind: 'section', sectionSlug: '{{ tile.slug }}' })">
-              <div class="card h-100 border shadow-sm hover-shadow transition-all py-3 text-center">
-                <i class="bi {{ tile.icon }} fs-3 text-primary mb-2" aria-hidden="true"></i>
-                <div class="small fw-medium text-body px-1">{{ tile.label }}</div>
-              </div>
-            </button>
-          </div>
-        {% endfor %}
-      </div>
-      <div class="d-flex justify-content-end mt-3">
-        <button type="button"
-                class="btn btn-outline-primary btn-sm pm-brands-more-btn"
-                x-show="svcHasMore"
-                x-cloak
-                @click="svcLoadMore()">
-          Ещё
-        </button>
-      </div>
+      <h2 class="h4 mb-1">Какая услуга нужна</h2>
+      <div class="small text-muted mb-3">Выберите услугу — затем при необходимости марку в фильтрах</div>
+      {% include "stations/includes/service_category_tiles_grid.html" with tiles=catalog_service_tiles mode="catalog" %}
     </section>
   </div>
 

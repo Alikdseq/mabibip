@@ -1,3 +1,5 @@
+import { serviceCategoryTilesFactory } from '../app/service-category-tiles.js';
+
 (() => {
   // Alpine expects this factory to exist in global scope.
   window.catalogQuickFilters = function catalogQuickFilters({
@@ -16,21 +18,11 @@
     const stc = Number(serviceTileCount) || 0;
 
     return {
+      ...serviceCategoryTilesFactory(stc),
       brandsMore: false,
       showBrands: showBrandsInitial,
       showServices: showServicesInitial,
       serviceTileCount: stc,
-      svcStep: 8,
-      svcShown: Math.min(8, stc),
-      svcShowAt(i) {
-        return i < this.svcShown;
-      },
-      svcLoadMore() {
-        this.svcShown = Math.min(this.svcShown + this.svcStep, this.serviceTileCount);
-      },
-      get svcHasMore() {
-        return this.svcShown < this.serviceTileCount;
-      },
       get controlsVisible() {
         return !this.showBrands && !this.showServices;
       },

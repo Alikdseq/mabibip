@@ -289,6 +289,15 @@ select.pm-city-listbox {
   color: #fff !important;
 }
 
+.pm-service-tile-card {
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.pm-service-tile-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 0.35rem 0.85rem rgba(0, 0, 0, 0.1) !important;
+}
+
 .pm-station-card {
   border-color: var(--pm-accent) !important;
   border-width: 2px;

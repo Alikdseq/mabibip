@@ -191,13 +191,16 @@ def all_service_category_tiles(today, city_label: str | None = None) -> list[dic
     visible = _visible_stations(today, city_label=city_label)
     qs = (
         ServiceCategory.objects.filter(stations__in=visible)
+        .select_related("section")
         .annotate(provider_count=Count("stations", distinct=True))
         .filter(provider_count__gt=0)
-        .order_by("-provider_count", "name")
+        .order_by("section__sort_order", "section__name", "name")
     )
     out: list[dict[str, str | int | None]] = []
     for c in qs:
-        icon = _SLUG_ICON.get(c.slug, "bi-tools")
+        icon = _SLUG_ICON.get(c.slug) or (
+            ((c.section.icon or "").strip() if c.section_id else "") or "bi-tools"
+        )
         out.append(
             {
                 "label": c.name,
@@ -344,6 +347,7 @@ def build_homepage_context(city_label: str | None = None) -> dict:
         "home_station_count": station_count,
         "home_categories_count": categories_with_providers,
         "home_service_section_tiles": all_service_section_tiles(today, city_label=city_label),
+        "home_service_category_tiles": all_service_category_tiles(today, city_label=city_label),
         "home_featured_stations": featured,
         "home_express_categories": _category_provider_rows(
             today,

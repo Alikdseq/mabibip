@@ -8,6 +8,7 @@ from django.urls import reverse
 
 from apps.bookings.constants import BookingStatus
 from apps.bookings.models import Booking, TimeSlot
+from apps.core.visitor_city import SESSION_KEY as VISITOR_CITY_SESSION_KEY
 from apps.stations.constants import EXECUTOR_KIND_PRIVATE, SUBSCRIPTION_PLAN_FREE
 from apps.stations.models import CarBrand, ServiceCategory, ServiceSection, ServiceStation, WorkBay
 from apps.users.models import User
@@ -78,6 +79,55 @@ def test_catalog_brand_filter(owner):
     slugs = [s.slug for s in r.context["stations"]]
     assert "bmw-st" in slugs
     assert "other-st" not in slugs
+
+
+@pytest.mark.django_db
+def test_catalog_lists_all_service_category_tiles(owner):
+    cats = []
+    for i in range(12):
+        c = ServiceCategory.objects.create(name=f"Услуга кат {i}", slug=f"svc-cat-tile-{i}")
+        cats.append(c)
+    st = ServiceStation.objects.create(
+        owner=owner,
+        name="СТО услуги",
+        slug="st-svc-tiles",
+        address="Москва, ул. 10",
+        subscription_plan=SUBSCRIPTION_PLAN_FREE,
+        is_active=True,
+        executor_kind=EXECUTOR_KIND_PRIVATE,
+    )
+    st.categories.set(cats)
+    c = Client()
+    session = c.session
+    session[VISITOR_CITY_SESSION_KEY] = "Москва"
+    session.save()
+    r = c.get(reverse("stations:list"))
+    assert r.status_code == 200
+    assert len(r.context["catalog_service_tiles"]) == 12
+    assert len(r.context["catalog_section_tiles"]) >= 0
+
+
+@pytest.mark.django_db
+def test_homepage_lists_all_service_category_tiles(owner):
+    for i in range(10):
+        c = ServiceCategory.objects.create(name=f"Главная услуга {i}", slug=f"home-svc-{i}")
+        st = ServiceStation.objects.create(
+            owner=owner,
+            name=f"СТО {i}",
+            slug=f"st-home-svc-{i}",
+            address="Москва, ул. 1",
+            subscription_plan=SUBSCRIPTION_PLAN_FREE,
+            is_active=True,
+            executor_kind=EXECUTOR_KIND_PRIVATE,
+        )
+        st.categories.add(c)
+    c = Client()
+    session = c.session
+    session[VISITOR_CITY_SESSION_KEY] = "Москва"
+    session.save()
+    r = c.get(reverse("home"))
+    assert r.status_code == 200
+    assert len(r.context["home_service_category_tiles"]) == 10
 
 
 @pytest.mark.django_db
