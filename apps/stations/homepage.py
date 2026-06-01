@@ -214,18 +214,21 @@ def all_service_category_tiles(today, city_label: str | None = None) -> list[dic
 
 
 def all_service_section_tiles(today, city_label: str | None = None) -> list[dict[str, str | int | None]]:
-    """Разделы услуг, по которым есть исполнители в каталоге (кнопки на главной)."""
+    """Разделы услуг (Детейлинг, Ходовая, …), по которым есть исполнители в каталоге."""
+    from django.urls import reverse
+
     visible = _visible_stations(today, city_label=city_label)
     qs = (
-        ServiceSection.objects.filter(categories__stations__in=visible)
+        ServiceSection.objects.filter(
+            Q(categories__stations__in=visible) | Q(stations__in=visible)
+        )
         .distinct()
         .order_by("sort_order", "name")
     )
     out: list[dict[str, str | int | None]] = []
     for s in qs:
         icon = (s.icon or "").strip() or "bi-tools"
-        # Ведём на лендинг раздела (как у точечной услуги).
-        href = _href_with_city(f"/razdely/{quote(s.slug)}/", city_label)
+        href = _href_with_city(reverse("landing:service_section", kwargs={"slug": s.slug}), city_label)
         out.append(
             {
                 "label": s.name,
@@ -347,7 +350,6 @@ def build_homepage_context(city_label: str | None = None) -> dict:
         "home_station_count": station_count,
         "home_categories_count": categories_with_providers,
         "home_service_section_tiles": all_service_section_tiles(today, city_label=city_label),
-        "home_service_category_tiles": all_service_category_tiles(today, city_label=city_label),
         "home_featured_stations": featured,
         "home_express_categories": _category_provider_rows(
             today,

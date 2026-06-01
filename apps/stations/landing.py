@@ -276,14 +276,14 @@ class CarBrandLandingView(DetailView):
                 Q(categories__stations__in=providers_qs) | Q(stations__in=providers_qs)
             )
             .distinct()
-            .order_by("sort_order", "name")[:12]
+            .order_by("sort_order", "name")
         )
         ctx["top_sections"] = [
             {
                 "slug": s.slug,
                 "name": s.name,
                 "icon": (s.icon or "").strip() or "bi-tools",
-                # Из лендинга марки: сразу открываем каталог по марке + разделу.
+                "label": s.name,
                 "href": catalog_href_brand_section(brand.slug, s.slug, city=city),
             }
             for s in sections

@@ -37,21 +37,14 @@
   </div>
 
   {% if top_sections %}
-    <section class="mb-5">
-      <h2 class="h4 mb-3">Разделы услуг по {{ brand.name }}</h2>
-      <div class="row row-cols-2 row-cols-sm-4 g-2 g-md-3">
-        {% for s in top_sections %}
-          <div class="col">
-            <a href="{{ s.href }}" class="text-decoration-none">
-              <div class="card h-100 border shadow-sm hover-shadow transition-all py-3 text-center">
-                <i class="bi {{ s.icon }} fs-3 text-primary mb-2" aria-hidden="true"></i>
-                <div class="small fw-medium text-body px-1">{{ s.name }}</div>
-              </div>
-            </a>
-          </div>
-        {% endfor %}
-      </div>
-      <p class="small text-muted mb-0">Открывается каталог с фильтром по марке {{ brand.name }} и разделу услуг.</p>
+    <section class="mb-5" x-data="serviceCategoryTiles({{ top_sections|length }})">
+      <h2 class="h4 mb-3">Выберите раздел услуг для {{ brand.name }}</h2>
+      <p class="small text-muted mb-3">После выбора откроется каталог мастеров по марке {{ brand.name }} и выбранному разделу.</p>
+      {% include "stations/includes/service_section_tiles_grid.html" with tiles=top_sections mode="link" %}
     </section>
   {% endif %}
+{% endblock %}
+{% block extra_js %}
+  {{ block.super }}
+  <script type="module" src="{% static 'js/pages/home.js' %}"></script>
 {% endblock %}

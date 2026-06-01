@@ -15,7 +15,7 @@
       hasBrand: {{ catalog_brand|yesno:'true,false' }},
       hasService: {{ catalog_cat_ids|length|yesno:'true,false' }},
       hasSection: {{ catalog_section|yesno:'true,false' }},
-      serviceTileCount: {{ catalog_service_tiles|length }},
+      serviceTileCount: {{ catalog_section_tiles|length }},
     })"
   >
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-start gap-2">
@@ -88,11 +88,11 @@
       </div>
     </section>
 
-    {# Категории услуг: 2 ряда, «Ещё» — все #}
+    {# Разделы услуг: 2 ряда, «Ещё» — все; клик = фильтр section (без перехода) #}
     <section class="mb-5 mt-3" x-show="showServices" x-cloak x-transition.duration.300ms>
-      <h2 class="h4 mb-1">Какая услуга нужна</h2>
-      <div class="small text-muted mb-3">Выберите услугу — затем при необходимости марку в фильтрах</div>
-      {% include "stations/includes/service_category_tiles_grid.html" with tiles=catalog_service_tiles mode="catalog" %}
+      <h2 class="h4 mb-1">Какой раздел услуг нужен</h2>
+      <div class="small text-muted mb-3">Детейлинг, ходовая, двигатель… — фильтр каталога применится сразу</div>
+      {% include "stations/includes/service_section_tiles_grid.html" with tiles=catalog_section_tiles mode="catalog" %}
     </section>
   </div>
 

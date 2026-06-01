@@ -82,52 +82,53 @@ def test_catalog_brand_filter(owner):
 
 
 @pytest.mark.django_db
-def test_catalog_lists_all_service_category_tiles(owner):
-    cats = []
+def test_catalog_lists_all_service_section_tiles(owner):
+    sections = []
     for i in range(12):
-        c = ServiceCategory.objects.create(name=f"Услуга кат {i}", slug=f"svc-cat-tile-{i}")
-        cats.append(c)
+        sec = ServiceSection.objects.create(name=f"Раздел {i}", slug=f"sec-tile-{i}", sort_order=i)
+        cat = ServiceCategory.objects.create(name=f"Услуга {i}", slug=f"svc-in-sec-{i}", section=sec)
+        sections.append(sec)
     st = ServiceStation.objects.create(
         owner=owner,
-        name="СТО услуги",
-        slug="st-svc-tiles",
+        name="СТО разделы",
+        slug="st-sec-tiles",
         address="Москва, ул. 10",
         subscription_plan=SUBSCRIPTION_PLAN_FREE,
         is_active=True,
         executor_kind=EXECUTOR_KIND_PRIVATE,
     )
-    st.categories.set(cats)
+    st.categories.set([ServiceCategory.objects.get(slug=f"svc-in-sec-{i}") for i in range(12)])
     c = Client()
     session = c.session
     session[VISITOR_CITY_SESSION_KEY] = "Москва"
     session.save()
     r = c.get(reverse("stations:list"))
     assert r.status_code == 200
-    assert len(r.context["catalog_service_tiles"]) == 12
-    assert len(r.context["catalog_section_tiles"]) >= 0
+    assert len(r.context["catalog_section_tiles"]) == 12
 
 
 @pytest.mark.django_db
-def test_homepage_lists_all_service_category_tiles(owner):
+def test_homepage_lists_all_service_section_tiles(owner):
     for i in range(10):
-        c = ServiceCategory.objects.create(name=f"Главная услуга {i}", slug=f"home-svc-{i}")
+        sec = ServiceSection.objects.create(name=f"Главный раздел {i}", slug=f"home-sec-{i}", sort_order=i)
+        cat = ServiceCategory.objects.create(name=f"Услуга {i}", slug=f"home-svc-{i}", section=sec)
         st = ServiceStation.objects.create(
             owner=owner,
             name=f"СТО {i}",
-            slug=f"st-home-svc-{i}",
+            slug=f"st-home-sec-{i}",
             address="Москва, ул. 1",
             subscription_plan=SUBSCRIPTION_PLAN_FREE,
             is_active=True,
             executor_kind=EXECUTOR_KIND_PRIVATE,
         )
-        st.categories.add(c)
+        st.categories.add(cat)
     c = Client()
     session = c.session
     session[VISITOR_CITY_SESSION_KEY] = "Москва"
     session.save()
     r = c.get(reverse("home"))
     assert r.status_code == 200
-    assert len(r.context["home_service_category_tiles"]) == 10
+    assert len(r.context["home_service_section_tiles"]) == 10
 
 
 @pytest.mark.django_db

@@ -55,7 +55,7 @@ from apps.core.visitor_city import SESSION_KEY as VISITOR_CITY_SESSION_KEY
 
 from .catalog_query import build_catalog_queryset
 from .catalog_seo import build_catalog_page_seo
-from .homepage import all_service_category_tiles, all_service_section_tiles, build_homepage_context
+from .homepage import all_service_section_tiles, build_homepage_context
 from .models import CarBrand, District, ServiceCategory, ServiceSection, ServiceStation, StationPhoto, StationServiceOffer
 from .nearby import list_nearby_stations
 from .selectors import (
@@ -285,10 +285,6 @@ class StationListView(ListView):
             "exec": ctx.get("catalog_exec") or [],
         }
         v_city = (self.request.session.get(VISITOR_CITY_SESSION_KEY) or "").strip() or None
-        ctx["catalog_service_tiles"] = all_service_category_tiles(
-            timezone.localdate(),
-            city_label=v_city,
-        )
         ctx["catalog_section_tiles"] = all_service_section_tiles(
             timezone.localdate(),
             city_label=v_city,

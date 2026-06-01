@@ -95,11 +95,13 @@
     </div>
   </section>
 
-  {# ——— Блок 3: все категории услуг (2 ряда + «Ещё») ——— #}
-  <section class="mb-5" x-data="serviceCategoryTiles({{ home_service_category_tiles|length }})">
-    <h2 class="h4 mb-1">Какая услуга нужна</h2>
-    <div class="small text-muted mb-3">Выберите услугу — откроется подбор мастеров и сервисов в каталоге.</div>
-    {% include "stations/includes/service_category_tiles_grid.html" with tiles=home_service_category_tiles mode="link" %}
+  {# ——— Блок 3: разделы услуг (Детейлинг, Ходовая, …) — 2 ряда + «Ещё» ——— #}
+  <section class="mb-5" x-data="serviceCategoryTiles({{ home_service_section_tiles|length }})">
+    <h2 class="h4 mb-1">Какой раздел услуг нужен</h2>
+    <div class="small text-muted mb-3">
+      Выберите раздел — затем марку авто. Или сначала марку выше, потом раздел на странице марки.
+    </div>
+    {% include "stations/includes/service_section_tiles_grid.html" with tiles=home_service_section_tiles mode="link" %}
     <p class="small text-muted mt-3 mb-0">
       Нужны фильтры по району, рейтингу и марке —
       <a href="{% url 'stations:list' %}">полный список мастеров и сервисов</a>.

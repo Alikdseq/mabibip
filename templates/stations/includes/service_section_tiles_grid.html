@@ -1,14 +1,14 @@
 {% comment %}
-  tiles — список категорий (all_service_category_tiles)
-  mode: link | catalog
+  tiles — разделы услуг (ServiceSection): Детейлинг, Ходовая, …
+  mode: link (главная → лендинг раздела) | catalog (фильтр section без перехода)
 {% endcomment %}
-<div class="row row-cols-2 row-cols-sm-4 g-2 g-md-3 pm-service-categories-grid">
+<div class="row row-cols-2 row-cols-sm-4 g-2 g-md-3 pm-service-sections-grid">
   {% for tile in tiles %}
     <div class="col" x-show="showAt({{ forloop.counter0 }})" x-cloak>
       {% if mode == 'catalog' %}
         <button type="button"
                 class="w-100 p-0 border-0 bg-transparent text-decoration-none d-block"
-                @click="applyService({ kind: 'category', catId: '{{ tile.cat_id }}' })">
+                @click="applyService({ kind: 'section', sectionSlug: '{{ tile.slug }}' })">
           <div class="card h-100 border shadow-sm hover-shadow transition-all py-3 text-center pm-service-tile-card">
             <i class="bi {{ tile.icon }} fs-3 text-primary mb-2" aria-hidden="true"></i>
             <div class="small fw-medium text-body px-1">{{ tile.label }}</div>
@@ -24,7 +24,7 @@
       {% endif %}
     </div>
   {% empty %}
-    <p class="text-muted small col-12 mb-0">Категории услуг появятся, когда мастера укажут услуги в профиле.</p>
+    <p class="text-muted small col-12 mb-0">Разделы услуг появятся, когда мастера заполнят профиль.</p>
   {% endfor %}
 </div>
 <div class="d-flex justify-content-end mt-3" x-show="hasMore" x-cloak>
